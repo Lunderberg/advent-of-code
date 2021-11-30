@@ -1,8 +1,7 @@
-use std::error::Error;
-
 use itertools::Itertools;
 use structopt::StructOpt;
 
+use utils::Error;
 use utils::Puzzle;
 
 mod solutions;
@@ -14,7 +13,7 @@ struct Options {
     days: Option<Vec<i32>>,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Error> {
     let opt = Options::from_args();
 
     let solutions: Vec<Box<dyn Puzzle>> = vec![
@@ -55,14 +54,23 @@ fn main() -> Result<(), Box<dyn Error>> {
             .collect::<Vec<i32>>()
     });
 
-    days.iter().for_each(|&day| {
-        let puzzle: &Box<dyn Puzzle> =
-            solutions.iter().filter(|&p| p.day() == day).next().unwrap();
-        println!("Day {:02}, Part 1", day);
-        puzzle.part_1();
-        println!("Day {:02}, Part 2", day);
-        puzzle.part_2();
-    });
+    days.iter()
+        .cloned()
+        .cartesian_product(vec![1, 2])
+        .map(|(day, part)| -> (i32,i32,Result<Box<dyn std::fmt::Debug>, Error>) {
+            let res = solutions
+                .iter()
+                .filter(|&p| p.day() == day)
+                .next()
+                .ok_or(Error::NoneError)
+                .and_then(|puzzle| puzzle.call_part(part));
+            (day, part, res)
+        })
+        .inspect(|(day, part, res)| {
+            println!("Day {:02}, Part {:}", day, part);
+            println!("{:?}", res);
+        } ).map(|(_day,_part,res)| res)
+        .collect::<Result<Vec<_>,Error>>()?;
 
     Ok(())
 }
