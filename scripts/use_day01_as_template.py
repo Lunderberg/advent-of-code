@@ -1,18 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
-import pathlib
 import re
 
 
-def get_repo_dir():
-    path = pathlib.Path(__file__).resolve()
-    while path != pathlib.Path(path.root):
-        path = path.parent
-        if path.joinpath("Cargo.toml").exists():
-            return path
-
-    raise RuntimeError("Could not find Cargo.toml in any parent dir")
+from utils import get_repo_dir
 
 
 def main(args):
