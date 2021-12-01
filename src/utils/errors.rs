@@ -3,6 +3,8 @@ pub enum Error {
     WrongInt(std::num::ParseIntError),
     IoError(std::io::Error),
     InvalidArg(Arg),
+    EnvError(std::env::VarError),
+    HttpError(reqwest::Error),
     MissingRegex,
     NoneError,
     EarlyFailure,
@@ -15,6 +17,18 @@ pub enum Error {
 pub enum Arg {
     String(String),
     I32(i32),
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(e: reqwest::Error) -> Self {
+        Error::HttpError(e)
+    }
+}
+
+impl From<std::env::VarError> for Error {
+    fn from(e: std::env::VarError) -> Self {
+        Error::EnvError(e)
+    }
 }
 
 impl From<std::io::Error> for Error {
