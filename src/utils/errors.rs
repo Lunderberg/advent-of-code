@@ -11,12 +11,25 @@ pub enum Error {
     UnknownChar(char),
     ParseError,
     Mismatch,
+    TooManyIteratorItems,
 }
 
 #[derive(Debug)]
 pub enum Arg {
     String(String),
     I32(i32),
+}
+
+impl From<&str> for Arg {
+    fn from(e: &str) -> Self {
+        Arg::String(e.to_string())
+    }
+}
+
+impl From<i32> for Arg {
+    fn from(e: i32) -> Self {
+        Arg::I32(e)
+    }
 }
 
 impl From<reqwest::Error> for Error {
@@ -49,3 +62,12 @@ impl From<std::num::ParseIntError> for Error {
 //         Error::NoneError
 //     }
 // }
+
+impl<T> From<itertools::structs::ExactlyOneError<T>> for Error
+where
+    T: Iterator,
+{
+    fn from(_e: itertools::structs::ExactlyOneError<T>) -> Self {
+        Error::TooManyIteratorItems
+    }
+}
