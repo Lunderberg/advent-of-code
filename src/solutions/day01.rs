@@ -33,8 +33,8 @@ impl Puzzle for Day01 {
 
         let result = puzzle_input
             .lines()
-            .map(|line| line.parse::<i32>().map_err(|err| err.into()))
-            .collect::<Result<Vec<_>, Error>>()?
+            .map(|line| line.parse::<i32>())
+            .collect::<Result<Vec<_>, _>>()?
             .iter()
             .tuple_windows()
             .map(|(a, b, c)| a + b + c)
