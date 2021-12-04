@@ -13,6 +13,9 @@ pub enum Error {
     ParseError,
     Mismatch,
     TooManyIteratorItems,
+    WrongBingoBoardSize(usize),
+    BoardNeverWins,
+    NoWinningBoard,
 }
 
 #[derive(Debug)]
