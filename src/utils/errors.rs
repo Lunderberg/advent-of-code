@@ -3,6 +3,7 @@ pub enum Error {
     WrongInt(std::num::ParseIntError),
     IoError(std::io::Error),
     InvalidArg(Arg),
+    InvalidIndex(usize),
     EnvError(std::env::VarError),
     HttpError(reqwest::Error),
     MissingRegex,
