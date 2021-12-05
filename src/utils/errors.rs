@@ -16,6 +16,7 @@ pub enum Error {
     WrongBingoBoardSize(usize),
     BoardNeverWins,
     NoWinningBoard,
+    DiagonalVentLine,
 }
 
 #[derive(Debug)]
