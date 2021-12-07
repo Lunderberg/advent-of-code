@@ -17,6 +17,7 @@ pub enum Error {
     BoardNeverWins,
     NoWinningBoard,
     DiagonalVentLine,
+    CannotFindMinMax,
 }
 
 #[derive(Debug)]
