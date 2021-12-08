@@ -11,7 +11,7 @@ name = "aoc2021"
 path = "src/bin.rs"
 
 [lib]
-name = "utils"
+name = "aoc2021"
 
 [dependencies]
 itertools = "*"

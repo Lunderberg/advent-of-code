@@ -9,3 +9,6 @@ pub use file_parsing::*;
 
 mod puzzle;
 pub use puzzle::*;
+
+mod iter_solutions;
+pub use iter_solutions::*;

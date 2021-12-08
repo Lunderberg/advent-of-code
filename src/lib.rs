@@ -1,2 +1,2 @@
-mod utils;
-pub use utils::*;
+pub mod solutions;
+pub mod utils;

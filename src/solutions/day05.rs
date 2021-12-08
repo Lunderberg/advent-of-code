@@ -1,8 +1,8 @@
 #![allow(unused_imports)]
 use regex::Regex;
 
-use utils::Error;
-use utils::{Puzzle, PuzzleExtensions, PuzzleInput};
+use crate::utils::Error;
+use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
 
 use itertools::Itertools;
 
