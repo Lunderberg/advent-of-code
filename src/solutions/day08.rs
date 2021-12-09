@@ -3,6 +3,8 @@
 use crate::utils::Error;
 use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
 
+use std::collections::{HashMap, HashSet};
+
 use itertools::Itertools;
 
 pub struct Day08;
@@ -12,6 +14,8 @@ struct LightSequence {
     unique_patterns: Vec<String>,
     outputs: Vec<String>,
 }
+
+type Segment = u8;
 
 impl std::str::FromStr for LightSequence {
     type Err = Error;
@@ -28,7 +32,76 @@ impl std::str::FromStr for LightSequence {
     }
 }
 
-type Segment = u8;
+impl LightSequence {
+    fn is_valid_assignment(
+        &self,
+        segments: Vec<Segment>,
+    ) -> Result<bool, Error> {
+        let segment_parse: HashMap<char, Segment> =
+            ('a'..='g').zip(segments.into_iter()).collect();
+        let unique_patterns: Vec<HashSet<Segment>> = self
+            .unique_patterns
+            .iter()
+            .map(|s| {
+                s.chars()
+                    .map(|c| segment_parse.get(&c))
+                    .flatten()
+                    .map(|&seg| seg)
+                    .collect()
+            })
+            .collect();
+
+        let reference_digits: Vec<HashSet<Segment>> = (0..=9)
+            .map(|d| Ok(active_segments(d)?.collect()))
+            .collect::<Result<_, Error>>()?;
+
+        println!("Segment map: {:?}", segment_parse);
+        println!("Unique patterns: {:?}", unique_patterns);
+        println!("Digit usage: {:?}", reference_digits);
+
+        let mut valid_digit_assignments =
+            (0..=9).filter_permute(10, |partial_permute| {
+                partial_permute
+                    .iter()
+                    .map(|i| reference_digits.get(*i as usize).unwrap())
+                    .zip(unique_patterns.iter())
+                    .all(|(reference_segments, assigned_segments)| {
+                        reference_segments.is_superset(&assigned_segments)
+                    })
+            });
+
+        Ok(valid_digit_assignments.next().is_some())
+    }
+
+    fn interpret_results(&self, segment_map: &Vec<Segment>) -> Vec<u8> {
+        let segment_parse: HashMap<char, Segment> = ('a'..='g')
+            .zip(segment_map.iter().map(|&seg| seg))
+            .collect();
+
+        let reference_digits: Vec<HashSet<Segment>> = (0..=9)
+            .map(|d| Ok(active_segments(d)?.collect()))
+            .collect::<Result<_, Error>>()
+            .unwrap();
+
+        self.outputs
+            .iter()
+            .map(|string| {
+                let active_segments: HashSet<Segment> = string
+                    .chars()
+                    .map(|c| segment_parse.get(&c).unwrap())
+                    .map(|&seg| seg)
+                    .collect();
+                reference_digits
+                    .iter()
+                    .enumerate()
+                    .filter(|(_i, reference)| **reference == active_segments)
+                    .map(|(i, _reference)| i as u8)
+                    .exactly_one()
+                    .unwrap()
+            })
+            .collect()
+    }
+}
 
 fn active_segments(digit: u8) -> Result<impl Iterator<Item = Segment>, Error> {
     Ok(match digit {
@@ -65,14 +138,24 @@ impl Puzzle for Day08 {
         true
     }
     fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        //let result = self.get_light_sequence();
-        //let result = (0..=9).permutations(10).collect::<Vec<Vec<u8>>>();
-        let result = (0..=3)
-            .filter_permute(4, |items| {
-                println!("Testing {:?}", items);
-                items.get(1).map(|&val| val == 2).unwrap_or(true)
+        let sequence = self.get_light_sequence()?;
+
+        let segment_map = (0..7)
+            .map(|i| i as Segment)
+            .filter_permute(7, |partial_permute| {
+                sequence.is_valid_assignment(partial_permute).unwrap()
             })
-            .collect::<Vec<Vec<u8>>>();
+            .exactly_one()?;
+
+        let result = sequence.interpret_results(&segment_map);
+
+        //let result = (0..=9).permutations(10).collect::<Vec<Vec<u8>>>();
+        // let result = (0..=3)
+        //     .filter_permute(4, |items| {
+        //         println!("Testing {:?}", items);
+        //         items.get(1).map(|&val| val == 2).unwrap_or(true)
+        //     })
+        //     .collect::<Vec<Vec<u8>>>();
         Ok(Box::new(result))
     }
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
