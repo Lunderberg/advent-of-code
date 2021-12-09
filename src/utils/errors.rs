@@ -18,6 +18,7 @@ pub enum Error {
     NoWinningBoard,
     DiagonalVentLine,
     CannotFindMinMax,
+    InvalidDigit(u8),
 }
 
 #[derive(Debug)]
