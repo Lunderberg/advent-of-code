@@ -4,18 +4,69 @@ use crate::utils::Error;
 use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
 
 use std::collections::{HashMap, HashSet};
+use std::convert::{TryFrom, TryInto};
+use std::fmt::{Debug, Formatter};
 
 use itertools::Itertools;
 
 pub struct Day08;
 
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+struct Segment(u8);
+
 #[derive(Debug)]
 struct LightSequence {
-    unique_patterns: Vec<String>,
-    outputs: Vec<String>,
+    unique_patterns: Vec<HashSet<Segment>>,
+    outputs: Vec<HashSet<Segment>>,
 }
 
-type Segment = u8;
+#[derive(Debug)]
+struct SegmentConstraints {
+    allowed_values: Vec<HashSet<Segment>>,
+}
+
+impl Debug for Segment {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl TryFrom<u8> for Segment {
+    type Error = Error;
+    fn try_from(val: u8) -> Result<Self, Error> {
+        if val < 7 {
+            Ok(Segment(val))
+        } else {
+            Err(Error::InvalidDigit(val))
+        }
+    }
+}
+
+impl TryFrom<char> for Segment {
+    type Error = Error;
+    fn try_from(c: char) -> Result<Segment, Error> {
+        match c {
+            'a' => Ok(Segment(0)),
+            'b' => Ok(Segment(1)),
+            'c' => Ok(Segment(2)),
+            'd' => Ok(Segment(3)),
+            'e' => Ok(Segment(4)),
+            'f' => Ok(Segment(5)),
+            'g' => Ok(Segment(6)),
+            _ => Err(Error::UnknownChar(c)),
+        }
+    }
+}
+
+impl std::str::FromStr for Segment {
+    type Err = Error;
+    fn from_str(s: &str) -> Result<Self, Error> {
+        let char = s.chars().exactly_one()?;
+        match char {
+            _ => Err(Error::UnknownChar(char)),
+        }
+    }
+}
 
 impl std::str::FromStr for LightSequence {
     type Err = Error;
@@ -24,60 +75,141 @@ impl std::str::FromStr for LightSequence {
             .exactly_one()?
             .split('|')
             .tuples()
-            .map(|(a, b)| LightSequence {
-                unique_patterns: a.split(' ').map(|s| s.to_string()).collect(),
-                outputs: b.split(' ').map(|s| s.to_string()).collect(),
+            .map(|(a, b)| -> Result<_, Error> {
+                let unpack = |string: &str| {
+                    string
+                        .split(' ')
+                        .map(|s| s.trim())
+                        .filter(|s| s.len() > 0)
+                        .map(|s| {
+                            s.chars()
+                                .map(|c| c.try_into())
+                                .collect::<Result<_, Error>>()
+                        })
+                        .collect::<Result<_, Error>>()
+                };
+                Ok(LightSequence {
+                    unique_patterns: unpack(a)?,
+                    outputs: unpack(b)?,
+                })
             })
-            .exactly_one()?)
+            .exactly_one()??)
     }
 }
 
 impl LightSequence {
-    fn is_valid_assignment(
-        &self,
-        segments: Vec<Segment>,
-    ) -> Result<bool, Error> {
-        let segment_parse: HashMap<char, Segment> =
-            ('a'..='g').zip(segments.into_iter()).collect();
-        let unique_patterns: Vec<HashSet<Segment>> = self
-            .unique_patterns
+    fn decode_outputs(&self) -> Result<Vec<u8>, Error> {
+        let mapping = self.find_mapping()?;
+        let values = self
+            .outputs
             .iter()
-            .map(|s| {
-                s.chars()
-                    .map(|c| segment_parse.get(&c))
-                    .flatten()
-                    .map(|&seg| seg)
-                    .collect()
+            .map(|output_pattern| -> Result<u8, Error> {
+                let val = mapping
+                    .iter()
+                    .enumerate()
+                    .filter(|(_digit, known_pattern)| {
+                        known_pattern == &output_pattern
+                    })
+                    .map(|(digit, _known_pattern)| digit)
+                    .exactly_one()?;
+                Ok(val as u8)
             })
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(values)
+    }
 
-        let reference_digits: Vec<HashSet<Segment>> = (0..=9)
+    fn find_mapping(&self) -> Result<Vec<HashSet<Segment>>, Error> {
+        let expected_segment_patterns: Vec<HashSet<Segment>> = (0..=9)
             .map(|d| Ok(active_segments(d)?.collect()))
             .collect::<Result<_, Error>>()?;
 
-        println!("Segment map: {:?}", segment_parse);
-        println!("Unique patterns: {:?}", unique_patterns);
-        println!("Digit usage: {:?}", reference_digits);
+        let digit_assignment_groups: Vec<(Vec<u8>, Vec<&HashSet<Segment>>)> =
+            self.unique_patterns
+                .iter()
+                .map(|pattern| (pattern.len(), pattern))
+                .into_group_map()
+                .into_iter()
+                .map(|(num_segments, patterns)| {
+                    (
+                        expected_segment_patterns
+                            .iter()
+                            .enumerate()
+                            .filter(|(_digit, segments)| {
+                                num_segments == segments.len()
+                            })
+                            .map(|(digit, _segments)| digit as u8)
+                            .collect::<Vec<u8>>(),
+                        patterns,
+                    )
+                })
+                .sorted_by(|(a_digits, _), (b_digits, _)| {
+                    a_digits.len().cmp(&b_digits.len())
+                })
+                .collect();
 
-        let mut valid_digit_assignments =
-            (0..=9).filter_permute(10, |partial_permute| {
-                partial_permute
+        let possible_digit_assignments = digit_assignment_groups
+            .iter()
+            .map(|(digits, patterns)| {
+                digits
                     .iter()
-                    .map(|i| reference_digits.get(*i as usize).unwrap())
-                    .zip(unique_patterns.iter())
-                    .all(|(reference_segments, assigned_segments)| {
-                        reference_segments.is_superset(&assigned_segments)
-                    })
-            });
+                    .permutations(digits.len())
+                    .map(move |ordering| (ordering, patterns))
+            })
+            .multi_cartesian_product()
+            .map(|vec: Vec<(Vec<&u8>, &Vec<&HashSet<Segment>>)>| {
+                let digits: Vec<u8> = vec
+                    .iter()
+                    .map(|(vals, _)| vals.iter())
+                    .flatten()
+                    .map(|d| **d)
+                    .collect();
+                let patterns: Vec<&HashSet<Segment>> = vec
+                    .iter()
+                    .map(|(_, patterns)| patterns.iter())
+                    .flatten()
+                    .map(|p| *p)
+                    .collect();
+                (digits, patterns)
+            })
+            .collect::<Vec<_>>();
 
-        Ok(valid_digit_assignments.next().is_some())
+        let digit_assignment = possible_digit_assignments
+            .iter()
+            .filter(|(digits, patterns)| {
+                Self::is_valid_assignment(digits, patterns)
+            })
+            .map(|(digits, patterns)| {
+                digits
+                    .iter()
+                    .zip(patterns.iter())
+                    .sorted_by_key(|(d, _pat)| *d)
+                    .map(|(_d, pat)| (*pat).clone())
+                    .collect::<Vec<_>>()
+            })
+            .exactly_one()?;
+
+        Ok(digit_assignment)
     }
 
-    fn interpret_results(&self, segment_map: &Vec<Segment>) -> Vec<u8> {
-        let segment_parse: HashMap<char, Segment> = ('a'..='g')
-            .zip(segment_map.iter().map(|&seg| seg))
-            .collect();
+    fn is_valid_assignment(
+        digits: &[u8],
+        patterns: &[&HashSet<Segment>],
+    ) -> bool {
+        let mut constraints = SegmentConstraints::new();
+        digits
+            .iter()
+            .zip(patterns.iter())
+            .for_each(|(digit, pattern)| {
+                constraints.impose_constraint(*digit, pattern);
+            });
 
+        constraints
+            .allowed_values
+            .iter()
+            .all(|vals| vals.len() == 1)
+    }
+
+    fn interpret_results(&self, _segment_map: &Vec<Segment>) -> Vec<u8> {
         let reference_digits: Vec<HashSet<Segment>> = (0..=9)
             .map(|d| Ok(active_segments(d)?.collect()))
             .collect::<Result<_, Error>>()
@@ -85,16 +217,11 @@ impl LightSequence {
 
         self.outputs
             .iter()
-            .map(|string| {
-                let active_segments: HashSet<Segment> = string
-                    .chars()
-                    .map(|c| segment_parse.get(&c).unwrap())
-                    .map(|&seg| seg)
-                    .collect();
+            .map(|segments| {
                 reference_digits
                     .iter()
                     .enumerate()
-                    .filter(|(_i, reference)| **reference == active_segments)
+                    .filter(|(_i, reference)| *reference == segments)
                     .map(|(i, _reference)| i as u8)
                     .exactly_one()
                     .unwrap()
@@ -103,30 +230,112 @@ impl LightSequence {
     }
 }
 
-fn active_segments(digit: u8) -> Result<impl Iterator<Item = Segment>, Error> {
-    Ok(match digit {
-        0 => vec![0, 1, 2, 4, 5, 6],
-        1 => vec![2, 5],
-        2 => vec![0, 2, 3, 4, 6],
-        3 => vec![0, 2, 3, 5, 6],
-        4 => vec![1, 2, 3, 5],
-        5 => vec![0, 1, 3, 5, 6],
-        6 => vec![0, 1, 3, 4, 5, 6],
-        7 => vec![0, 2, 5],
-        8 => vec![0, 1, 2, 3, 4, 5, 6],
-        9 => vec![0, 1, 2, 3, 5, 6],
-        _ => Err(Error::InvalidDigit(digit))?,
+impl SegmentConstraints {
+    fn new() -> Self {
+        let all_segments: HashSet<_> =
+            (0..7).map(|seg| seg.try_into().unwrap()).collect();
+        let allowed_values =
+            (0..7).map(|_segnum| all_segments.clone()).collect();
+        Self { allowed_values }
     }
-    .into_iter()
-    .map(|i| i as Segment))
+
+    fn impose_constraint(
+        &mut self,
+        digit: u8,
+        lighted_segments: &HashSet<Segment>,
+    ) -> bool {
+        // Wrong number of segments, means I did something wrong in
+        // the parent scope.
+        let expected_num_lit = segments_status(digit)
+            .iter()
+            .map(|&b| b as usize)
+            .sum::<usize>();
+        if lighted_segments.len() != expected_num_lit {
+            panic!();
+        }
+
+        // Remove any options that directly contradict the constraint given.
+        self.allowed_values
+            .iter_mut()
+            .zip(segments_status(digit).iter())
+            .for_each(|(rewired_seg_options, actual_lit)| {
+                rewired_seg_options
+                    .iter()
+                    .filter(|rewired_seg| {
+                        let rewired_lit =
+                            lighted_segments.contains(rewired_seg);
+                        *actual_lit != rewired_lit
+                    })
+                    .map(|s| *s)
+                    .collect::<Vec<Segment>>()
+                    .into_iter()
+                    .for_each(|incorrect_option| {
+                        rewired_seg_options.remove(&incorrect_option);
+                    });
+            });
+
+        // For any segments that are now known, remove it as a
+        // possibility from all other segments.
+        self.allowed_values
+            .iter()
+            .enumerate()
+            .filter(|(_i, vals)| vals.len() == 1)
+            .map(|(i, vals)| (i, *vals.iter().next().unwrap()))
+            .collect::<Vec<(usize, Segment)>>()
+            .iter()
+            .for_each(|(unique_i, unique_val)| {
+                self.allowed_values
+                    .iter_mut()
+                    .enumerate()
+                    .filter(|(i, _vals)| i != unique_i)
+                    .for_each(|(_i, vals)| {
+                        vals.remove(unique_val);
+                    })
+            });
+
+        // The set of constraints is valid if every segment still has
+        // some possible values.
+        self.allowed_values.iter().all(|vals| vals.len() > 0)
+    }
+}
+
+fn segments_status(digit: u8) -> [bool; 7] {
+    match digit {
+        0 => [true, true, true, false, true, true, true],
+        1 => [false, false, true, false, false, true, false],
+        2 => [true, false, true, true, true, false, true],
+        3 => [true, false, true, true, false, true, true],
+        4 => [false, true, true, true, false, true, false],
+        5 => [true, true, false, true, false, true, true],
+        6 => [true, true, false, true, true, true, true],
+        7 => [true, false, true, false, false, true, false],
+        8 => [true, true, true, true, true, true, true],
+        9 => [true, true, true, true, false, true, true],
+        _ => panic!(),
+    }
+}
+
+fn active_segments(digit: u8) -> Result<impl Iterator<Item = Segment>, Error> {
+    Ok(segments_status(digit)
+        .iter()
+        .enumerate()
+        .filter(|(_i, active)| **active)
+        .map(|(i, _active)| (i as u8).try_into().unwrap())
+        .collect::<Vec<_>>()
+        .into_iter())
 }
 
 impl Day08 {
-    fn get_light_sequence(&self) -> Result<LightSequence, Error> {
-        let puzzle_input = self.puzzle_input(PuzzleInput::Example(1))?;
-        // let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+    fn get_light_sequences(&self) -> Result<Vec<LightSequence>, Error> {
+        // let puzzle_input = self
+        //     .puzzle_input(PuzzleInput::Example(1))?
+        //     .replace("\n", "");
+        // let puzzle_input = self
+        //     .puzzle_input(PuzzleInput::Example(2))?
+        //     .replace("|\n", "|");
+        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
 
-        puzzle_input.lines().join("").parse()
+        puzzle_input.lines().map(|s| s.parse()).collect()
     }
 }
 
@@ -138,28 +347,33 @@ impl Puzzle for Day08 {
         true
     }
     fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let sequence = self.get_light_sequence()?;
+        let sequences = self.get_light_sequences()?;
 
-        let segment_map = (0..7)
-            .map(|i| i as Segment)
-            .filter_permute(7, |partial_permute| {
-                sequence.is_valid_assignment(partial_permute).unwrap()
+        let result = sequences
+            .iter()
+            .map(|seq| {
+                seq.outputs.iter().filter(|set| match set.len() {
+                    2 | 3 | 4 | 7 => true,
+                    _ => false,
+                })
             })
-            .exactly_one()?;
-
-        let result = sequence.interpret_results(&segment_map);
-
-        //let result = (0..=9).permutations(10).collect::<Vec<Vec<u8>>>();
-        // let result = (0..=3)
-        //     .filter_permute(4, |items| {
-        //         println!("Testing {:?}", items);
-        //         items.get(1).map(|&val| val == 2).unwrap_or(true)
-        //     })
-        //     .collect::<Vec<Vec<u8>>>();
+            .flatten()
+            .count();
         Ok(Box::new(result))
     }
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let result = ();
+        let sequences = self.get_light_sequences()?;
+
+        let result = sequences
+            .into_iter()
+            .map(|seq| -> Result<_, Error> {
+                Ok(seq
+                    .decode_outputs()?
+                    .into_iter()
+                    .fold(0usize, |acc, digit| 10 * acc + (digit as usize)))
+            })
+            .sum::<Result<usize, _>>()?;
+
         Ok(Box::new(result))
     }
 }
