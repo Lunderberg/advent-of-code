@@ -19,6 +19,9 @@ pub enum Error {
     DiagonalVentLine,
     CannotFindMinMax,
     InvalidDigit(u8),
+    NotOpeningDelimiter,
+    InvalidString(String),
+    NoIllegalCharacterFound,
 }
 
 #[derive(Debug)]
