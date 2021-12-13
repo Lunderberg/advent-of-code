@@ -22,6 +22,9 @@ pub enum Error {
     NotOpeningDelimiter,
     InvalidString(String),
     NoIllegalCharacterFound,
+    NoStartCave,
+    NoEndCave,
+    GraphHasCycle,
 }
 
 #[derive(Debug)]
