@@ -25,6 +25,7 @@ pub enum Error {
     NoStartCave,
     NoEndCave,
     GraphHasCycle,
+    DotOnFoldLine,
 }
 
 #[derive(Debug)]
