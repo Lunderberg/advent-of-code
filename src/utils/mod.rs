@@ -12,3 +12,6 @@ pub use puzzle::*;
 
 mod iter_solutions;
 pub use iter_solutions::*;
+
+mod gridmap;
+pub use gridmap::*;

@@ -1,5 +1,6 @@
 #![allow(unused_imports)]
 use crate::utils::Error;
+use crate::utils::{Adjacency, GridMap, GridPos};
 use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
 
 use std::collections::HashSet;
@@ -12,9 +13,7 @@ pub struct Day11;
 #[derive(Debug, Clone)]
 struct OctopusMap {
     total_flashes: usize,
-    x_size: usize,
-    y_size: usize,
-    values: Vec<Octopus>,
+    map: GridMap<Octopus>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -22,21 +21,6 @@ enum Octopus {
     Charging(u8),
     Flashing,
     Flashed,
-}
-
-impl Display for OctopusMap {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        self.values
-            .iter()
-            .chunks(self.x_size)
-            .into_iter()
-            .try_for_each(|mut chunk| -> Result<_, std::fmt::Error> {
-                chunk.try_for_each(|val| write!(f, "{}", val))?;
-                write!(f, "\n")?;
-                Ok(())
-            })?;
-        Ok(())
-    }
 }
 
 impl Display for Octopus {
@@ -99,75 +83,65 @@ impl Octopus {
 }
 
 impl OctopusMap {
-    fn adjacent_points(&self, i: usize) -> impl Iterator<Item = usize> {
-        let x0 = (i % self.x_size) as i64;
-        let y0 = (i / self.x_size) as i64;
-        let x_size = self.x_size as i64;
-        let y_size = self.x_size as i64;
-        (-1..=1)
-            .cartesian_product(-1..=1)
-            .filter(|(dx, dy)| *dx != 0 || *dy != 0)
-            .map(move |(dx, dy)| {
-                let y = y0 + dy;
-                let x = x0 + dx;
-                if x >= 0 && y >= 0 && x < x_size && y < y_size {
-                    Some((y * x_size + x) as usize)
-                } else {
-                    None
-                }
-            })
-            .flatten()
+    fn adjacent_points(&self, pos: GridPos) -> impl Iterator<Item = GridPos> {
+        self.map.adjacent_points(pos, Adjacency::Queen)
     }
 
     #[allow(dead_code)]
     fn iterate_stack_based(&mut self) {
-        self.values.iter_mut().for_each(|octo| octo.accumulate());
+        self.map
+            .iter_mut()
+            .for_each(|(_pos, octo)| octo.accumulate());
 
-        let mut flash_stack: Vec<usize> = self
-            .values
+        let mut flash_stack: Vec<_> = self
+            .map
             .iter()
-            .copied()
-            .enumerate()
-            .flat_map(|(i, octo)| octo.ready_to_flash().then(|| i))
+            .flat_map(|(pos, octo)| {
+                octo.ready_to_flash().then(|| pos.normalize(&self.map))
+            })
             .collect();
-        let mut all_flashes: HashSet<usize> =
-            flash_stack.iter().copied().collect();
+        let mut all_flashes: HashSet<_> = flash_stack.iter().copied().collect();
 
         while flash_stack.len() > 0 {
-            let i = flash_stack.pop().unwrap();
-            self.values[i].try_flash();
+            let flashing = flash_stack.pop().unwrap().into();
+            self.map[flashing].try_flash();
 
-            self.adjacent_points(i)
-                .filter(|i| !all_flashes.contains(i))
-                .filter(|i| {
-                    self.values[*i].accumulate();
-                    self.values[*i].ready_to_flash()
+            self.adjacent_points(flashing)
+                .filter(|adj| !all_flashes.contains(&adj.normalize(&self.map)))
+                .collect::<Vec<_>>()
+                .into_iter()
+                .filter_map(|adj| {
+                    self.map[adj].accumulate();
+                    self.map[adj]
+                        .ready_to_flash()
+                        .then(|| adj.normalize(&self.map))
                 })
                 .collect::<Vec<_>>()
                 .into_iter()
-                .for_each(|i| {
-                    flash_stack.push(i);
-                    all_flashes.insert(i);
+                .for_each(|adj| {
+                    flash_stack.push(adj);
+                    all_flashes.insert(adj);
                 });
         }
         self.total_flashes += all_flashes.len();
 
-        self.values.iter_mut().for_each(|octo| octo.reset());
+        self.map.iter_mut().for_each(|(_pos, octo)| octo.reset());
     }
 
     #[allow(dead_code)]
     fn iterate_loop_all(&mut self) {
-        self.values.iter_mut().for_each(|octo| octo.accumulate());
+        self.map
+            .iter_mut()
+            .for_each(|(_pos, octo)| octo.accumulate());
 
         loop {
-            let flashing: Vec<usize> = self
-                .values
+            let flashing: Vec<_> = self
+                .map
                 .iter_mut()
-                .enumerate()
-                .filter_map(|(i, octo)| {
+                .filter_map(|(pos, octo)| {
                     let orig = *octo;
                     octo.try_flash();
-                    (orig != *octo).then(|| i)
+                    (orig != *octo).then(|| pos)
                 })
                 .collect();
 
@@ -182,10 +156,10 @@ impl OctopusMap {
                 .flat_map(|i| self.adjacent_points(i))
                 .collect::<Vec<_>>()
                 .into_iter()
-                .for_each(|i| self.values[i].accumulate());
+                .for_each(|pos| self.map[pos].accumulate());
         }
 
-        self.values.iter_mut().for_each(|octo| octo.reset());
+        self.map.iter_mut().for_each(|(_pos, octo)| octo.reset());
     }
 
     fn iterate(&mut self) {
@@ -195,7 +169,7 @@ impl OctopusMap {
     }
 
     fn is_synchronized(&self) -> bool {
-        self.values.iter().all_equal()
+        self.map.iter().map(|(_pos, octo)| octo).all_equal()
     }
 }
 
@@ -216,28 +190,11 @@ impl std::str::FromStr for Octopus {
 impl std::str::FromStr for OctopusMap {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (line_num, line_length, values): (Vec<_>, Vec<_>, Vec<_>) = s
-            .lines()
-            .enumerate()
-            .map(|(line_num, line)| {
-                line.chars().map(move |c| -> Result<_, Error> {
-                    let value = c.to_string().parse::<Octopus>()?;
-                    Ok((line_num, line.len(), value))
-                })
-            })
-            .flatten()
-            .collect::<Result<Vec<(usize, usize, Octopus)>, _>>()?
-            .into_iter()
-            .multiunzip();
-
-        let x_size = line_length.into_iter().unique().exactly_one()?;
-        let y_size = line_num.into_iter().max().ok_or(Error::NoneError)? + 1;
+        let map = s.lines().collect::<GridMap<Octopus>>();
 
         Ok(OctopusMap {
             total_flashes: 0,
-            x_size,
-            y_size,
-            values,
+            map,
         })
     }
 }
@@ -259,6 +216,7 @@ impl Puzzle for Day11 {
     }
     fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
         let mut map = self.parse_octopodes()?;
+
         (0..100).for_each(|_i| map.iterate());
         let result = map.total_flashes;
         Ok(Box::new(result))
