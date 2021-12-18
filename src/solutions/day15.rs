@@ -27,9 +27,13 @@ impl RiskMap {
         self.grid.adjacent_points(pos, Adjacency::Rook)
     }
 
-    fn find_path(&self, source: GridPos, dest: GridPos) -> Result<(), Error> {
+    fn find_path(
+        &self,
+        source: GridPos,
+        dest: GridPos,
+    ) -> Result<Vec<GridPos>, Error> {
         let get_heuristic_to_dest = |pos: &GridPos| -> usize {
-            9 * self.grid.manhattan_dist(pos, &dest)
+            1 * self.grid.manhattan_dist(pos, &dest)
         };
         let get_priority = |info: &SearchPointInfo| -> Reverse<usize> {
             Reverse(info.src_to_pos + info.heuristic_to_dest)
@@ -67,7 +71,7 @@ impl RiskMap {
                     (pos, pos_info_map.get(&pos))
                 })
                 .filter(|(_pos, opt_info)| {
-                    !opt_info.map_or(true, |info| info.finalized)
+                    opt_info.map_or(true, |info| !info.finalized)
                 })
                 .filter_map(|(pos, opt_info)| {
                     let src_to_pos =
@@ -101,7 +105,17 @@ impl RiskMap {
                 });
         }
 
-        Err(Error::NoPathToDest)
+        if !pos_info_map.contains_key(&dest) {
+            return Err(Error::NoPathToDest);
+        }
+
+        Ok(std::iter::successors(Some(dest), |pos| {
+            pos_info_map[pos].previous_point
+        })
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect())
     }
 }
 
@@ -125,13 +139,16 @@ impl Puzzle for Day15 {
     fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
         let map = self.parse_inputs()?;
 
-        println!("{}", map.grid);
-        let path = map.find_path(map.grid.top_left(), map.grid.bottom_right());
-
-        let result = path;
+        let result = map
+            .find_path(map.grid.top_left(), map.grid.bottom_right())?
+            .into_iter()
+            .skip(1)
+            .map(|pos| map.grid[pos] as usize)
+            .sum::<usize>();
         Ok(Box::new(result))
     }
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
+        let map = self.parse_inputs()?;
         let result = ();
         Ok(Box::new(result))
     }

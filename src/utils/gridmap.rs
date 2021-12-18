@@ -153,6 +153,10 @@ where
 }
 
 impl<T> GridMap<T> {
+    pub fn as_xy(&self, pos: &GridPos) -> (usize, usize) {
+        pos.as_xy(self.x_size)
+    }
+
     pub fn adjacent_points<P>(
         &self,
         pos: P,
