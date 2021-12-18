@@ -23,6 +23,41 @@ struct SearchPointInfo {
 }
 
 impl RiskMap {
+    fn enlarge_by(&self, factor: usize) -> Self {
+        let grid = self
+            .grid
+            .iter()
+            .map(|(pos, val)| {
+                let (x, y) = self.grid.as_xy(&pos);
+                (x, y, *val)
+            })
+            .flat_map(|(x, y, val)| {
+                (0..factor).map(move |tile_x| {
+                    let x = tile_x * self.grid.x_size + x;
+                    let val = (val + (tile_x as u8) - 1) % 9 + 1;
+                    (x, y, val)
+                })
+            })
+            .flat_map(|(x, y, val)| {
+                (0..factor).map(move |tile_y| {
+                    let y = tile_y * self.grid.y_size + y;
+                    let val = (val + (tile_y as u8) - 1) % 9 + 1;
+                    (x, y, val)
+                })
+            })
+            .collect();
+        Self { grid }
+    }
+
+    fn path_cost(&self) -> Result<usize, Error> {
+        Ok(self
+            .find_path(self.grid.top_left(), self.grid.bottom_right())?
+            .into_iter()
+            .skip(1)
+            .map(|pos| self.grid[pos] as usize)
+            .sum::<usize>())
+    }
+
     fn adjacent_points(&self, pos: GridPos) -> impl Iterator<Item = GridPos> {
         self.grid.adjacent_points(pos, Adjacency::Rook)
     }
@@ -121,8 +156,8 @@ impl RiskMap {
 
 impl Day15 {
     fn parse_inputs(&self) -> Result<RiskMap, Error> {
-        let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        //let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
+        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
 
         let grid = puzzle_input.lines().collect();
         Ok(RiskMap { grid })
@@ -138,18 +173,12 @@ impl Puzzle for Day15 {
     }
     fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
         let map = self.parse_inputs()?;
-
-        let result = map
-            .find_path(map.grid.top_left(), map.grid.bottom_right())?
-            .into_iter()
-            .skip(1)
-            .map(|pos| map.grid[pos] as usize)
-            .sum::<usize>();
+        let result = map.path_cost()?;
         Ok(Box::new(result))
     }
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let map = self.parse_inputs()?;
-        let result = ();
+        let map = self.parse_inputs()?.enlarge_by(5);
+        let result = map.path_cost()?;
         Ok(Box::new(result))
     }
 }

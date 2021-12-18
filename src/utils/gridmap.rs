@@ -7,8 +7,8 @@ use itertools::Itertools;
 
 #[derive(Debug, Clone)]
 pub struct GridMap<T> {
-    x_size: usize,
-    y_size: usize,
+    pub x_size: usize,
+    pub y_size: usize,
     values: Vec<T>,
 }
 
@@ -20,6 +20,8 @@ pub struct GridPos {
 #[derive(Debug)]
 enum GridMapError {
     InconsistentLineSize,
+    MissingValue,
+    DuplicateValue,
 }
 
 pub enum Adjacency {
@@ -89,6 +91,42 @@ impl Adjacency {
                 (-1, 1),
             ]
             .into_iter(),
+        }
+    }
+}
+
+impl<T> FromIterator<(usize, usize, T)> for GridMap<T> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (usize, usize, T)>,
+    {
+        let (xvals, yvals, values): (Vec<_>, Vec<_>, Vec<_>) =
+            iter.into_iter().multiunzip();
+        let x_size = xvals.iter().max().unwrap() + 1;
+        let y_size = yvals.iter().max().unwrap() + 1;
+
+        let values = xvals
+            .into_iter()
+            .zip(yvals.into_iter())
+            .zip(values.into_iter())
+            .map(|((x, y), val)| (y * x_size + x, val))
+            .sorted_by_key(|(pos, _val)| *pos)
+            .enumerate()
+            .map(|(i, (pos, val))| {
+                (i == pos).then(|| val).ok_or_else(|| {
+                    if i < pos {
+                        GridMapError::MissingValue
+                    } else {
+                        GridMapError::DuplicateValue
+                    }
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        Self {
+            x_size,
+            y_size,
+            values,
         }
     }
 }
