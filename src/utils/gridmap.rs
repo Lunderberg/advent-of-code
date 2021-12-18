@@ -12,7 +12,7 @@ pub struct GridMap<T> {
     values: Vec<T>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Hash)]
 pub enum GridPos {
     FlatIndex(usize),
     XY(usize, usize),
@@ -40,9 +40,24 @@ impl From<(usize, usize)> for GridPos {
     }
 }
 
+impl PartialEq for GridPos {
+    fn eq(&self, other: &Self) -> bool {
+        use GridPos::*;
+        match (self, other) {
+            (FlatIndex(i), FlatIndex(j)) => i == j,
+            (XY(sx, sy), XY(ox, oy)) => (sx, sy) == (ox, oy),
+            _ => panic!("Cannot compare {:?} and {:?}", self, other),
+        }
+    }
+}
+
+impl Eq for GridPos {}
+
 impl GridPos {
-    pub fn normalize<T>(&self, map: &GridMap<T>) -> usize {
-        self.as_flat(map.x_size)
+    // Should be called prior to use in any hashmap or equality
+    // checks.
+    pub fn normalize<T>(&self, map: &GridMap<T>) -> Self {
+        GridPos::FlatIndex(self.as_flat(map.x_size))
     }
     pub fn as_flat(&self, x_size: usize) -> usize {
         match self {
@@ -185,6 +200,40 @@ impl<T> GridMap<T> {
             .enumerate()
             .map(move |(i, val)| (GridPos::FlatIndex(i), val))
     }
+
+    pub fn cartesian_dist2(&self, a: &GridPos, b: &GridPos) -> usize {
+        let (ax, ay) = a.as_xy(self.x_size);
+        let (bx, by) = b.as_xy(self.x_size);
+
+        // Have .abs_diff()
+        // https://github.com/rust-lang/rust/issues/89492 would be
+        // really nice here.
+        // ax.abs_diff(bx).pow(2) + ay.abs_diff(by).pow(2)
+
+        let x_min = ax.min(bx);
+        let x_max = ax.max(bx);
+        let y_min = ay.min(by);
+        let y_max = ay.max(by);
+
+        (x_max - x_min).pow(2) + (y_max - y_min).pow(2)
+    }
+
+    pub fn manhattan_dist(&self, a: &GridPos, b: &GridPos) -> usize {
+        let (ax, ay) = a.as_xy(self.x_size);
+        let (bx, by) = b.as_xy(self.x_size);
+
+        // Have .abs_diff()
+        // https://github.com/rust-lang/rust/issues/89492 would be
+        // really nice here.
+        // ax.abs_diff(bx) + ay.abs_diff(by)
+
+        let x_min = ax.min(bx);
+        let x_max = ax.max(bx);
+        let y_min = ay.min(by);
+        let y_max = ay.max(by);
+
+        (x_max - x_min) + (y_max - y_min)
+    }
 }
 
 impl<T> Index<GridPos> for GridMap<T> {
@@ -197,5 +246,15 @@ impl<T> Index<GridPos> for GridMap<T> {
 impl<T> IndexMut<GridPos> for GridMap<T> {
     fn index_mut(&mut self, pos: GridPos) -> &mut T {
         &mut self.values[pos.as_flat(self.x_size)]
+    }
+}
+
+impl<T> GridMap<T> {
+    pub fn top_left(&self) -> GridPos {
+        GridPos::FlatIndex(0)
+    }
+
+    pub fn bottom_right(&self) -> GridPos {
+        GridPos::XY(self.x_size - 1, self.y_size - 1)
     }
 }
