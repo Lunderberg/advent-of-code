@@ -96,9 +96,7 @@ impl OctopusMap {
         let mut flash_stack: Vec<_> = self
             .map
             .iter()
-            .flat_map(|(pos, octo)| {
-                octo.ready_to_flash().then(|| pos.normalize(&self.map))
-            })
+            .flat_map(|(pos, octo)| octo.ready_to_flash().then(|| pos))
             .collect();
         let mut all_flashes: HashSet<_> = flash_stack.iter().copied().collect();
 
@@ -107,14 +105,12 @@ impl OctopusMap {
             self.map[flashing].try_flash();
 
             self.adjacent_points(flashing)
-                .filter(|adj| !all_flashes.contains(&adj.normalize(&self.map)))
+                .filter(|adj| !all_flashes.contains(&adj))
                 .collect::<Vec<_>>()
                 .into_iter()
                 .filter_map(|adj| {
                     self.map[adj].accumulate();
-                    self.map[adj]
-                        .ready_to_flash()
-                        .then(|| adj.normalize(&self.map))
+                    self.map[adj].ready_to_flash().then(|| adj)
                 })
                 .collect::<Vec<_>>()
                 .into_iter()

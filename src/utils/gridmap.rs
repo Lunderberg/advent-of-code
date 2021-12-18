@@ -12,10 +12,9 @@ pub struct GridMap<T> {
     values: Vec<T>,
 }
 
-#[derive(Debug, Clone, Copy, Hash)]
-pub enum GridPos {
-    FlatIndex(usize),
-    XY(usize, usize),
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub struct GridPos {
+    index: usize,
 }
 
 #[derive(Debug)]
@@ -28,48 +27,47 @@ pub enum Adjacency {
     Queen,
 }
 
-impl From<usize> for GridPos {
+pub enum InputGridPos {
+    FlatIndex(usize),
+    XY(usize, usize),
+}
+
+impl From<GridPos> for InputGridPos {
+    fn from(pos: GridPos) -> Self {
+        InputGridPos::FlatIndex(pos.index)
+    }
+}
+
+impl From<usize> for InputGridPos {
     fn from(i: usize) -> Self {
-        GridPos::FlatIndex(i)
+        InputGridPos::FlatIndex(i)
     }
 }
 
-impl From<(usize, usize)> for GridPos {
+impl From<(usize, usize)> for InputGridPos {
     fn from((x, y): (usize, usize)) -> Self {
-        GridPos::XY(x, y)
+        InputGridPos::XY(x, y)
     }
 }
-
-impl PartialEq for GridPos {
-    fn eq(&self, other: &Self) -> bool {
-        use GridPos::*;
-        match (self, other) {
-            (FlatIndex(i), FlatIndex(j)) => i == j,
-            (XY(sx, sy), XY(ox, oy)) => (sx, sy) == (ox, oy),
-            _ => panic!("Cannot compare {:?} and {:?}", self, other),
-        }
-    }
-}
-
-impl Eq for GridPos {}
 
 impl GridPos {
-    // Should be called prior to use in any hashmap or equality
-    // checks.
-    pub fn normalize<T>(&self, map: &GridMap<T>) -> Self {
-        GridPos::FlatIndex(self.as_flat(map.x_size))
-    }
-    pub fn as_flat(&self, x_size: usize) -> usize {
-        match self {
-            GridPos::FlatIndex(i) => *i,
-            GridPos::XY(x, y) => y * x_size + x,
-        }
+    pub fn as_flat(&self) -> usize {
+        self.index
     }
 
     pub fn as_xy(&self, x_size: usize) -> (usize, usize) {
+        (self.index % x_size, self.index / x_size)
+    }
+}
+
+impl InputGridPos {
+    fn normalize(&self, x_size: usize) -> GridPos {
+        use InputGridPos::*;
         match self {
-            GridPos::FlatIndex(i) => (i % x_size, i / x_size),
-            GridPos::XY(x, y) => (*x, *y),
+            FlatIndex(index) => GridPos { index: *index },
+            XY(x, y) => GridPos {
+                index: y * x_size + x,
+            },
         }
     }
 }
@@ -161,18 +159,23 @@ impl<T> GridMap<T> {
         adj: Adjacency,
     ) -> impl Iterator<Item = GridPos>
     where
-        P: Into<GridPos>,
+        P: Into<InputGridPos>,
     {
-        let (x0, y0) = pos.into().as_xy(self.x_size);
-        let x_size = self.x_size as i64;
-        let y_size = self.x_size as i64;
+        let (x0, y0) = pos.into().normalize(self.x_size).as_xy(self.x_size);
+        let x_size = self.x_size;
+        let y_size = self.x_size;
 
         adj.offsets()
             .map(move |(dx, dy)| {
                 let y = (y0 as i64) + dy;
                 let x = (x0 as i64) + dx;
-                if x >= 0 && y >= 0 && x < x_size && y < y_size {
-                    Some(GridPos::XY(x as usize, y as usize))
+                if x >= 0
+                    && y >= 0
+                    && x < (x_size as i64)
+                    && y < (y_size as i64)
+                {
+                    let pos: InputGridPos = (x as usize, y as usize).into();
+                    Some(pos.normalize(x_size))
                 } else {
                     None
                 }
@@ -184,21 +187,21 @@ impl<T> GridMap<T> {
         self.values
             .iter()
             .enumerate()
-            .map(move |(i, val)| (GridPos::FlatIndex(i), val))
+            .map(move |(index, val)| (GridPos { index }, val))
     }
 
     pub fn into_iter(self) -> impl Iterator<Item = (GridPos, T)> {
         self.values
             .into_iter()
             .enumerate()
-            .map(move |(i, val)| (GridPos::FlatIndex(i), val))
+            .map(move |(index, val)| (GridPos { index }, val))
     }
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (GridPos, &mut T)> {
         self.values
             .iter_mut()
             .enumerate()
-            .map(move |(i, val)| (GridPos::FlatIndex(i), val))
+            .map(move |(index, val)| (GridPos { index }, val))
     }
 
     pub fn cartesian_dist2(&self, a: &GridPos, b: &GridPos) -> usize {
@@ -239,22 +242,23 @@ impl<T> GridMap<T> {
 impl<T> Index<GridPos> for GridMap<T> {
     type Output = T;
     fn index(&self, pos: GridPos) -> &T {
-        &self.values[pos.as_flat(self.x_size)]
+        &self.values[pos.index]
     }
 }
 
 impl<T> IndexMut<GridPos> for GridMap<T> {
     fn index_mut(&mut self, pos: GridPos) -> &mut T {
-        &mut self.values[pos.as_flat(self.x_size)]
+        &mut self.values[pos.index]
     }
 }
 
 impl<T> GridMap<T> {
     pub fn top_left(&self) -> GridPos {
-        GridPos::FlatIndex(0)
+        GridPos { index: 0 }
     }
 
     pub fn bottom_right(&self) -> GridPos {
-        GridPos::XY(self.x_size - 1, self.y_size - 1)
+        InputGridPos::XY(self.x_size - 1, self.y_size - 1)
+            .normalize(self.x_size)
     }
 }

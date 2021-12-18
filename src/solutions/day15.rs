@@ -35,8 +35,6 @@ impl RiskMap {
             Reverse(info.src_to_pos + info.heuristic_to_dest)
         };
 
-        let source = source.normalize(&self.grid);
-
         let start_info = SearchPointInfo {
             src_to_pos: 0,
             heuristic_to_dest: get_heuristic_to_dest(&source),

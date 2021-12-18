@@ -34,7 +34,7 @@ impl HeightMap {
         let mut search_stack: Vec<GridPos> = vec![low_point];
 
         let mut touched: HashSet<_> = HashSet::new();
-        touched.insert(low_point.normalize(&self.map));
+        touched.insert(low_point);
 
         let mut output: Vec<GridPos> = Vec::new();
 
@@ -43,12 +43,12 @@ impl HeightMap {
             if self.map[point] != 9 {
                 output.push(point);
                 self.adjacent_points(point)
-                    .filter(|adj| !touched.contains(&adj.normalize(&self.map)))
+                    .filter(|adj| !touched.contains(&adj))
                     .collect::<Vec<_>>()
                     .iter()
                     .for_each(|adj| {
                         search_stack.push(*adj);
-                        touched.insert(adj.normalize(&self.map));
+                        touched.insert(*adj);
                     });
             }
         }
