@@ -27,6 +27,8 @@ pub enum Error {
     GraphHasCycle,
     DotOnFoldLine,
     NoPathToDest,
+    UnknownTypeId(u8),
+    UnexpectedEndOfStream,
 }
 
 #[derive(Debug)]

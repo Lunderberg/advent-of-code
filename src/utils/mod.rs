@@ -15,3 +15,5 @@ pub use iter_solutions::*;
 
 mod gridmap;
 pub use gridmap::*;
+
+pub mod extensions;
