@@ -51,6 +51,18 @@ impl Packet {
             payload,
         })
     }
+
+    fn sum_version_nums(&self) -> u64 {
+        let subpacket_sum = if let PacketData::Operator(op) = &self.payload {
+            op.subpackets
+                .iter()
+                .map(|packet| packet.sum_version_nums())
+                .sum::<u64>()
+        } else {
+            0
+        };
+        subpacket_sum + (self.version as u64)
+    }
 }
 
 impl PacketData {
@@ -145,11 +157,28 @@ impl Length {
 impl Day16 {
     fn parse_inputs(&self) -> Result<Vec<bool>, Error> {
         //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        // let puzzle_input = "D2FE28";
-        //let puzzle_input = "38006F45291200";
-        let puzzle_input = "EE00D40C823060";
 
-        //let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+        // Literal "2021"
+        // let puzzle_input = "D2FE28";
+        // [10,20]
+        // let puzzle_input = "38006F45291200";
+        // [1,2,3]
+        // let puzzle_input = "EE00D40C823060";
+
+        // Version sum 16
+        // let puzzle_input = "8A004A801A8002F478";
+        // Version sum 12
+        // let puzzle_input = "620080001611562C8802118E34";
+        // Version sum 23
+        // let puzzle_input = "C0015000016115A2E0802F182340";
+        // Version sum 31
+        // let puzzle_input = "A0016C880162017C3686B18A3D4780";
+
+        let puzzle_input = self
+            .puzzle_input(PuzzleInput::User)?
+            .lines()
+            .exactly_one()?
+            .to_string();
 
         Ok(puzzle_input
             .chars()
@@ -172,7 +201,7 @@ impl Puzzle for Day16 {
     }
     fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
         let mut bit_stream = self.parse_inputs()?.into_iter();
-        let result = Packet::parse(&mut bit_stream)?;
+        let result = Packet::parse(&mut bit_stream)?.sum_version_nums();
         Ok(Box::new(result))
     }
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
