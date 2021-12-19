@@ -26,6 +26,13 @@ struct Probe {
 }
 
 impl Target {
+    fn initial_probes(&self) -> impl Iterator<Item = Probe> + '_ {
+        self.yvel_range()
+            .cartesian_product(self.xvel_range())
+            .map(|(yvel, xvel)| Probe::new(xvel, yvel))
+            .filter(move |probe| probe.path_intersects(&self))
+    }
+
     fn contains(&self, x: &i64, y: &i64) -> bool {
         self.x.contains(x) && self.y.contains(y)
     }
@@ -58,10 +65,6 @@ impl Target {
         let yvel_max = *self.x.end();
 
         yvel_min..=yvel_max
-    }
-
-    fn top(&self) -> i64 {
-        *self.y.end()
     }
 
     fn bottom(&self) -> i64 {
@@ -172,20 +175,12 @@ impl Puzzle for Day17 {
     }
     fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
         let target = self.parse_target()?;
-
-        let result = target
-            .yvel_range()
-            .cartesian_product(target.xvel_range())
-            .map(|(yvel, xvel)| Probe::new(xvel, yvel))
-            .filter(|probe| probe.path_intersects(&target))
-            .map(|probe| probe.ymax())
-            .max();
+        let result = target.initial_probes().map(|probe| probe.ymax()).max();
         Ok(Box::new(result))
     }
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        //let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-        let result = ();
+        let target = self.parse_target()?;
+        let result = target.initial_probes().count();
         Ok(Box::new(result))
     }
 }
