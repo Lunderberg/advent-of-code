@@ -29,6 +29,7 @@ pub enum Error {
     NoPathToDest,
     UnknownTypeId(u8),
     UnexpectedEndOfStream,
+    IllegalNumberOfOperands,
 }
 
 #[derive(Debug)]

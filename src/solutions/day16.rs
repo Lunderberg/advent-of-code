@@ -10,7 +10,6 @@ pub struct Day16;
 #[derive(Debug)]
 struct Packet {
     version: u8, // 3 bits
-    type_id: u8, // 3 bits
     payload: PacketData,
 }
 
@@ -27,8 +26,19 @@ struct Literal {
 
 #[derive(Debug)]
 struct Operator {
-    length: Length,
+    op: OperatorType,
     subpackets: Vec<Packet>,
+}
+
+#[derive(Debug)]
+enum OperatorType {
+    Sum,
+    Product,
+    Minimum,
+    Maximum,
+    GreaterThan,
+    LessThan,
+    EqualTo,
 }
 
 #[derive(Debug)]
@@ -42,14 +52,9 @@ impl Packet {
         bit_stream: &mut impl Iterator<Item = bool>,
     ) -> Result<Self, Error> {
         let version = bit_stream.by_ref().take(3).collect_bits();
-        let type_id = bit_stream.by_ref().take(3).collect_bits();
-        let payload = PacketData::parse(type_id, bit_stream)?;
+        let payload = PacketData::parse(bit_stream)?;
 
-        Ok(Self {
-            version,
-            type_id,
-            payload,
-        })
+        Ok(Self { version, payload })
     }
 
     fn sum_version_nums(&self) -> u64 {
@@ -63,17 +68,29 @@ impl Packet {
         };
         subpacket_sum + (self.version as u64)
     }
+
+    fn eval(&self) -> Result<u64, Error> {
+        self.payload.eval()
+    }
 }
 
 impl PacketData {
     fn parse(
-        type_id: u8,
         bit_stream: &mut impl Iterator<Item = bool>,
     ) -> Result<Self, Error> {
+        let type_id = bit_stream.by_ref().take(3).collect_bits();
+
         Ok(match type_id {
             4 => Self::Literal(Literal::parse(bit_stream)?),
-            _ => Self::Operator(Operator::parse(bit_stream)?),
+            _ => Self::Operator(Operator::parse(type_id, bit_stream)?),
         })
+    }
+
+    fn eval(&self) -> Result<u64, Error> {
+        match self {
+            Self::Literal(literal) => Ok(literal.value),
+            Self::Operator(op) => op.eval(),
+        }
     }
 }
 
@@ -95,12 +112,25 @@ impl Literal {
 
 impl Operator {
     fn parse(
+        type_id: u8,
         bit_stream: &mut impl Iterator<Item = bool>,
     ) -> Result<Self, Error> {
         let length = Length::parse(bit_stream)?;
         let subpackets = Self::parse_subpackets(&length, bit_stream)?;
 
-        Ok(Self { length, subpackets })
+        use OperatorType::*;
+        let op = match type_id {
+            0 => Sum,
+            1 => Product,
+            2 => Minimum,
+            3 => Maximum,
+            5 => GreaterThan,
+            6 => LessThan,
+            7 => EqualTo,
+            _ => panic!("Unexpected type ID: {}", type_id),
+        };
+
+        Ok(Self { subpackets, op })
     }
 
     fn parse_subpackets(
@@ -136,6 +166,41 @@ impl Operator {
             }
         })
         .collect()
+    }
+
+    fn eval(&self) -> Result<u64, Error> {
+        let mut vals = self.subpackets.iter().map(|p| p.eval());
+
+        fn binary_op(
+            vals: impl Iterator<Item = Result<u64, Error>>,
+        ) -> Result<(u64, u64), Error> {
+            let (a, b) =
+                vals.collect_tuple().ok_or(Error::IllegalNumberOfOperands)?;
+            Ok((a?, b?))
+        }
+
+        use OperatorType::*;
+        match self.op {
+            Sum => vals.fold_ok(0, |acc, val| acc + val),
+            Product => vals.fold_ok(1, |acc, val| acc * val),
+            Minimum => vals
+                .fold_ok(None, |acc, val| {
+                    Some(acc.unwrap_or(u64::MAX).min(val))
+                })
+                .and_then(|opt_min| {
+                    opt_min.ok_or(Error::IllegalNumberOfOperands)
+                }),
+            Maximum => vals
+                .fold_ok(None, |acc, val| {
+                    Some(acc.unwrap_or(u64::MIN).max(val))
+                })
+                .and_then(|opt_max| {
+                    opt_max.ok_or(Error::IllegalNumberOfOperands)
+                }),
+            GreaterThan => binary_op(vals).map(|(a, b)| (a > b) as u64),
+            LessThan => binary_op(vals).map(|(a, b)| (a < b) as u64),
+            EqualTo => binary_op(vals).map(|(a, b)| (a == b) as u64),
+        }
     }
 }
 
@@ -174,6 +239,23 @@ impl Day16 {
         // Version sum 31
         // let puzzle_input = "A0016C880162017C3686B18A3D4780";
 
+        // 1 + 2, yields 3
+        // let puzzle_input = "C200B40A82";
+        // 6*9, yields 54
+        // let puzzle_input = "04005AC33890";
+        // min(7,8,9), yields 7
+        // let puzzle_input = "880086C3E88112";
+        // max(7,8,9), yields 9
+        // let puzzle_input = "CE00C43D881120";
+        // 5<15, yields 1
+        // let puzzle_input = "D8005AC2A8F0";
+        // 5>15, yields 0
+        // let puzzle_input = "F600BC2D8F";
+        // 5==15, yields 0
+        // let puzzle_input = "9C005AC2F8F0";
+        // 1+3==2*2, yields 1
+        // let puzzle_input = "9C0141080250320F1802104A08";
+
         let puzzle_input = self
             .puzzle_input(PuzzleInput::User)?
             .lines()
@@ -205,9 +287,8 @@ impl Puzzle for Day16 {
         Ok(Box::new(result))
     }
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        //let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-        let result = ();
+        let mut bit_stream = self.parse_inputs()?.into_iter();
+        let result = Packet::parse(&mut bit_stream)?.eval()?;
         Ok(Box::new(result))
     }
 }
