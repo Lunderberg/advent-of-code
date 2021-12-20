@@ -30,6 +30,8 @@ pub enum Error {
     UnknownTypeId(u8),
     UnexpectedEndOfStream,
     IllegalNumberOfOperands,
+    UnexpectedToken(String),
+    NestingLimitExceeded,
 }
 
 #[derive(Debug)]
