@@ -218,6 +218,12 @@ impl Snailfish {
         }
     }
 
+    fn after_reduce(&self) -> Self {
+        let mut fish = self.clone();
+        fish.reduce();
+        fish
+    }
+
     fn reduce(&mut self) {
         while self.reduce_step() {}
     }
@@ -302,11 +308,7 @@ impl Puzzle for Day18 {
 
         let result = snailfish
             .into_iter()
-            .reduce(|acc, fish| {
-                let mut fish: Snailfish = (acc, fish).into();
-                fish.reduce();
-                fish
-            })
+            .reduce(|acc, fish| Snailfish::from((acc, fish)).after_reduce())
             .unwrap()
             .magnitude();
 
@@ -322,9 +324,7 @@ impl Puzzle for Day18 {
                 permutation
                     .into_iter()
                     .reduce(|acc, fish| {
-                        let mut fish: Snailfish = (acc, fish).into();
-                        fish.reduce();
-                        fish
+                        Snailfish::from((acc, fish)).after_reduce()
                     })
                     .unwrap()
                     .magnitude()
