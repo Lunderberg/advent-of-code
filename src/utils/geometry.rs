@@ -120,6 +120,10 @@ impl Mul<Vector3> for Mat3 {
 }
 
 impl Vector3 {
+    pub fn new(arr: [i64; 3]) -> Self {
+        Self(arr)
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = i64> + '_ {
         self.0.iter().copied()
     }
@@ -138,6 +142,20 @@ impl Vector3 {
 
     pub fn z(&self) -> i64 {
         self.0[2]
+    }
+
+    pub fn dist2(&self, other: &Self) -> i64 {
+        self.iter()
+            .zip(other.iter())
+            .map(|(a, b)| (a - b).pow(2))
+            .sum()
+    }
+
+    pub fn manhattan_dist(&self, other: &Self) -> i64 {
+        self.iter()
+            .zip(other.iter())
+            .map(|(a, b)| (a - b).abs())
+            .sum()
     }
 }
 
@@ -160,5 +178,26 @@ impl Mat3 {
 
     pub fn pow(&self, power: usize) -> Self {
         (0..power).fold(Self::identity(), |cum_prod, _i| *self * cum_prod)
+    }
+
+    pub fn iter_90degrees() -> impl Iterator<Item = Self> {
+        (0..=2)
+            .flat_map(|alpha| {
+                let max_beta = match alpha {
+                    0 => 0,
+                    1 => 3,
+                    2 => 0,
+                    _ => panic!("Math is broken"),
+                };
+                (0..=max_beta).map(move |beta| (alpha, beta))
+            })
+            .flat_map(|(alpha, beta)| {
+                (0..=3).map(move |gamma| (alpha, beta, gamma))
+            })
+            .map(|(alpha, beta, gamma)| {
+                Mat3::rotate_z().pow(beta)
+                    * Mat3::rotate_x().pow(alpha)
+                    * Mat3::rotate_z().pow(gamma)
+            })
     }
 }
