@@ -83,7 +83,10 @@ impl Octopus {
 }
 
 impl OctopusMap {
-    fn adjacent_points(&self, pos: GridPos) -> impl Iterator<Item = GridPos> {
+    fn adjacent_points(
+        &self,
+        pos: GridPos,
+    ) -> impl Iterator<Item = GridPos> + '_ {
         self.map.adjacent_points(pos, Adjacency::Queen)
     }
 

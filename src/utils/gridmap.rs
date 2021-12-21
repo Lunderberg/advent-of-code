@@ -27,11 +27,12 @@ enum GridMapError {
 pub enum Adjacency {
     Rook,
     Queen,
+    Region3x3,
 }
 
 pub enum InputGridPos {
     FlatIndex(usize),
-    XY(usize, usize),
+    XY(i64, i64),
 }
 
 impl From<GridPos> for InputGridPos {
@@ -46,8 +47,8 @@ impl From<usize> for InputGridPos {
     }
 }
 
-impl From<(usize, usize)> for InputGridPos {
-    fn from((x, y): (usize, usize)) -> Self {
+impl From<(i64, i64)> for InputGridPos {
+    fn from((x, y): (i64, i64)) -> Self {
         InputGridPos::XY(x, y)
     }
 }
@@ -57,19 +58,36 @@ impl GridPos {
         self.index
     }
 
-    pub fn as_xy(&self, x_size: usize) -> (usize, usize) {
-        (self.index % x_size, self.index / x_size)
+    pub fn as_xy<T>(&self, map: &GridMap<T>) -> (i64, i64) {
+        (
+            (self.index % map.x_size) as i64,
+            (self.index / map.x_size) as i64,
+        )
     }
 }
 
 impl InputGridPos {
-    fn normalize(&self, x_size: usize) -> GridPos {
+    fn normalize<T>(&self, map: &GridMap<T>) -> Option<GridPos> {
         use InputGridPos::*;
         match self {
-            FlatIndex(index) => GridPos { index: *index },
-            XY(x, y) => GridPos {
-                index: y * x_size + x,
-            },
+            FlatIndex(index) => Some(GridPos { index: *index }),
+            XY(x, y) => {
+                let coordinates_valid = *x >= 0
+                    && *y >= 0
+                    && *x < (map.x_size as i64)
+                    && *y < (map.y_size as i64);
+                coordinates_valid.then(|| GridPos {
+                    index: (*y as usize) * map.x_size + (*x as usize),
+                })
+            }
+        }
+    }
+
+    fn as_xy<T>(&self, map: &GridMap<T>) -> (i64, i64) {
+        use InputGridPos::*;
+        match self {
+            FlatIndex(index) => GridPos { index: *index }.as_xy(map),
+            XY(x, y) => (*x, *y),
         }
     }
 }
@@ -89,6 +107,18 @@ impl Adjacency {
                 (-1, -1),
                 (-1, 0),
                 (-1, 1),
+            ]
+            .into_iter(),
+            Adjacency::Region3x3 => vec![
+                (-1, -1),
+                (-1, 0),
+                (-1, 1),
+                (0, -1),
+                (0, 0),
+                (0, 1),
+                (1, -1),
+                (1, 0),
+                (1, 1),
             ]
             .into_iter(),
         }
@@ -191,38 +221,56 @@ where
 }
 
 impl<T> GridMap<T> {
-    pub fn as_xy(&self, pos: &GridPos) -> (usize, usize) {
-        pos.as_xy(self.x_size)
+    fn adjacent_points_internal<P>(
+        &self,
+        pos: P,
+        adj: Adjacency,
+    ) -> impl Iterator<Item = (Option<GridPos>, (i64, i64))> + '_
+    where
+        P: Into<InputGridPos>,
+    {
+        let (x0, y0) = pos.into().as_xy(self);
+
+        adj.offsets().map(move |(dx, dy)| {
+            let y = y0 + dy;
+            let x = x0 + dx;
+            let gridpos = InputGridPos::XY(x, y).normalize(self);
+
+            (gridpos, (x, y))
+        })
     }
 
     pub fn adjacent_points<P>(
         &self,
         pos: P,
         adj: Adjacency,
-    ) -> impl Iterator<Item = GridPos>
+    ) -> impl Iterator<Item = GridPos> + '_
     where
         P: Into<InputGridPos>,
     {
-        let (x0, y0) = pos.into().normalize(self.x_size).as_xy(self.x_size);
-        let x_size = self.x_size;
-        let y_size = self.x_size;
-
-        adj.offsets()
-            .map(move |(dx, dy)| {
-                let y = (y0 as i64) + dy;
-                let x = (x0 as i64) + dx;
-                if x >= 0
-                    && y >= 0
-                    && x < (x_size as i64)
-                    && y < (y_size as i64)
-                {
-                    let pos: InputGridPos = (x as usize, y as usize).into();
-                    Some(pos.normalize(x_size))
-                } else {
-                    None
-                }
-            })
+        let pos = pos.into();
+        self.adjacent_points_internal(pos, adj)
+            .map(|(adj_pos, _xy)| adj_pos)
             .flatten()
+    }
+
+    pub fn adjacent_values_default<P>(
+        &self,
+        pos: P,
+        adj: Adjacency,
+        default: T,
+    ) -> impl Iterator<Item = T> + '_
+    where
+        P: Into<InputGridPos>,
+        T: Clone,
+    {
+        let pos = pos.into();
+        self.adjacent_points_internal(pos, adj)
+            .map(move |(adj_pos, _xy)| {
+                adj_pos
+                    .map(|pos| self[pos].clone())
+                    .unwrap_or_else(|| default.clone())
+            })
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (GridPos, &T)> {
@@ -246,38 +294,18 @@ impl<T> GridMap<T> {
             .map(move |(index, val)| (GridPos { index }, val))
     }
 
-    pub fn cartesian_dist2(&self, a: &GridPos, b: &GridPos) -> usize {
-        let (ax, ay) = a.as_xy(self.x_size);
-        let (bx, by) = b.as_xy(self.x_size);
+    pub fn cartesian_dist2(&self, a: &GridPos, b: &GridPos) -> i64 {
+        let (ax, ay) = a.as_xy(self);
+        let (bx, by) = b.as_xy(self);
 
-        // Have .abs_diff()
-        // https://github.com/rust-lang/rust/issues/89492 would be
-        // really nice here.
-        // ax.abs_diff(bx).pow(2) + ay.abs_diff(by).pow(2)
-
-        let x_min = ax.min(bx);
-        let x_max = ax.max(bx);
-        let y_min = ay.min(by);
-        let y_max = ay.max(by);
-
-        (x_max - x_min).pow(2) + (y_max - y_min).pow(2)
+        (ax - bx).pow(2) + (ay - by).pow(2)
     }
 
-    pub fn manhattan_dist(&self, a: &GridPos, b: &GridPos) -> usize {
-        let (ax, ay) = a.as_xy(self.x_size);
-        let (bx, by) = b.as_xy(self.x_size);
+    pub fn manhattan_dist(&self, a: &GridPos, b: &GridPos) -> i64 {
+        let (ax, ay) = a.as_xy(self);
+        let (bx, by) = b.as_xy(self);
 
-        // Have .abs_diff()
-        // https://github.com/rust-lang/rust/issues/89492 would be
-        // really nice here.
-        // ax.abs_diff(bx) + ay.abs_diff(by)
-
-        let x_min = ax.min(bx);
-        let x_max = ax.max(bx);
-        let y_min = ay.min(by);
-        let y_max = ay.max(by);
-
-        (x_max - x_min) + (y_max - y_min)
+        (ax - bx).abs() + (ay - by).abs()
     }
 }
 
@@ -300,7 +328,8 @@ impl<T> GridMap<T> {
     }
 
     pub fn bottom_right(&self) -> GridPos {
-        InputGridPos::XY(self.x_size - 1, self.y_size - 1)
-            .normalize(self.x_size)
+        InputGridPos::XY((self.x_size as i64) - 1, (self.y_size as i64) - 1)
+            .normalize(self)
+            .unwrap()
     }
 }

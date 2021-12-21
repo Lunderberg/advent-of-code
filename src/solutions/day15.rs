@@ -16,8 +16,8 @@ struct RiskMap {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct SearchPointInfo {
-    src_to_pos: usize,
-    heuristic_to_dest: usize,
+    src_to_pos: i64,
+    heuristic_to_dest: i64,
     previous_point: Option<GridPos>,
     finalized: bool,
 }
@@ -28,8 +28,8 @@ impl RiskMap {
             .grid
             .iter()
             .map(|(pos, val)| {
-                let (x, y) = self.grid.as_xy(&pos);
-                (x, y, *val)
+                let (x, y) = pos.as_xy(&self.grid);
+                (x as usize, y as usize, *val)
             })
             .flat_map(|(x, y, val)| {
                 (0..factor).map(move |tile_x| {
@@ -58,7 +58,10 @@ impl RiskMap {
             .sum::<usize>())
     }
 
-    fn adjacent_points(&self, pos: GridPos) -> impl Iterator<Item = GridPos> {
+    fn adjacent_points(
+        &self,
+        pos: GridPos,
+    ) -> impl Iterator<Item = GridPos> + '_ {
         self.grid.adjacent_points(pos, Adjacency::Rook)
     }
 
@@ -67,10 +70,9 @@ impl RiskMap {
         source: GridPos,
         dest: GridPos,
     ) -> Result<Vec<GridPos>, Error> {
-        let get_heuristic_to_dest = |pos: &GridPos| -> usize {
-            1 * self.grid.manhattan_dist(pos, &dest)
-        };
-        let get_priority = |info: &SearchPointInfo| -> Reverse<usize> {
+        let get_heuristic_to_dest =
+            |pos: &GridPos| -> i64 { 1 * self.grid.manhattan_dist(pos, &dest) };
+        let get_priority = |info: &SearchPointInfo| -> Reverse<i64> {
             Reverse(info.src_to_pos + info.heuristic_to_dest)
         };
 
@@ -81,7 +83,7 @@ impl RiskMap {
             finalized: false,
         };
 
-        let mut search_queue: PriorityQueue<GridPos, Reverse<usize>> =
+        let mut search_queue: PriorityQueue<GridPos, Reverse<i64>> =
             PriorityQueue::new();
         search_queue.push(source, get_priority(&start_info));
 
@@ -110,7 +112,7 @@ impl RiskMap {
                 })
                 .filter_map(|(pos, opt_info)| {
                     let src_to_pos =
-                        src_to_current_pos + (self.grid[pos] as usize);
+                        src_to_current_pos + (self.grid[pos] as i64);
                     opt_info
                         .map_or(true, |info| src_to_pos < info.src_to_pos)
                         .then(|| (pos, opt_info, src_to_pos))
