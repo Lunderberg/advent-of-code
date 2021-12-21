@@ -28,7 +28,6 @@ enum Token {
 #[derive(Debug)]
 struct SnailfishView<'a> {
     snailfish: &'a Snailfish,
-    depth: u8,
 }
 
 #[derive(Debug)]
@@ -162,7 +161,6 @@ impl Snailfish {
                 let mut_view = stack.pop()?;
                 if predicate(SnailfishView {
                     snailfish: mut_view.snailfish,
-                    depth: mut_view.depth,
                 }) {
                     return Some(mut_view);
                 }
