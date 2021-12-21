@@ -32,6 +32,10 @@ pub enum Error {
     IllegalNumberOfOperands,
     UnexpectedToken(String),
     NestingLimitExceeded,
+    TooManyValues,
+    NotEnoughValues,
+    InsufficientSharedBeacons,
+    NeverFoundMatchedScanner,
 }
 
 #[derive(Debug)]
