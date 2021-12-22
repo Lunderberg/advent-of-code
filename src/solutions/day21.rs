@@ -2,18 +2,28 @@
 use crate::utils::Error;
 use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
 
+use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
+
 use itertools::Itertools;
 
 pub struct Day21;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+enum GameState {
+    Player1Victory,
+    Player2Victory,
+    InProgress(InProgressGameState),
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 struct InProgressGameState {
     winning_score: u64,
     players: [PlayerState; 2],
     turn: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 struct PlayerState {
     space: u64,
     score: u64,
@@ -25,10 +35,81 @@ struct DeterministicDie {
     num_times_rolled: u64,
 }
 
+impl Display for GameState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        use GameState::*;
+        match self {
+            InProgress(in_progress) => write!(f, "{}", in_progress),
+            Player1Victory => write!(f, "Player1Victory"),
+            Player2Victory => write!(f, "Player2Victory"),
+        }
+    }
+}
+
+impl Display for InProgressGameState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let (p1_active, p2_active) =
+            if self.turn == 0 { ("*", "") } else { ("", "*") };
+        write!(
+            f,
+            "{}{}, {}{}",
+            p1_active, self.players[0], p2_active, self.players[1]
+        )
+    }
+}
+
+impl Display for PlayerState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{} @ {}", self.score, self.space)
+    }
+}
+
+impl GameState {
+    fn after_dirac_turn(&self) -> impl Iterator<Item = (Self, usize)> + '_ {
+        (0..3)
+            .map(|_roll_num| (1..=3))
+            .multi_cartesian_product()
+            .map(|combo| combo.into_iter().sum::<u64>())
+            .counts()
+            .into_iter()
+            .map(move |(advance_by, counts)| {
+                (self.after_turn(advance_by), counts)
+            })
+    }
+
+    fn after_turn(&self, advance_by: u64) -> Self {
+        if let GameState::InProgress(mut in_progress) = self {
+            in_progress.take_turn(advance_by);
+            in_progress.as_victory()
+        } else {
+            *self
+        }
+    }
+
+    fn is_finished(&self) -> bool {
+        use GameState::*;
+        match self {
+            Player1Victory => true,
+            Player2Victory => true,
+            InProgress(_) => false,
+        }
+    }
+}
+
 impl InProgressGameState {
     fn take_turn(&mut self, advance_by: u64) {
         self.players[self.turn].advance(advance_by);
         self.turn = (self.turn + 1) % self.players.len();
+    }
+
+    fn as_victory(self) -> GameState {
+        if self.players[0].score >= self.winning_score {
+            GameState::Player1Victory
+        } else if self.players[1].score >= self.winning_score {
+            GameState::Player2Victory
+        } else {
+            GameState::InProgress(self)
+        }
     }
 
     fn is_finished(&self) -> bool {
@@ -118,6 +199,46 @@ impl Puzzle for Day21 {
     }
 
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
+        let winning_score = 21;
+        let state = self.parse_starting_state(winning_score)?;
+
+        let mut states: HashMap<GameState, usize> = HashMap::new();
+        states.insert(GameState::InProgress(state), 1);
+
+        let mut iteration = 0;
+
+        let print_it = |header: &str, states: &HashMap<GameState, usize>| {
+            println!("--------------{}--------------", header);
+            states
+                .iter()
+                .sorted_by_key(|(_state, counts)| *counts)
+                .for_each(|(state, counts)| {
+                    println!("{} counts for {}", counts, state)
+                });
+        };
+
+        while states.iter().any(|(state, _count)| !state.is_finished()) {
+            print_it(&format!("After {} Iterations", iteration), &states);
+
+            iteration += 1;
+
+            states = states
+                .iter()
+                .flat_map(|(state, counts)| {
+                    state.after_dirac_turn().map(move |(new_state, factor)| {
+                        (new_state, counts * factor)
+                    })
+                })
+                .into_grouping_map()
+                .sum();
+            if iteration >= 2 {
+                break;
+            }
+        }
+
+        print_it("Final", &states);
+
+        //let result = states.into_values().max().unwrap();
         let result = ();
         Ok(Box::new(result))
     }
