@@ -11,8 +11,13 @@ use regex::Regex;
 pub struct Day22;
 
 #[derive(Debug)]
-struct Cuboid {
+struct Command {
     new_state: bool,
+    region: Cuboid,
+}
+
+#[derive(Debug)]
+struct Cuboid {
     ranges: Vec<RangeInclusive<i64>>,
 }
 
@@ -28,7 +33,7 @@ impl Cuboid {
     }
 }
 
-impl FromStr for Cuboid {
+impl FromStr for Command {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Error> {
         let captures = Regex::new(
@@ -63,15 +68,16 @@ impl FromStr for Cuboid {
             .tuples()
             .map(|(a, b)| Ok((a?)..=(b?)))
             .collect::<Result<_, Error>>()?;
+        let region = Cuboid { ranges };
 
-        Ok(Self { new_state, ranges })
+        Ok(Self { new_state, region })
     }
 }
 
 impl Day22 {
-    fn parse_cuboids(&self) -> Result<Vec<Cuboid>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(1))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+    fn parse_commands(&self) -> Result<Vec<Command>, Error> {
+        let puzzle_input = self.puzzle_input(PuzzleInput::Example(1))?;
+        //let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
 
         let cuboids = puzzle_input
             .lines()
@@ -90,23 +96,22 @@ impl Puzzle for Day22 {
         true
     }
     fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let cuboids = self.parse_cuboids()?;
+        let commands = self.parse_commands()?;
 
         let region = Cuboid {
-            new_state: false,
             ranges: vec![-50..=50, -50..=50, -50..=50],
         };
 
         let mut state: Vec<bool> = region.locations().map(|_| false).collect();
 
-        cuboids.iter().for_each(|cuboid| {
+        commands.iter().for_each(|command| {
             region
                 .locations()
-                .map(|loc| cuboid.contains(&loc))
+                .map(|loc| command.region.contains(&loc))
                 .zip(state.iter_mut())
                 .filter_map(|(to_update, out)| to_update.then(|| out))
                 .for_each(|out| {
-                    *out = cuboid.new_state;
+                    *out = command.new_state;
                 });
         });
 
