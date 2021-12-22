@@ -7,10 +7,10 @@ use itertools::Itertools;
 pub struct Day21;
 
 #[derive(Debug)]
-struct GameState {
-    players: Vec<PlayerState>,
+struct InProgressGameState {
+    winning_score: u64,
+    players: [PlayerState; 2],
     turn: usize,
-    die: DeterministicDie,
 }
 
 #[derive(Debug)]
@@ -25,16 +25,14 @@ struct DeterministicDie {
     num_times_rolled: u64,
 }
 
-impl GameState {
-    const WINNING_SCORE: u64 = 1000;
-    fn take_turn(&mut self) {
-        let player = &mut self.players[self.turn];
-        player.advance(self.die.roll() + self.die.roll() + self.die.roll());
+impl InProgressGameState {
+    fn take_turn(&mut self, advance_by: u64) {
+        self.players[self.turn].advance(advance_by);
         self.turn = (self.turn + 1) % self.players.len();
     }
 
     fn is_finished(&self) -> bool {
-        self.players.iter().any(|p| p.score >= Self::WINNING_SCORE)
+        self.players.iter().any(|p| p.score >= self.winning_score)
     }
 
     fn lowest_score(&self) -> u64 {
@@ -62,18 +60,21 @@ impl DeterministicDie {
 impl PlayerState {
     const TRACK_SIZE: u64 = 10;
 
-    fn advance(&mut self, num_spaces: u64) {
-        self.space = (self.space + num_spaces - 1) % Self::TRACK_SIZE + 1;
+    fn advance(&mut self, advance_by: u64) {
+        self.space = (self.space + advance_by - 1) % Self::TRACK_SIZE + 1;
         self.score += self.space;
     }
 }
 
 impl Day21 {
-    fn parse(&self) -> Result<GameState, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+    fn parse_starting_state(
+        &self,
+        winning_score: u64,
+    ) -> Result<InProgressGameState, Error> {
+        let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
+        //let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
 
-        let players = puzzle_input
+        let (player1, player2) = puzzle_input
             .lines()
             .map(|line| {
                 line.split(' ')
@@ -82,14 +83,15 @@ impl Day21 {
                     .and_then(|s| s.parse::<u64>().map_err(|e| e.into()))
                     .map(|space| PlayerState { space, score: 0 })
             })
-            .collect::<Result<_, _>>()?;
+            .tuples()
+            .exactly_one()?;
 
-        let die = DeterministicDie::new();
+        let players = [player1?, player2?];
 
-        Ok(GameState {
+        Ok(InProgressGameState {
             players,
             turn: 0,
-            die,
+            winning_score,
         })
     }
 }
@@ -102,15 +104,19 @@ impl Puzzle for Day21 {
         true
     }
     fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let mut state = self.parse()?;
+        let winning_score = 1000;
+        let mut state = self.parse_starting_state(winning_score)?;
+
+        let mut die = DeterministicDie::new();
 
         while !state.is_finished() {
-            state.take_turn();
+            state.take_turn(die.roll() + die.roll() + die.roll());
         }
-        let result = state.lowest_score() * state.die.num_times_rolled;
+        let result = state.lowest_score() * die.num_times_rolled;
 
         Ok(Box::new(result))
     }
+
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
         let result = ();
         Ok(Box::new(result))
