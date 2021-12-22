@@ -6,31 +6,29 @@ use itertools::Itertools;
 
 pub struct Day07;
 
-impl Day07 {
-    fn parse_crabs(&self) -> Result<Vec<i64>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+impl Day07 {}
 
-        Ok(puzzle_input
-            .lines()
+impl Puzzle for Day07 {
+    const DAY: u8 = 7;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
+
+    type ParsedInput = Vec<i64>;
+    fn parse_input<'a>(
+        mut lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        Ok(lines
             .next()
             .unwrap()
             .split(',')
             .map(|s| s.parse::<i64>())
             .collect::<Result<Vec<_>, _>>()?)
     }
-}
 
-impl Puzzle for Day07 {
-    fn day(&self) -> i32 {
-        7
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let crab_pos = self.parse_crabs()?;
-
+    type Part1Result = i64;
+    fn part_1(
+        crab_pos: &Self::ParsedInput,
+    ) -> Result<Self::Part1Result, Error> {
         let (low, high) = match crab_pos.iter().map(|x| *x).minmax() {
             itertools::MinMaxResult::NoElements => Err(Error::CannotFindMinMax),
             itertools::MinMaxResult::OneElement(_) => {
@@ -41,14 +39,16 @@ impl Puzzle for Day07 {
 
         let lowest_fuel = (low..=high)
             .map(|pos| crab_pos.iter().map(|c| (pos - c).abs()).sum::<i64>())
-            .min();
+            .min()
+            .unwrap();
 
-        let result = lowest_fuel;
-        Ok(Box::new(result))
+        Ok(lowest_fuel)
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let crab_pos = self.parse_crabs()?;
 
+    type Part2Result = i64;
+    fn part_2(
+        crab_pos: &Self::ParsedInput,
+    ) -> Result<Self::Part1Result, Error> {
         let (low, high) = match crab_pos.iter().map(|x| *x).minmax() {
             itertools::MinMaxResult::NoElements => Err(Error::CannotFindMinMax),
             itertools::MinMaxResult::OneElement(_) => {
@@ -67,9 +67,9 @@ impl Puzzle for Day07 {
                     })
                     .sum::<i64>()
             })
-            .min();
+            .min()
+            .unwrap();
 
-        let result = lowest_fuel;
-        Ok(Box::new(result))
+        Ok(lowest_fuel)
     }
 }

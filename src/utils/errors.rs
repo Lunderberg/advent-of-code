@@ -2,6 +2,11 @@ use crate::utils::graph;
 
 #[derive(Debug)]
 pub enum Error {
+    // Used by framework
+    NoCachedInputAvailable,
+    ExampleBlockNotFound(u8),
+
+    // Used by puzzle solutions.
     WrongInt(std::num::ParseIntError),
     IoError(std::io::Error),
     InvalidArg(Arg),

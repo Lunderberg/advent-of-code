@@ -11,7 +11,7 @@ use itertools::Itertools;
 pub struct Day11;
 
 #[derive(Debug, Clone)]
-struct OctopusMap {
+pub struct OctopusMap {
     total_flashes: usize,
     map: GridMap<Octopus>,
 }
@@ -186,50 +186,39 @@ impl std::str::FromStr for Octopus {
     }
 }
 
-impl std::str::FromStr for OctopusMap {
-    type Err = Error;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let map = s.lines().collect::<GridMap<Octopus>>();
+impl Puzzle for Day11 {
+    const DAY: u8 = 11;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 1;
 
+    type ParsedInput = OctopusMap;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
         Ok(OctopusMap {
             total_flashes: 0,
-            map,
+            map: lines.collect(),
         })
     }
-}
 
-impl Day11 {
-    fn parse_octopodes(&self) -> Result<OctopusMap, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-        puzzle_input.parse()
-    }
-}
-
-impl Puzzle for Day11 {
-    fn day(&self) -> i32 {
-        11
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let mut map = self.parse_octopodes()?;
+    type Part1Result = usize;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        let mut map = parsed.clone();
 
         (0..100).for_each(|_i| map.iterate());
-        let result = map.total_flashes;
-        Ok(Box::new(result))
+        Ok(map.total_flashes)
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let map = self.parse_octopodes()?;
-        let result = std::iter::repeat(())
-            .scan(map, |map, _| {
+
+    type Part2Result = usize;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        Ok(std::iter::repeat(())
+            .scan(parsed.clone(), |map, _| {
                 map.iterate();
                 Some(map.is_synchronized())
             })
             .enumerate()
             .flat_map(|(iter, b)| b.then(|| iter + 1))
-            .next();
-        Ok(Box::new(result))
+            .next()
+            .unwrap())
     }
 }

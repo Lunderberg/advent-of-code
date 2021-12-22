@@ -219,51 +219,17 @@ impl Length {
     }
 }
 
-impl Day16 {
-    fn parse_inputs(&self) -> Result<Vec<bool>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
+impl Puzzle for Day16 {
+    const DAY: u8 = 16;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 1;
 
-        // Literal "2021"
-        // let puzzle_input = "D2FE28";
-        // [10,20]
-        // let puzzle_input = "38006F45291200";
-        // [1,2,3]
-        // let puzzle_input = "EE00D40C823060";
-
-        // Version sum 16
-        // let puzzle_input = "8A004A801A8002F478";
-        // Version sum 12
-        // let puzzle_input = "620080001611562C8802118E34";
-        // Version sum 23
-        // let puzzle_input = "C0015000016115A2E0802F182340";
-        // Version sum 31
-        // let puzzle_input = "A0016C880162017C3686B18A3D4780";
-
-        // 1 + 2, yields 3
-        // let puzzle_input = "C200B40A82";
-        // 6*9, yields 54
-        // let puzzle_input = "04005AC33890";
-        // min(7,8,9), yields 7
-        // let puzzle_input = "880086C3E88112";
-        // max(7,8,9), yields 9
-        // let puzzle_input = "CE00C43D881120";
-        // 5<15, yields 1
-        // let puzzle_input = "D8005AC2A8F0";
-        // 5>15, yields 0
-        // let puzzle_input = "F600BC2D8F";
-        // 5==15, yields 0
-        // let puzzle_input = "9C005AC2F8F0";
-        // 1+3==2*2, yields 1
-        // let puzzle_input = "9C0141080250320F1802104A08";
-
-        let puzzle_input = self
-            .puzzle_input(PuzzleInput::User)?
-            .lines()
-            .exactly_one()?
-            .to_string();
-
-        Ok(puzzle_input
-            .chars()
+    type ParsedInput = Vec<bool>;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        Ok(lines
+            .flat_map(|line| line.chars())
             .map(|c| usize::from_str_radix(&c.to_string(), 16))
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
@@ -272,23 +238,14 @@ impl Day16 {
             })
             .collect())
     }
-}
 
-impl Puzzle for Day16 {
-    fn day(&self) -> i32 {
-        16
+    type Part1Result = u64;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        Ok(Packet::parse(&mut parsed.iter().copied())?.sum_version_nums())
     }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let mut bit_stream = self.parse_inputs()?.into_iter();
-        let result = Packet::parse(&mut bit_stream)?.sum_version_nums();
-        Ok(Box::new(result))
-    }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let mut bit_stream = self.parse_inputs()?.into_iter();
-        let result = Packet::parse(&mut bit_stream)?.eval()?;
-        Ok(Box::new(result))
+
+    type Part2Result = u64;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        Packet::parse(&mut parsed.iter().copied())?.eval()
     }
 }

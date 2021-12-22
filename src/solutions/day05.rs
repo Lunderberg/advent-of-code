@@ -15,7 +15,7 @@ struct Pos {
 }
 
 #[derive(Debug)]
-struct VentLine {
+pub struct VentLine {
     start: Pos,
     stop: Pos,
 }
@@ -40,18 +40,23 @@ impl VentLine {
     }
 }
 
-impl Day05 {
-    fn parse_vents(&self) -> Result<Vec<VentLine>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+impl Day05 {}
 
+impl Puzzle for Day05 {
+    const DAY: u8 = 5;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
+
+    type ParsedInput = Vec<VentLine>;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
         let reg = Regex::new(
             r"^(?P<x1>[0-9]+),(?P<y1>[0-9]+) -> (?P<x2>[0-9]+),(?P<y2>[0-9]+)$",
         )
         .unwrap();
 
-        Ok(puzzle_input
-            .lines()
+        Ok(lines
             .map(|line| -> Result<_, Error> {
                 let captures = reg.captures(line).ok_or(Error::Mismatch)?;
                 let vals = vec!["x1", "y1", "x2", "y2"]
@@ -78,18 +83,10 @@ impl Day05 {
             })
             .collect::<Result<Vec<_>, _>>()?)
     }
-}
 
-impl Puzzle for Day05 {
-    fn day(&self) -> i32 {
-        5
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let result = self
-            .parse_vents()?
+    type Part1Result = usize;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        Ok(parsed
             .iter()
             .filter(|vent_line| !vent_line.is_diagonal())
             .map(|vent_line| vent_line.vent_locations())
@@ -97,19 +94,18 @@ impl Puzzle for Day05 {
             .counts()
             .into_iter()
             .filter(|(_loc, num_occurrences)| *num_occurrences > 1)
-            .count();
-        Ok(Box::new(result))
+            .count())
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let result = self
-            .parse_vents()?
+
+    type Part2Result = usize;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        Ok(parsed
             .iter()
             .map(|vent_line| vent_line.vent_locations())
             .flatten()
             .counts()
             .into_iter()
             .filter(|(_loc, num_occurrences)| *num_occurrences > 1)
-            .count();
-        Ok(Box::new(result))
+            .count())
     }
 }

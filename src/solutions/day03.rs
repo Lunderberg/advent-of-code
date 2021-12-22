@@ -7,25 +7,7 @@ use itertools::Itertools;
 pub struct Day03;
 
 impl Day03 {
-    fn parse_inputs(&self) -> Result<Vec<Vec<bool>>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-
-        Ok(puzzle_input
-            .lines()
-            .map(|line| {
-                line.chars()
-                    .map(move |c| match c {
-                        '0' => Ok(false),
-                        '1' => Ok(true),
-                        _ => Err(Error::InvalidArg(line.into())),
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-            })
-            .collect::<Result<Vec<_>, _>>()?)
-    }
-
-    fn get_bit_mask(&self, entries: &Vec<Vec<bool>>) -> Result<usize, Error> {
+    fn get_bit_mask(entries: &Vec<Vec<bool>>) -> Result<usize, Error> {
         let num_bits = entries
             .iter()
             .map(|entry| entry.len())
@@ -35,7 +17,6 @@ impl Day03 {
     }
 
     fn filter_most_frequent(
-        &self,
         entries: &Vec<Vec<bool>>,
         reverse_filter: bool,
     ) -> Result<usize, Error> {
@@ -84,40 +65,51 @@ impl Day03 {
 }
 
 impl Puzzle for Day03 {
-    fn day(&self) -> i32 {
-        3
-    }
-    fn implemented(&self) -> bool {
-        true
+    const DAY: u8 = 3;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
+
+    type ParsedInput = Vec<Vec<bool>>;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        Ok(lines
+            .map(|line| {
+                line.chars()
+                    .map(move |c| match c {
+                        '0' => Ok(false),
+                        '1' => Ok(true),
+                        _ => Err(Error::InvalidArg(line.into())),
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .collect::<Result<Vec<_>, _>>()?)
     }
 
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let entries = self.parse_inputs()?;
-        let bit_mask = self.get_bit_mask(&entries)?;
-        let gamma = entries
-            .into_iter()
-            .map(|entry: Vec<bool>| entry.into_iter().enumerate())
+    type Part1Result = usize;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        let bit_mask = Self::get_bit_mask(&parsed)?;
+        let gamma = parsed
+            .iter()
+            .map(|entry: &Vec<bool>| entry.iter().enumerate())
             .flatten()
             .into_group_map()
             .into_iter()
             .sorted_by_key(|(bitnum, _vals)| bitnum.to_owned())
             .map(|(_bitnum, vals)| {
-                let is_set = vals.iter().map(|&b| b as usize).sum::<usize>()
+                let is_set = vals.iter().map(|&b| *b as usize).sum::<usize>()
                     > vals.len() / 2;
                 is_set
             })
             .fold(0, |acc, b| 2 * acc + (b as usize));
         let epsilon = (!gamma) & bit_mask;
-        let result = gamma * epsilon;
-        println!("Gamma = {}, epsilon = {}", gamma, epsilon);
-        Ok(Box::new(result))
+        Ok(gamma * epsilon)
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let entries = self.parse_inputs()?;
 
-        let oxy = self.filter_most_frequent(&entries, false)?;
-        let carbon_dioxide = self.filter_most_frequent(&entries, true)?;
-        let result = oxy * carbon_dioxide;
-        Ok(Box::new(result))
+    type Part2Result = usize;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        let oxy = Self::filter_most_frequent(&parsed, false)?;
+        let carbon_dioxide = Self::filter_most_frequent(&parsed, true)?;
+        Ok(oxy * carbon_dioxide)
     }
 }

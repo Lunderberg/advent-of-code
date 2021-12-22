@@ -8,7 +8,7 @@ use itertools::Itertools;
 
 pub struct Day10;
 
-struct ProgramLine {
+pub struct ProgramLine {
     tokens: Vec<Token>,
 }
 
@@ -153,29 +153,22 @@ impl ProgramLine {
     }
 }
 
-impl Day10 {
-    fn parse_inputs(&self) -> Result<Vec<ProgramLine>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(1))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-
-        Ok(puzzle_input
-            .lines()
-            .map(|s| s.parse())
-            .collect::<Result<Vec<_>, _>>()?)
-    }
-}
-
 impl Puzzle for Day10 {
-    fn day(&self) -> i32 {
-        10
+    const DAY: u8 = 10;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 1;
+
+    type ParsedInput = Vec<ProgramLine>;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        lines.map(|s| s.parse()).collect::<Result<Vec<_>, _>>()
     }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let result = self
-            .parse_inputs()?
-            .into_iter()
+
+    type Part1Result = u64;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        Ok(parsed
+            .iter()
             .map(|line| {
                 if let ParseResult::IllegalCharacter(token) =
                     line.parse_brackets()
@@ -187,13 +180,13 @@ impl Puzzle for Day10 {
             })
             .flatten()
             .map(|token| token.syntax_points())
-            .sum::<u64>();
-        Ok(Box::new(result))
+            .sum::<u64>())
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let points = self
-            .parse_inputs()?
-            .into_iter()
+
+    type Part2Result = u64;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        let points = parsed
+            .iter()
             .map(|line| {
                 if let ParseResult::OpenDelimiters(stack) =
                     line.parse_brackets()
@@ -215,7 +208,6 @@ impl Puzzle for Day10 {
             })
             .sorted()
             .collect::<Vec<_>>();
-        let result = points[points.len() / 2];
-        Ok(Box::new(result))
+        Ok(points[points.len() / 2])
     }
 }

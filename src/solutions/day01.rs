@@ -7,41 +7,32 @@ use itertools::Itertools;
 pub struct Day01;
 
 impl Puzzle for Day01 {
-    fn day(&self) -> i32 {
-        1
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+    const DAY: u8 = 1;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
 
-        let result = puzzle_input
-            .lines()
+    type ParsedInput = Vec<i32>;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        lines
             .map(|line| line.parse::<i32>().map_err(|err| err.into()))
-            .collect::<Result<Vec<_>, Error>>()?
-            .iter()
-            .tuple_windows()
-            .filter(|(a, b)| a < b)
-            .count();
-        Ok(Box::new(result))
+            .collect()
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
 
-        let result = puzzle_input
-            .lines()
-            .map(|line| line.parse::<i32>())
-            .collect::<Result<Vec<_>, _>>()?
+    type Part1Result = usize;
+    fn part_1(values: &Vec<i32>) -> Result<Self::Part1Result, Error> {
+        Ok(values.iter().tuple_windows().filter(|(a, b)| a < b).count())
+    }
+
+    type Part2Result = usize;
+    fn part_2(values: &Vec<i32>) -> Result<Self::Part2Result, Error> {
+        Ok(values
             .iter()
             .tuple_windows()
             .map(|(a, b, c)| a + b + c)
             .tuple_windows()
             .filter(|(a, b)| a < b)
-            .count();
-
-        Ok(Box::new(result))
+            .count())
     }
 }

@@ -12,7 +12,7 @@ use regex::Regex;
 pub struct Day17;
 
 #[derive(Debug)]
-struct Target {
+pub struct Target {
     x: RangeInclusive<i64>,
     y: RangeInclusive<i64>,
 }
@@ -157,30 +157,29 @@ impl FromStr for Target {
     }
 }
 
-impl Day17 {
-    fn parse_target(&self) -> Result<Target, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-
-        Ok(puzzle_input.lines().exactly_one()?.parse()?)
-    }
-}
-
 impl Puzzle for Day17 {
-    fn day(&self) -> i32 {
-        17
+    const DAY: u8 = 17;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
+
+    type ParsedInput = Target;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        Ok(lines.exactly_one()?.parse()?)
     }
-    fn implemented(&self) -> bool {
-        true
+
+    type Part1Result = i64;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        Ok(parsed
+            .initial_probes()
+            .map(|probe| probe.ymax())
+            .max()
+            .unwrap())
     }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let target = self.parse_target()?;
-        let result = target.initial_probes().map(|probe| probe.ymax()).max();
-        Ok(Box::new(result))
-    }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let target = self.parse_target()?;
-        let result = target.initial_probes().count();
-        Ok(Box::new(result))
+
+    type Part2Result = usize;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        Ok(parsed.initial_probes().count())
     }
 }

@@ -12,8 +12,8 @@ use itertools::Itertools;
 
 pub struct Day25;
 
-#[derive(Debug, PartialEq, Eq)]
-struct CucumberMap {
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct CucumberMap {
     cucumbers: HashMap<Vector2, Cucumber>,
     map_size: Vector2,
 }
@@ -145,12 +145,16 @@ impl Display for Tile {
     }
 }
 
-impl Day25 {
-    fn parse_cucumbers(&self) -> Result<CucumberMap, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+impl Puzzle for Day25 {
+    const DAY: u8 = 25;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
 
-        let map = puzzle_input.lines().collect::<GridMap<Tile>>();
+    type ParsedInput = CucumberMap;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        let map = lines.collect::<GridMap<Tile>>();
         let map_size = Vector2([map.x_size as i64, map.y_size as i64]);
         let cucumbers = map
             .iter()
@@ -168,30 +172,20 @@ impl Day25 {
             map_size,
         })
     }
-}
 
-impl Puzzle for Day25 {
-    fn day(&self) -> i32 {
-        25
+    type Part1Result = usize;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        Ok(std::iter::successors(Some(parsed.clone()), |map| {
+            Some(map.after_advance())
+        })
+        .enumerate()
+        .tuples()
+        .find_map(|((_, before), (i, after))| (before == after).then(|| i))
+        .unwrap())
     }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let result =
-            std::iter::successors(Some(self.parse_cucumbers()?), |map| {
-                Some(map.after_advance())
-            })
-            .enumerate()
-            .tuples()
-            .find_map(|((_, before), (i, after))| (before == after).then(|| i))
-            .unwrap();
-        Ok(Box::new(result))
-    }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        //let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-        let result = ();
-        Ok(Box::new(result))
+
+    type Part2Result = ();
+    fn part_2(_parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        Ok(())
     }
 }

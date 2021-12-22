@@ -19,7 +19,7 @@ enum GameState {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-struct InProgressGameState {
+pub struct InProgressGameState {
     winning_score: u64,
     players: [PlayerState; 2],
     turn: usize,
@@ -160,16 +160,16 @@ impl PlayerState {
     }
 }
 
-impl Day21 {
-    fn parse_starting_state(
-        &self,
-        winning_score: u64,
-    ) -> Result<InProgressGameState, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+impl Puzzle for Day21 {
+    const DAY: u8 = 21;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
 
-        let (player1, player2) = puzzle_input
-            .lines()
+    type ParsedInput = InProgressGameState;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        let (player1, player2) = lines
             .map(|line| {
                 line.split(' ')
                     .last()
@@ -185,35 +185,28 @@ impl Day21 {
         Ok(InProgressGameState {
             players,
             turn: 0,
-            winning_score,
+            winning_score: 0,
         })
     }
-}
 
-impl Puzzle for Day21 {
-    fn day(&self) -> i32 {
-        21
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let winning_score = 1000;
-        let mut state = self.parse_starting_state(winning_score)?;
+    type Part1Result = u64;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        let mut state = parsed.clone();
+        state.winning_score = 1000;
 
         let mut die = DeterministicDie::new();
 
         while !state.is_finished() {
             state.take_turn(die.roll() + die.roll() + die.roll());
         }
-        let result = state.lowest_score() * die.num_times_rolled;
-
-        Ok(Box::new(result))
+        Ok(state.lowest_score() * die.num_times_rolled)
     }
 
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let winning_score = 21;
-        let state = self.parse_starting_state(winning_score)?.as_full_state();
+    type Part2Result = usize;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        let mut state = parsed.clone();
+        state.winning_score = 21;
+        let state = state.as_full_state();
 
         let mut states: HashMap<GameState, usize> = HashMap::new();
         states.insert(state, 1);
@@ -242,7 +235,6 @@ impl Puzzle for Day21 {
                 });
         }
 
-        let result = states.into_values().max().unwrap();
-        Ok(Box::new(result))
+        Ok(states.into_values().max().unwrap())
     }
 }

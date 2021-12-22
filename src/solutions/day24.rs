@@ -14,7 +14,7 @@ use itertools::Itertools;
 pub struct Day24;
 
 #[derive(Debug)]
-struct Program {
+pub struct Program {
     instructions: Vec<Instruction>,
 }
 
@@ -462,46 +462,27 @@ impl FromStr for MemoryLocation {
     }
 }
 
-impl Day24 {
-    fn parse_instructions(&self) -> Result<Program, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(1))?;
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(2))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+impl Puzzle for Day24 {
+    const DAY: u8 = 24;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 2;
 
-        let instructions = puzzle_input
-            .lines()
-            .map(|line| line.parse())
-            .collect::<Result<_, _>>()?;
+    type ParsedInput = Program;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        let instructions =
+            lines.map(|line| line.parse()).collect::<Result<_, _>>()?;
         Ok(Program { instructions })
     }
-}
 
-impl Puzzle for Day24 {
-    fn day(&self) -> i32 {
-        24
+    type Part1Result = i64;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        parsed.to_checksum_graph(false)?.find_serial()
     }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let result = self
-            .parse_instructions()?
-            .to_checksum_graph(false)?
-            .find_serial()?;
 
-        // let num_digits = (serial as f64).log10().ceil() as u32;
-        // let digits =
-        //     (0..num_digits).rev().map(|i| (serial / 10_i64.pow(i)) % 10);
-
-        // let result = program.execute(digits);
-
-        Ok(Box::new(result))
-    }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let result = self
-            .parse_instructions()?
-            .to_checksum_graph(true)?
-            .find_serial()?;
-        Ok(Box::new(result))
+    type Part2Result = i64;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        parsed.to_checksum_graph(true)?.find_serial()
     }
 }

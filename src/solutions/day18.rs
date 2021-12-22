@@ -12,7 +12,7 @@ use itertools::Itertools;
 pub struct Day18;
 
 #[derive(Clone)]
-enum Snailfish {
+pub enum Snailfish {
     Value(i64),
     Pair(Box<Snailfish>, Box<Snailfish>),
 }
@@ -285,38 +285,33 @@ impl Snailfish {
     }
 }
 
-impl Day18 {
-    fn parse_snailfish(&self) -> Result<Vec<Snailfish>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(7))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-
-        puzzle_input.lines().map(|line| line.parse()).collect()
-    }
-}
-
 impl Puzzle for Day18 {
-    fn day(&self) -> i32 {
-        18
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let snailfish = self.parse_snailfish()?;
+    const DAY: u8 = 18;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 7;
 
-        let result = snailfish
-            .into_iter()
+    type ParsedInput = Vec<Snailfish>;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        lines.map(|line| line.parse()).collect()
+    }
+
+    type Part1Result = i64;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        Ok(parsed
+            .iter()
+            .cloned()
             .reduce(|acc, fish| Snailfish::from((acc, fish)).after_reduce())
             .unwrap()
-            .magnitude();
-
-        Ok(Box::new(result))
+            .magnitude())
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let snailfish = self.parse_snailfish()?;
 
-        let result = snailfish
-            .into_iter()
+    type Part2Result = i64;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        Ok(parsed
+            .iter()
+            .cloned()
             .permutations(2)
             .map(|permutation| {
                 permutation
@@ -328,8 +323,6 @@ impl Puzzle for Day18 {
                     .magnitude()
             })
             .max()
-            .unwrap();
-
-        Ok(Box::new(result))
+            .unwrap())
     }
 }

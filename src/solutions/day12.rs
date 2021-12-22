@@ -11,7 +11,7 @@ use itertools::Itertools;
 pub struct Day12;
 
 #[derive(Debug)]
-struct CaveSystem {
+pub struct CaveSystem {
     caves: Vec<Cave>,
     connections: HashMap<usize, Vec<usize>>,
     start: usize,
@@ -484,32 +484,25 @@ impl TraversalState {
     }
 }
 
-impl Day12 {
-    fn parse_caves(&self) -> Result<CaveSystem, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-
-        Ok(CaveSystem::parse(puzzle_input.lines())?)
-    }
-}
-
 impl Puzzle for Day12 {
-    fn day(&self) -> i32 {
-        12
+    const DAY: u8 = 12;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
+
+    type ParsedInput = CaveSystem;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        CaveSystem::parse(lines)
     }
-    fn implemented(&self) -> bool {
-        true
+
+    type Part1Result = usize;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        parsed.num_paths(false)
     }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let result = self.parse_caves()?.num_paths(false)?;
-        // self.parse_caves()?.enumerate_paths(false)?;
-        // let result = ();
-        Ok(Box::new(result))
-    }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let result = self.parse_caves()?.num_paths(true)?;
-        // self.parse_caves()?.enumerate_paths(true)?;
-        // let result = ();
-        Ok(Box::new(result))
+
+    type Part2Result = usize;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        parsed.num_paths(true)
     }
 }

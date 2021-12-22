@@ -11,8 +11,8 @@ use itertools::Itertools;
 
 pub struct Day20;
 
-#[derive(Debug)]
-struct Image {
+#[derive(Debug, Clone)]
+pub struct Image {
     enhancement: Vec<Pixel>,
     grid: GridMap<Pixel>,
     pad_value: Pixel,
@@ -112,20 +112,23 @@ impl Image {
     }
 }
 
-impl Day20 {
-    fn parse_image(&self) -> Result<Image, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+impl Puzzle for Day20 {
+    const DAY: u8 = 20;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 5;
 
-        let mut line_iter = puzzle_input.lines();
-        let enhancement = line_iter
+    type ParsedInput = Image;
+    fn parse_input<'a>(
+        mut lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        let enhancement = lines
             .by_ref()
             .take_while(|line| line.len() > 0)
             .flat_map(|line| line.chars())
             .map(|c| c.to_string().parse::<Pixel>())
             .collect::<Result<_, _>>()?;
 
-        let grid = line_iter.collect();
+        let grid = lines.collect();
 
         let pad_value = Pixel::Dark;
 
@@ -135,24 +138,18 @@ impl Day20 {
             pad_value,
         })
     }
-}
 
-impl Puzzle for Day20 {
-    fn day(&self) -> i32 {
-        20
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let image = self.parse_image()?;
-        let result = (0..2).fold(image, |acc, _i| acc.enhance()).num_pixels();
-        Ok(Box::new(result))
+    type Part1Result = usize;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        Ok((0..2)
+            .fold(parsed.clone(), |acc, _i| acc.enhance())
+            .num_pixels())
     }
 
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let image = self.parse_image()?;
-        let result = (0..50).fold(image, |acc, _i| acc.enhance()).num_pixels();
-        Ok(Box::new(result))
+    type Part2Result = usize;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        Ok((0..50)
+            .fold(parsed.clone(), |acc, _i| acc.enhance())
+            .num_pixels())
     }
 }

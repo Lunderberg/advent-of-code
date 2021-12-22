@@ -10,12 +10,12 @@ use itertools::Itertools;
 pub struct Day13;
 
 #[derive(Debug, Clone)]
-struct Transparency {
+pub struct Transparency {
     dots: HashSet<(i64, i64)>,
 }
 
-#[derive(Debug, Clone)]
-enum FoldInstruction {
+#[derive(Debug, Clone, Copy)]
+pub enum FoldInstruction {
     X(i64),
     Y(i64),
 }
@@ -87,16 +87,16 @@ impl Transparency {
     }
 }
 
-impl Day13 {
-    fn parse_input(
-        &self,
-    ) -> Result<(Transparency, Vec<FoldInstruction>), Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(1))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+impl Puzzle for Day13 {
+    const DAY: u8 = 13;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 1;
 
-        let mut line_iter = puzzle_input.lines();
-
-        let dots = line_iter
+    type ParsedInput = (Transparency, Vec<FoldInstruction>);
+    fn parse_input<'a>(
+        mut lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        let dots = lines
             .by_ref()
             .take_while(|line| line.len() > 0)
             .map(|line| -> Result<_, Error> {
@@ -109,41 +109,33 @@ impl Day13 {
             })
             .collect::<Result<_, _>>()?;
 
-        let instructions = line_iter
+        let instructions = lines
             .map(|line| line.parse::<FoldInstruction>())
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok((Transparency { dots }, instructions))
     }
-}
 
-impl Puzzle for Day13 {
-    fn day(&self) -> i32 {
-        13
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let (paper, folds) = self.parse_input()?;
+    type Part1Result = usize;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        let (paper, folds) = parsed;
         let fold = folds.iter().cloned().next().ok_or(Error::NoneError)?;
 
         let folded = paper.after_fold(fold)?;
 
-        let result = folded.dots.len();
-        Ok(Box::new(result))
+        Ok(folded.dots.len())
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let (mut paper, folds) = self.parse_input()?;
 
-        folds.into_iter().try_for_each(|fold| -> Result<_, Error> {
+    type Part2Result = String;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        let (paper, folds) = parsed;
+        let mut paper = paper.clone();
+
+        folds.iter().try_for_each(|&fold| -> Result<_, Error> {
             paper = paper.after_fold(fold)?;
             Ok(())
         })?;
 
-        println!("{}", paper);
-
-        let result = ();
-        Ok(Box::new(result))
+        Ok(format!("{}", paper))
     }
 }

@@ -21,7 +21,7 @@ struct BingoBoard {
 }
 
 #[derive(Debug, Clone)]
-struct BingoGame {
+pub struct BingoGame {
     numbers_called: Vec<u32>,
     boards: Vec<BingoBoard>,
 }
@@ -156,41 +156,22 @@ impl BingoGame {
 }
 
 impl Puzzle for Day04 {
-    fn day(&self) -> i32 {
-        4
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let boards = self.parse_bingo()?;
-        let (last_num, board) = boards.find_winning_board(WhichBoard::First)?;
-        let result = board.score(last_num);
-        Ok(Box::new(result))
-    }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let boards = self.parse_bingo()?;
-        let (last_num, board) = boards.find_winning_board(WhichBoard::Last)?;
-        let result = board.score(last_num);
-        Ok(Box::new(result))
-    }
-}
+    const DAY: u8 = 4;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
 
-impl Day04 {
-    fn parse_bingo(&self) -> Result<BingoGame, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-
-        let numbers_called = puzzle_input
-            .lines()
+    type ParsedInput = BingoGame;
+    fn parse_input<'a>(
+        mut lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        let numbers_called = lines
             .next()
             .ok_or(Error::NoneError)?
             .split(',')
             .map(|item| item.parse::<u32>())
             .collect::<Result<_, _>>()?;
 
-        let boards = puzzle_input
-            .lines()
+        let boards = lines
             .skip(1)
             .chunks(6)
             .into_iter()
@@ -217,5 +198,17 @@ impl Day04 {
             numbers_called,
             boards,
         })
+    }
+
+    type Part1Result = u32;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        let (last_num, board) = parsed.find_winning_board(WhichBoard::First)?;
+        Ok(board.score(last_num))
+    }
+
+    type Part2Result = u32;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        let (last_num, board) = parsed.find_winning_board(WhichBoard::Last)?;
+        Ok(board.score(last_num))
     }
 }

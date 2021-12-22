@@ -5,7 +5,7 @@ use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
 use itertools::Itertools;
 
 #[derive(Debug)]
-enum Command {
+pub enum Command {
     Up(i64),
     Down(i64),
     Forward(i64),
@@ -82,35 +82,26 @@ fn final_position_part2(commands: &Vec<Command>) -> SubmarineState {
 pub struct Day02;
 
 impl Puzzle for Day02 {
-    fn day(&self) -> i32 {
-        2
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+    const DAY: u8 = 2;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
 
-        let commands = puzzle_input
-            .lines()
-            .map(|line| line.parse::<Command>())
-            .collect::<Result<Vec<_>, _>>()?;
-        let pos = final_position_part1(&commands);
-
-        let result = pos.depth * pos.forward_pos;
-        Ok(Box::new(result))
+    type ParsedInput = Vec<Command>;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        lines.map(|line| line.parse::<Command>()).collect()
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-        let commands = puzzle_input
-            .lines()
-            .map(|line| line.parse::<Command>())
-            .collect::<Result<Vec<_>, _>>()?;
-        let pos = final_position_part2(&commands);
 
-        let result = pos.depth * pos.forward_pos;
-        Ok(Box::new(result))
+    type Part1Result = i64;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        let pos = final_position_part1(&parsed);
+        Ok(pos.depth * pos.forward_pos)
+    }
+
+    type Part2Result = i64;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        let pos = final_position_part2(&parsed);
+        Ok(pos.depth * pos.forward_pos)
     }
 }

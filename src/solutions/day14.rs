@@ -8,15 +8,15 @@ use std::collections::HashMap;
 
 pub struct Day14;
 
-#[derive(Debug)]
-struct Polymer {
+#[derive(Debug, Clone)]
+pub struct Polymer {
     pair_counts: HashMap<(char, char), usize>,
     first: char,
     last: char,
 }
 
 #[derive(Debug)]
-struct InsertionRules {
+pub struct InsertionRules {
     rules: HashMap<(char, char), char>,
 }
 
@@ -78,20 +78,23 @@ impl Polymer {
     }
 }
 
-impl Day14 {
-    fn parse_inputs(&self) -> Result<(Polymer, InsertionRules), Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+impl Puzzle for Day14 {
+    const DAY: u8 = 14;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
 
-        let mut line_iter = puzzle_input.lines();
-        let polymer = line_iter
+    type ParsedInput = (Polymer, InsertionRules);
+    fn parse_input<'a>(
+        mut lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        let polymer = lines
             .by_ref()
             .take_while(|line| line.len() > 0)
             .map(|line| line.parse::<Polymer>())
             .exactly_one()??;
 
         let rules = InsertionRules {
-            rules: line_iter
+            rules: lines
                 .map(|line| -> Result<_, Error> {
                     Ok(line
                         .split(" -> ")
@@ -111,31 +114,24 @@ impl Day14 {
 
         Ok((polymer, rules))
     }
-}
 
-impl Puzzle for Day14 {
-    fn day(&self) -> i32 {
-        14
+    type Part1Result = usize;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        let (polymer, rules) = parsed;
+
+        (0..10)
+            .fold(polymer.clone(), |state: Polymer, _| {
+                state.apply_rules(&rules)
+            })
+            .minmax_diff()
     }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let (polymer, rules) = self.parse_inputs()?;
 
-        let result = (0..10)
-            .fold(polymer, |state, _| state.apply_rules(&rules))
-            .minmax_diff()?;
+    type Part2Result = usize;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        let (polymer, rules) = parsed;
 
-        Ok(Box::new(result))
-    }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let (polymer, rules) = self.parse_inputs()?;
-
-        let result = (0..40)
-            .fold(polymer, |state, _| state.apply_rules(&rules))
-            .minmax_diff()?;
-
-        Ok(Box::new(result))
+        (0..40)
+            .fold(polymer.clone(), |state, _| state.apply_rules(&rules))
+            .minmax_diff()
     }
 }

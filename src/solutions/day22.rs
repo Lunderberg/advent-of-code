@@ -13,7 +13,7 @@ use regex::Regex;
 pub struct Day22;
 
 #[derive(Debug)]
-struct Command {
+pub struct Command {
     new_state: bool,
     region: Cuboid,
 }
@@ -214,62 +214,47 @@ impl FromStr for Command {
     }
 }
 
-impl Day22 {
-    fn parse_commands(&self) -> Result<Vec<Command>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(1))?;
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(2))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-
-        let cuboids = puzzle_input
-            .lines()
-            .map(|line| line.parse())
-            .collect::<Result<_, _>>()?;
-
-        Ok(cuboids)
-    }
-}
-
 impl Puzzle for Day22 {
-    fn day(&self) -> i32 {
-        22
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let commands = self.parse_commands()?;
+    const DAY: u8 = 22;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 2;
 
+    type ParsedInput = Vec<Command>;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        lines.map(|line| line.parse()).collect()
+    }
+
+    type Part1Result = u64;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
         let initialization_region = Cuboid {
             ranges: [-50..51, -50..51, -50..51],
         };
 
-        let final_state = commands
-            .into_iter()
-            .fold(WorldState::new(), |state, command| {
+        let final_state =
+            parsed.iter().fold(WorldState::new(), |state, command| {
                 state.after_command(&command)
             });
 
-        let result = final_state
+        Ok(final_state
             .enabled_regions
             .iter()
             .map(|region| region.intersection(&initialization_region).size())
-            .sum::<u64>();
-        Ok(Box::new(result))
+            .sum::<u64>())
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let commands = self.parse_commands()?;
 
-        let final_state = commands
-            .into_iter()
-            .fold(WorldState::new(), |state, command| {
+    type Part2Result = u64;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        let final_state =
+            parsed.iter().fold(WorldState::new(), |state, command| {
                 state.after_command(&command)
             });
 
-        let result = final_state
+        Ok(final_state
             .enabled_regions
             .iter()
             .map(|region| region.size())
-            .sum::<u64>();
-        Ok(Box::new(result))
+            .sum::<u64>())
     }
 }

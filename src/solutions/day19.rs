@@ -11,7 +11,7 @@ use itertools::Itertools;
 pub struct Day19;
 
 #[derive(Debug, Clone)]
-struct Scanner {
+pub struct Scanner {
     beacons: Vec<Vector3>,
 }
 
@@ -228,14 +228,17 @@ impl ScannerSet {
     }
 }
 
-impl Day19 {
-    fn parse_scanners(&self) -> Result<Vec<Scanner>, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(5))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+impl Puzzle for Day19 {
+    const DAY: u8 = 19;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 5;
 
-        let mut line_iter = puzzle_input.lines();
+    type ParsedInput = Vec<Scanner>;
+    fn parse_input<'a>(
+        mut lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
         let scanners =
-            std::iter::from_fn(|| match Scanner::from_lines(&mut line_iter) {
+            std::iter::from_fn(|| match Scanner::from_lines(&mut lines) {
                 Ok(scanner) => Some(Ok(scanner)),
                 Err(Error::UnexpectedEndOfStream) => None,
                 Err(err) => Some(Err(err)),
@@ -244,36 +247,23 @@ impl Day19 {
 
         Ok(scanners)
     }
-}
 
-impl Puzzle for Day19 {
-    fn day(&self) -> i32 {
-        19
+    type Part1Result = usize;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        let merged = ScannerSet::merge_all(parsed.iter())?;
+        Ok(merged.beacons.len())
     }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let scanners = self.parse_scanners()?;
 
-        let merged = ScannerSet::merge_all(scanners.iter())?;
-        let result = merged.beacons.len();
+    type Part2Result = i64;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        let merged = ScannerSet::merge_all(parsed.iter())?;
 
-        Ok(Box::new(result))
-    }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let scanners = self.parse_scanners()?;
-
-        let merged = ScannerSet::merge_all(scanners.iter())?;
-
-        let result = merged
+        Ok(merged
             .scanners
             .into_iter()
             .tuple_combinations()
             .map(|(a, b)| a.manhattan_dist(&b))
             .max()
-            .unwrap();
-
-        Ok(Box::new(result))
+            .unwrap())
     }
 }

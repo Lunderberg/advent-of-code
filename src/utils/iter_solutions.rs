@@ -1,34 +1,34 @@
-use crate::utils::Puzzle;
+use crate::utils::{PuzzleRunner, PuzzleRunnerImpl};
 
 use crate::solutions::*;
 
-pub fn iter_solutions() -> impl Iterator<Item = Box<dyn Puzzle>> {
-    let puzzles: Vec<Box<dyn Puzzle>> = vec![
-        Box::new(Day01),
-        Box::new(Day02),
-        Box::new(Day03),
-        Box::new(Day04),
-        Box::new(Day05),
-        Box::new(Day06),
-        Box::new(Day07),
-        Box::new(Day08),
-        Box::new(Day09),
-        Box::new(Day10),
-        Box::new(Day11),
-        Box::new(Day12),
-        Box::new(Day13),
-        Box::new(Day14),
-        Box::new(Day15),
-        Box::new(Day16),
-        Box::new(Day17),
-        Box::new(Day18),
-        Box::new(Day19),
-        Box::new(Day20),
-        Box::new(Day21),
-        Box::new(Day22),
-        Box::new(Day23),
-        Box::new(Day24),
-        Box::new(Day25),
+pub fn iter_solutions() -> impl Iterator<Item = Box<dyn PuzzleRunner>> {
+    let puzzles: Vec<Box<dyn PuzzleRunner>> = vec![
+        PuzzleRunnerImpl::<Day01>::new(),
+        PuzzleRunnerImpl::<Day02>::new(),
+        PuzzleRunnerImpl::<Day03>::new(),
+        PuzzleRunnerImpl::<Day04>::new(),
+        PuzzleRunnerImpl::<Day05>::new(),
+        PuzzleRunnerImpl::<Day06>::new(),
+        PuzzleRunnerImpl::<Day07>::new(),
+        PuzzleRunnerImpl::<Day08>::new(),
+        PuzzleRunnerImpl::<Day09>::new(),
+        PuzzleRunnerImpl::<Day10>::new(),
+        PuzzleRunnerImpl::<Day11>::new(),
+        PuzzleRunnerImpl::<Day12>::new(),
+        PuzzleRunnerImpl::<Day13>::new(),
+        PuzzleRunnerImpl::<Day14>::new(),
+        PuzzleRunnerImpl::<Day15>::new(),
+        PuzzleRunnerImpl::<Day16>::new(),
+        PuzzleRunnerImpl::<Day17>::new(),
+        PuzzleRunnerImpl::<Day18>::new(),
+        PuzzleRunnerImpl::<Day19>::new(),
+        PuzzleRunnerImpl::<Day20>::new(),
+        PuzzleRunnerImpl::<Day21>::new(),
+        PuzzleRunnerImpl::<Day22>::new(),
+        PuzzleRunnerImpl::<Day23>::new(),
+        PuzzleRunnerImpl::<Day24>::new(),
+        PuzzleRunnerImpl::<Day25>::new(),
     ];
 
     puzzles.into_iter().filter(|p| p.implemented())

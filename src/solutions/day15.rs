@@ -11,7 +11,7 @@ use std::collections::HashMap;
 pub struct Day15;
 
 #[derive(Debug)]
-struct RiskMap {
+pub struct RiskMap {
     grid: GridMap<u8>,
 }
 
@@ -77,31 +77,27 @@ impl DynamicGraph<GridPos> for RiskMap {
     }
 }
 
-impl Day15 {
-    fn parse_inputs(&self) -> Result<RiskMap, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-
-        let grid = puzzle_input.lines().collect();
-        Ok(RiskMap { grid })
-    }
-}
-
 impl Puzzle for Day15 {
-    fn day(&self) -> i32 {
-        15
+    const DAY: u8 = 15;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
+
+    type ParsedInput = RiskMap;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        Ok(RiskMap {
+            grid: lines.collect(),
+        })
     }
-    fn implemented(&self) -> bool {
-        true
+
+    type Part1Result = u64;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        parsed.path_cost()
     }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let map = self.parse_inputs()?;
-        let result = map.path_cost()?;
-        Ok(Box::new(result))
-    }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let map = self.parse_inputs()?.enlarge_by(5);
-        let result = map.path_cost()?;
-        Ok(Box::new(result))
+
+    type Part2Result = u64;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        parsed.enlarge_by(5).path_cost()
     }
 }

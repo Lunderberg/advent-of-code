@@ -10,7 +10,7 @@ use std::collections::HashSet;
 pub struct Day09;
 
 #[derive(Debug)]
-struct HeightMap {
+pub struct HeightMap {
     map: GridMap<u8>,
 }
 
@@ -59,46 +59,45 @@ impl HeightMap {
 impl std::str::FromStr for HeightMap {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let map = s.lines().collect();
-
-        Ok(HeightMap { map })
-    }
-}
-
-impl Day09 {
-    fn parse_height_map(&self) -> Result<HeightMap, Error> {
-        // let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-
-        let map = puzzle_input.lines().collect();
-        Ok(HeightMap { map })
+        Ok(HeightMap {
+            map: s.lines().collect(),
+        })
     }
 }
 
 impl Puzzle for Day09 {
-    fn day(&self) -> i32 {
-        9
+    const DAY: u8 = 9;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
+
+    type ParsedInput = HeightMap;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        Ok(HeightMap {
+            map: lines.collect(),
+        })
     }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let result = self
-            .parse_height_map()?
+
+    type Part1Result = u64;
+    fn part_1(
+        height_map: &Self::ParsedInput,
+    ) -> Result<Self::Part1Result, Error> {
+        Ok(height_map
             .low_points()
             .map(|(_pos, height)| (height + 1) as u64)
-            .sum::<u64>();
-        Ok(Box::new(result))
+            .sum::<u64>())
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let height_map = self.parse_height_map()?;
 
-        let result = height_map
+    type Part2Result = usize;
+    fn part_2(
+        height_map: &Self::ParsedInput,
+    ) -> Result<Self::Part2Result, Error> {
+        Ok(height_map
             .low_points()
             .map(|(pos, _height)| height_map.basin_points(pos).len())
             .sorted_by_key(|&i| -(i as i64))
             .take(3)
-            .product::<usize>();
-        Ok(Box::new(result))
+            .product::<usize>())
     }
 }

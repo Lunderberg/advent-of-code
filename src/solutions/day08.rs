@@ -15,7 +15,7 @@ pub struct Day08;
 struct Segment(u8);
 
 #[derive(Debug)]
-struct LightSequence {
+pub struct LightSequence {
     unique_patterns: Vec<HashSet<Segment>>,
     outputs: Vec<HashSet<Segment>>,
 }
@@ -340,16 +340,32 @@ impl Day08 {
 }
 
 impl Puzzle for Day08 {
-    fn day(&self) -> i32 {
-        8
-    }
-    fn implemented(&self) -> bool {
-        true
-    }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let sequences = self.get_light_sequences()?;
+    const DAY: u8 = 8;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 1;
 
-        let result = sequences
+    type ParsedInput = Vec<LightSequence>;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        lines
+            .scan(None, |partial: &mut Option<String>, line| {
+                if let Some(partial) = partial.take() {
+                    Some(partial.to_string() + line)
+                } else if line.ends_with("|") {
+                    *partial = Some(line.to_string());
+                    None
+                } else {
+                    Some(line.to_string())
+                }
+            })
+            .map(|s| s.parse())
+            .collect()
+    }
+
+    type Part1Result = usize;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        Ok(parsed
             .iter()
             .map(|seq| {
                 seq.outputs.iter().filter(|set| match set.len() {
@@ -358,23 +374,20 @@ impl Puzzle for Day08 {
                 })
             })
             .flatten()
-            .count();
-        Ok(Box::new(result))
+            .count())
     }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let sequences = self.get_light_sequences()?;
 
-        let result = sequences
-            .into_iter()
+    type Part2Result = usize;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        parsed
+            .iter()
             .map(|seq| -> Result<_, Error> {
                 Ok(seq
                     .decode_outputs()?
                     .into_iter()
                     .fold(0usize, |acc, digit| 10 * acc + (digit as usize)))
             })
-            .sum::<Result<usize, _>>()?;
-
-        Ok(Box::new(result))
+            .sum::<Result<usize, _>>()
     }
 }
 

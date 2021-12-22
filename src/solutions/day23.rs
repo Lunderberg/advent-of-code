@@ -14,7 +14,7 @@ use itertools::Itertools;
 pub struct Day23;
 
 #[derive(Debug, Clone)]
-struct AmphipodDiagram {
+pub struct AmphipodDiagram {
     tiles: HashSet<Pos>,
     amphipods: HashMap<Pos, Amphipod>,
 }
@@ -644,42 +644,37 @@ impl From<AmphipodLayout> for AmphipodDiagram {
     }
 }
 
-impl Day23 {
-    fn parse_diagram(&self) -> Result<AmphipodDiagram, Error> {
-        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-
-        Ok(puzzle_input.lines().collect())
-    }
-}
-
 impl Puzzle for Day23 {
-    fn day(&self) -> i32 {
-        23
+    const DAY: u8 = 23;
+    const IMPLEMENTED: bool = true;
+    const EXAMPLE_NUM: u8 = 0;
+
+    type ParsedInput = AmphipodDiagram;
+    fn parse_input<'a>(
+        lines: impl Iterator<Item = &'a str>,
+    ) -> Result<Self::ParsedInput, Error> {
+        Ok(lines.collect())
     }
-    fn implemented(&self) -> bool {
-        true
+
+    type Part1Result = u64;
+    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+        let initial: AmphipodLayout = parsed.into();
+        let target = initial.target_arrangement()?;
+
+        let path = initial.shortest_path(initial.clone(), target)?;
+
+        Ok(path.into_iter().map(|(_state, cost)| cost).sum::<u64>())
     }
-    fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let diagram = self.parse_diagram()?;
+
+    type Part2Result = u64;
+    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        let diagram = parsed.extend_part_2();
 
         let initial: AmphipodLayout = diagram.into();
         let target = initial.target_arrangement()?;
 
         let path = initial.shortest_path(initial.clone(), target)?;
 
-        let result = path.into_iter().map(|(_state, cost)| cost).sum::<u64>();
-        Ok(Box::new(result))
-    }
-    fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let diagram = self.parse_diagram()?.extend_part_2();
-
-        let initial: AmphipodLayout = diagram.into();
-        let target = initial.target_arrangement()?;
-
-        let path = initial.shortest_path(initial.clone(), target)?;
-
-        let result = path.into_iter().map(|(_state, cost)| cost).sum::<u64>();
-        Ok(Box::new(result))
+        Ok(path.into_iter().map(|(_state, cost)| cost).sum::<u64>())
     }
 }
