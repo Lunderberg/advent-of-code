@@ -2,10 +2,12 @@
 use crate::utils::Error;
 use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
 
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
 use itertools::Itertools;
+use priority_queue::PriorityQueue;
 
 pub struct Day21;
 
@@ -65,6 +67,17 @@ impl Display for PlayerState {
 }
 
 impl GameState {
+    fn priority(&self) -> Reverse<u64> {
+        use GameState::*;
+        match self {
+            Player1Victory => Reverse(u64::MAX),
+            Player2Victory => Reverse(u64::MAX),
+            InProgress(state) => {
+                Reverse(state.players.iter().map(|p| p.score).sum())
+            }
+        }
+    }
+
     fn after_dirac_turn(&self) -> impl Iterator<Item = (Self, usize)> + '_ {
         (0..3)
             .map(|_roll_num| (1..=3))
@@ -80,7 +93,7 @@ impl GameState {
     fn after_turn(&self, advance_by: u64) -> Self {
         if let GameState::InProgress(mut in_progress) = self {
             in_progress.take_turn(advance_by);
-            in_progress.as_victory()
+            in_progress.as_full_state()
         } else {
             *self
         }
@@ -102,7 +115,7 @@ impl InProgressGameState {
         self.turn = (self.turn + 1) % self.players.len();
     }
 
-    fn as_victory(self) -> GameState {
+    fn as_full_state(self) -> GameState {
         if self.players[0].score >= self.winning_score {
             GameState::Player1Victory
         } else if self.players[1].score >= self.winning_score {
@@ -152,8 +165,8 @@ impl Day21 {
         &self,
         winning_score: u64,
     ) -> Result<InProgressGameState, Error> {
-        let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        //let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
+        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
 
         let (player1, player2) = puzzle_input
             .lines()
@@ -200,46 +213,36 @@ impl Puzzle for Day21 {
 
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
         let winning_score = 21;
-        let state = self.parse_starting_state(winning_score)?;
+        let state = self.parse_starting_state(winning_score)?.as_full_state();
 
         let mut states: HashMap<GameState, usize> = HashMap::new();
-        states.insert(GameState::InProgress(state), 1);
+        states.insert(state, 1);
 
-        let mut iteration = 0;
+        let mut state_queue = PriorityQueue::new();
+        state_queue.push(state, state.priority());
 
-        let print_it = |header: &str, states: &HashMap<GameState, usize>| {
-            println!("--------------{}--------------", header);
-            states
-                .iter()
-                .sorted_by_key(|(_state, counts)| *counts)
-                .for_each(|(state, counts)| {
-                    println!("{} counts for {}", counts, state)
+        while state_queue
+            .peek()
+            .map(|(next_state, _)| !next_state.is_finished())
+            .unwrap_or(false)
+        {
+            let state = state_queue.pop().unwrap().0;
+            let counts = states.remove(&state).unwrap();
+
+            state
+                .after_dirac_turn()
+                .map(|(new_state, factor)| (new_state, counts * factor))
+                .for_each(|(new_state, counts)| {
+                    if let Some(prev_counts) = states.get_mut(&new_state) {
+                        *prev_counts += counts;
+                    } else {
+                        states.insert(new_state, counts);
+                        state_queue.push(new_state, new_state.priority());
+                    }
                 });
-        };
-
-        while states.iter().any(|(state, _count)| !state.is_finished()) {
-            print_it(&format!("After {} Iterations", iteration), &states);
-
-            iteration += 1;
-
-            states = states
-                .iter()
-                .flat_map(|(state, counts)| {
-                    state.after_dirac_turn().map(move |(new_state, factor)| {
-                        (new_state, counts * factor)
-                    })
-                })
-                .into_grouping_map()
-                .sum();
-            if iteration >= 2 {
-                break;
-            }
         }
 
-        print_it("Final", &states);
-
-        //let result = states.into_values().max().unwrap();
-        let result = ();
+        let result = states.into_values().max().unwrap();
         Ok(Box::new(result))
     }
 }
