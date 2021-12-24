@@ -123,6 +123,10 @@ impl Adjacency {
             .into_iter(),
         }
     }
+
+    pub fn adjacent(&self, i: i64, j: i64) -> impl Iterator<Item = (i64, i64)> {
+        self.offsets().map(move |(di, dj)| (i + di, j + dj))
+    }
 }
 
 impl<T> FromIterator<(usize, usize, T)> for GridMap<T> {
