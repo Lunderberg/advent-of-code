@@ -51,7 +51,7 @@ impl RiskMap {
     }
 
     fn path_cost(&self) -> Result<u64, Error> {
-        self.shortest_path(&self.grid.top_left(), &self.grid.bottom_right())
+        self.shortest_path(self.grid.top_left(), self.grid.bottom_right())
             .map(|edges| edges.into_iter().map(|(_node, weight)| weight).sum())
             .map_err(|_e| Error::NoPathToDest)
     }

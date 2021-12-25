@@ -2,25 +2,64 @@ use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use itertools::Itertools;
 use priority_queue::PriorityQueue;
 
 #[derive(Debug)]
 pub enum Error {
     NoPathToTarget,
+    InvalidReverseIndex,
+    CircularReversePath,
 }
 
-pub trait DynamicGraphNode: Clone + Eq + Hash {}
+pub trait DynamicGraphNode: Eq + Hash {}
 
-impl<T> DynamicGraphNode for T where T: Clone + Eq + Hash {}
+impl<T> DynamicGraphNode for T where T: Eq + Hash {}
 
-struct SearchPointInfo<T: DynamicGraphNode> {
+// Internal structure for path-finding.  Implements Ord based on the
+// sum of src_to_pos and heuristic_to_dest.
+#[derive(Eq)]
+struct SearchPointInfo {
+    node_index: Option<usize>,
     src_to_pos: u64,
     heuristic_to_dest: u64,
-    previous_point: Option<(T, u64)>,
-    finalized: bool,
+    // The edge that was followed to reach this node, along the
+    // fastest path from the initial node.  Only the initial node may
+    // have previous_edge: None.
+    previous_edge: Option<GraphEdge>,
 }
 
-impl<T: DynamicGraphNode> SearchPointInfo<T> {
+#[derive(PartialEq, Eq)]
+struct GraphEdge {
+    // Index into a vector of nodes, where all elements of that vector
+    // have the fastest path known.
+    initial_node: usize,
+    edge_weight: u64,
+    // Can't be set initially, because it can't yet be added to the
+    // vector of nodes with known paths. Is there anywhere I can even
+    // set this?
+    final_node: Option<usize>,
+}
+
+impl PartialEq for SearchPointInfo {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.priority().eq(&rhs.priority())
+    }
+}
+
+impl PartialOrd for SearchPointInfo {
+    fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
+        self.priority().partial_cmp(&rhs.priority())
+    }
+}
+
+impl Ord for SearchPointInfo {
+    fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
+        self.priority().cmp(&rhs.priority())
+    }
+}
+
+impl SearchPointInfo {
     fn priority(&self) -> Reverse<u64> {
         Reverse(self.src_to_pos + self.heuristic_to_dest)
     }
@@ -40,96 +79,97 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
     // does not include the initial point.
     fn shortest_path(
         &self,
-        initial: &T,
-        target: &T,
+        initial: T,
+        target: T,
     ) -> Result<Vec<(T, u64)>, Error> {
         let get_heuristic =
-            |pos: &T| -> u64 { self.heuristic_between(pos, target) };
+            |pos: &T| -> u64 { self.heuristic_between(pos, &target) };
 
-        let start_info = SearchPointInfo::<T> {
+        let mut search_queue: PriorityQueue<T, SearchPointInfo> =
+            PriorityQueue::new();
+        let initial_info = SearchPointInfo {
+            node_index: None,
             src_to_pos: 0,
-            heuristic_to_dest: get_heuristic(initial),
-            previous_point: None,
-            finalized: false,
+            heuristic_to_dest: get_heuristic(&initial),
+            previous_edge: None,
         };
+        search_queue.push(initial, initial_info);
 
-        let mut search_queue = PriorityQueue::new();
-        search_queue.push(initial.clone(), start_info.priority());
-
-        let mut pos_info_map = HashMap::new();
-        pos_info_map.insert(initial.clone(), start_info);
+        let mut finalized_nodes: HashMap<T, SearchPointInfo> = HashMap::new();
+        let mut found_target = false;
 
         while search_queue.len() > 0 {
-            let current_pos = search_queue.pop().unwrap().0;
-            let current_info = pos_info_map.get_mut(&current_pos).unwrap();
-            current_info.finalized = true;
+            let (node, mut info) = search_queue.pop().unwrap();
 
-            if &current_pos == target {
+            let src_to_node = info.src_to_pos;
+            found_target = node == target;
+            let connected_nodes = self.connections_from(&node);
+
+            let node_index = finalized_nodes.len();
+            info.node_index = Some(node_index);
+
+            finalized_nodes.insert(node, info);
+
+            if found_target {
                 break;
             }
 
-            let src_to_current_pos = current_info.src_to_pos;
-
-            self.connections_from(&current_pos)
+            connected_nodes
                 .into_iter()
-                .map(|(edge_target, edge_weight): (T,u64)| -> (T, Option<&SearchPointInfo<T>>,u64) {
-                    let info = pos_info_map.get(&edge_target);
-                    (edge_target, info, edge_weight)
+                .map(|(new_node, edge_weight)| {
+                    let heuristic_to_dest = get_heuristic(&new_node);
+                    let info = SearchPointInfo {
+                        node_index: None,
+                        src_to_pos: src_to_node + edge_weight,
+                        heuristic_to_dest,
+                        previous_edge: Some(GraphEdge {
+                            initial_node: node_index,
+                            edge_weight,
+                            final_node: None,
+                        }),
+                    };
+                    (new_node, info)
                 })
-                // Don't re-check edges that point to a node whose
-                // shortest path is known.
-                .filter(|(_pos, opt_info, _edge_weight)| {
-                    opt_info.map_or(true, |info| !info.finalized)
-                })
-                .filter_map(|(pos, opt_info, edge_weight)| {
-                    let src_to_pos =
-                        src_to_current_pos + edge_weight;
-                    opt_info
-                        .map_or(true, |info| src_to_pos < info.src_to_pos)
-                        .then(|| (pos, opt_info, src_to_pos, edge_weight))
-                })
-                .map(|(pos, opt_info, src_to_pos, edge_weight)| {
-                    let info: SearchPointInfo<T> = opt_info.map_or_else(
-                        || SearchPointInfo::<T> {
-                            src_to_pos,
-                            previous_point: Some((current_pos.clone(),edge_weight)),
-                            heuristic_to_dest: get_heuristic(&pos),
-                            finalized: false,
-                        },
-                        |info| SearchPointInfo::<T> {
-                            src_to_pos,
-                            previous_point: Some((current_pos.clone(),edge_weight)),
-                            heuristic_to_dest: info.heuristic_to_dest,
-                            finalized: false,
-                        },
-                    );
-                    (pos, info)
-                })
-                .collect::<Vec<_>>()
-                .into_iter()
-                .for_each(|(pos, info)| {
-                    search_queue.push_increase(pos.clone(), info.priority());
-                    pos_info_map.insert(pos, info);
+                .filter(|(node, _info)| !finalized_nodes.contains_key(node))
+                .for_each(|(node, info): (T, SearchPointInfo)| {
+                    search_queue.push_increase(node, info);
                 });
         }
 
-        pos_info_map
-            .contains_key(target)
-            .then(|| {
-                let mut pos: T = target.clone();
-                std::iter::from_fn(move || {
-                    pos_info_map.get(&pos).unwrap().previous_point.as_ref().map(
-                        |(edge_source, edge_weight)| {
-                            let edge_target = std::mem::replace(
-                                &mut pos,
-                                edge_source.clone(),
-                            );
-                            (edge_target, *edge_weight)
-                        },
-                    )
+        if !found_target {
+            return Err(Error::NoPathToTarget);
+        }
+
+        let mut index_lookup: Vec<Option<(T, SearchPointInfo)>> =
+            finalized_nodes
+                .into_iter()
+                .sorted_by_key(|(_node, info)| info.node_index.unwrap())
+                .map(|(node, info)| Some((node, info)))
+                .collect();
+
+        let last: (T, SearchPointInfo) =
+            index_lookup.last_mut().unwrap().take().unwrap();
+        std::iter::successors(Some(Ok(last)), |res| {
+            res.as_ref()
+                .ok()
+                .map(|(_node, info)| {
+                    info.previous_edge.as_ref().map(|edge| {
+                        index_lookup
+                            .get_mut(edge.initial_node)
+                            .ok_or(Error::InvalidReverseIndex)
+                            .and_then(|opt| {
+                                opt.take().ok_or(Error::CircularReversePath)
+                            })
+                    })
                 })
-                .collect()
-            })
-            .ok_or(Error::NoPathToTarget)
+                .flatten()
+        })
+        .filter_map_ok(|(node, info)| {
+            info.previous_edge.map(move |edge| (node, edge.edge_weight))
+        })
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect()
     }
 }
