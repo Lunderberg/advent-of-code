@@ -1,3 +1,5 @@
+use crate::utils::graph;
+
 #[derive(Debug)]
 pub enum Error {
     WrongInt(std::num::ParseIntError),
@@ -36,6 +38,10 @@ pub enum Error {
     NotEnoughValues,
     InsufficientSharedBeacons,
     NeverFoundMatchedScanner,
+    NoAmphipodAtCurrentLocation,
+    AmphipodAtTargetLocation,
+    TooManyAmphipodsForRoom,
+    GraphError(graph::Error),
 }
 
 #[derive(Debug)]
@@ -59,6 +65,12 @@ impl From<i32> for Arg {
 impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
         Error::HttpError(e)
+    }
+}
+
+impl From<graph::Error> for Error {
+    fn from(e: graph::Error) -> Self {
+        Error::GraphError(e)
     }
 }
 

@@ -1,17 +1,19 @@
 #![allow(unused_imports)]
+use crate::utils::graph::DynamicGraph;
 use crate::utils::Adjacency;
 use crate::utils::Error;
 use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
 
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
+use std::hash::{Hash, Hasher};
 
 use itertools::Itertools;
 
 pub struct Day23;
 
 #[derive(Debug, Clone)]
-struct Diagram {
+struct AmphipodDiagram {
     tiles: HashSet<Pos>,
     amphipods: HashMap<Pos, Amphipod>,
 }
@@ -22,7 +24,7 @@ struct Pos {
     j: i64,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 enum Amphipod {
     A,
     B,
@@ -30,15 +32,25 @@ enum Amphipod {
     D,
 }
 
-#[derive(Debug)]
-struct Graph {
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct AmphipodLayout {
     amphipods: HashMap<GraphNode, Amphipod>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 enum GraphNode {
     Hallway { i: i64 },
     Room { i: i64, steps_in: usize },
+}
+
+impl Hash for AmphipodLayout {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.amphipods
+            .iter()
+            .sorted()
+            .for_each(|pair| pair.hash(hasher))
+    }
+    //
 }
 
 impl Display for Pos {
@@ -71,7 +83,7 @@ impl Display for Amphipod {
     }
 }
 
-impl Display for Diagram {
+impl Display for AmphipodDiagram {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         let left_char = self.tiles.iter().map(|pos| pos.i - 1).min().unwrap();
 
@@ -131,15 +143,7 @@ impl Amphipod {
     }
 }
 
-// impl Pos {
-//     fn adjacent(&self) -> impl Iterator<Item = Self> {
-//         Adjacency::Rook
-//             .adjacent(self.i, self.j)
-//             .map(|(i, j)| Pos { i, j })
-//     }
-// }
-
-impl Diagram {
+impl AmphipodDiagram {
     fn walls(&self) -> impl Iterator<Item = Pos> + '_ {
         self.tiles
             .iter()
@@ -153,7 +157,7 @@ impl Diagram {
     }
 }
 
-impl Graph {
+impl AmphipodLayout {
     const HALLWAY_MIN: i64 = 1;
     const HALLWAY_MAX: i64 = 11;
     const ROOM_LOCS: [i64; 4] = [3, 5, 7, 9];
@@ -194,6 +198,8 @@ impl Graph {
             .flat_map(|(current, amph)| {
                 Self::all_nodes().map(move |target| (*current, target, amph))
             })
+            // Will not move to its own location
+            .filter(|(current, target, _amph)| current != target)
             // Will never move into a non-target room
             .filter(|(_current, target, amph)| match target {
                 Room { i, .. } => Self::ROOM_LOCS[amph.room_num()] == *i,
@@ -240,6 +246,37 @@ impl Graph {
                     .all(move |node| self.amphipods.get(&node).is_none())
             })
             .map(|(current, target, _amph)| (current, target))
+    }
+
+    // Moves an amphipod from the current location to the target
+    // location.  If the current location is unoccupied, or if the
+    // target location is occupied, will make no changes and return an
+    // error.  Does not check that the path is clear.
+    fn apply_move(
+        &mut self,
+        current: &GraphNode,
+        target: &GraphNode,
+    ) -> Result<(), Error> {
+        if self.amphipods.contains_key(target) {
+            return Err(Error::AmphipodAtTargetLocation);
+        }
+
+        self.amphipods
+            .remove_entry(current)
+            .ok_or(Error::NoAmphipodAtCurrentLocation)
+            .map(|(_pos, amph)| {
+                self.amphipods.insert(*target, amph);
+            })
+    }
+
+    fn after_move(
+        &self,
+        current: &GraphNode,
+        target: &GraphNode,
+    ) -> Result<Self, Error> {
+        let mut out: Self = self.clone();
+        out.apply_move(current, target)?;
+        Ok(out)
     }
 
     // Includes the target point, but not the current point.
@@ -403,39 +440,118 @@ impl Graph {
         }
     }
 
-    fn cost_heuristic(&self) -> u64 {
+    fn cost_to_apply(
+        &self,
+        current: &GraphNode,
+        target: &GraphNode,
+    ) -> Result<u64, Error> {
         self.amphipods
-            .iter()
-            .map(|(node, amph)| {
-                use GraphNode::*;
+            .get(current)
+            .ok_or(Error::NoAmphipodAtCurrentLocation)
+            .map(|amph| amph.step_cost() * Self::num_steps_to(current, target))
+    }
 
-                let target_room = Self::ROOM_LOCS[amph.room_num()];
+    // fn cost_heuristic(&self) -> u64 {
+    //     self.amphipods
+    //         .iter()
+    //         .map(|(node, amph)| {
+    //             use GraphNode::*;
 
-                let target = match node {
-                    Room { i, .. } => {
-                        if *i == target_room {
-                            *node
-                        } else {
-                            Room {
-                                i: target_room,
-                                steps_in: 0,
-                            }
-                        }
-                    }
-                    _ => Room {
-                        i: target_room,
-                        steps_in: 0,
-                    },
-                };
+    //             let target_room = Self::ROOM_LOCS[amph.room_num()];
 
-                Graph::num_steps_to(node, &target) * amph.step_cost()
+    //             let target = match node {
+    //                 Room { i, .. } => {
+    //                     if *i == target_room {
+    //                         *node
+    //                     } else {
+    //                         Room {
+    //                             i: target_room,
+    //                             steps_in: 0,
+    //                         }
+    //                     }
+    //                 }
+    //                 _ => Room {
+    //                     i: target_room,
+    //                     steps_in: 0,
+    //                 },
+    //             };
+
+    //             AmphipodLayout::num_steps_to(node, &target) * amph.step_cost()
+    //         })
+    //         .sum()
+    // }
+
+    fn target_arrangement(&self) -> Result<Self, Error> {
+        let (in_position, out_of_position): (HashMap<_, _>, HashMap<_, _>) =
+            self.amphipods.iter().partition(|(pos, amph)| match pos {
+                GraphNode::Room { i, .. } => {
+                    Self::ROOM_LOCS[amph.room_num()] == *i
+                }
+                _ => false,
+            });
+
+        fn fold_func(
+            res_acc: Result<HashMap<GraphNode, Amphipod>, Error>,
+            (_pos, amph): (GraphNode, Amphipod),
+        ) -> Result<HashMap<GraphNode, Amphipod>, Error> {
+            res_acc.and_then(|mut acc| {
+                let i = AmphipodLayout::ROOM_LOCS[amph.room_num()];
+                (0..AmphipodLayout::ROOM_DEPTH)
+                    .map(|steps_in| GraphNode::Room { i, steps_in })
+                    .filter(|pos| !acc.contains_key(pos))
+                    .next()
+                    .ok_or(Error::TooManyAmphipodsForRoom)
+                    .map(move |pos| {
+                        acc.insert(pos, amph);
+                        acc
+                    })
             })
-            .sum()
+        }
+
+        let amphipods: HashMap<GraphNode, Amphipod> = out_of_position
+            .into_iter()
+            .fold(Ok(in_position), fold_func)?;
+
+        Ok(Self { amphipods })
     }
 }
 
-impl From<&Diagram> for Graph {
-    fn from(diagram: &Diagram) -> Graph {
+impl DynamicGraph<Self> for AmphipodLayout {
+    fn connections_from(&self, node: &Self) -> Vec<(Self, u64)> {
+        node.allowed_moves()
+            .map(|(from, to)| {
+                let amph = node.amphipods[&from];
+                let cost = amph.step_cost()
+                    * (Self::steps_to(&from, &to).count() as u64);
+                node.after_move(&from, &to).map(|graph| (graph, cost))
+            })
+            .collect::<Result<_, _>>()
+            .unwrap()
+    }
+
+    fn heuristic_between(&self, a: &Self, b: &Self) -> u64 {
+        let possible_target_map: HashMap<Amphipod, HashSet<GraphNode>> = b
+            .amphipods
+            .iter()
+            .map(|(&pos, &amph)| (amph, pos))
+            .into_grouping_map()
+            .collect();
+
+        a.amphipods
+            .iter()
+            .map(|(a_pos, amph)| {
+                possible_target_map[amph]
+                    .iter()
+                    .map(|b_pos| a.cost_to_apply(a_pos, b_pos))
+                    .fold_ok(u64::MAX, |acc, cost| acc.min(cost))
+            })
+            .fold_ok(0, |acc, cost| acc + cost)
+            .unwrap()
+    }
+}
+
+impl From<&AmphipodDiagram> for AmphipodLayout {
+    fn from(diagram: &AmphipodDiagram) -> AmphipodLayout {
         let amphipods = Self::all_nodes()
             .flat_map(|node| {
                 diagram
@@ -449,38 +565,38 @@ impl From<&Diagram> for Graph {
     }
 }
 
-impl From<Diagram> for Graph {
-    fn from(diagram: Diagram) -> Graph {
+impl From<AmphipodDiagram> for AmphipodLayout {
+    fn from(diagram: AmphipodDiagram) -> AmphipodLayout {
         (&diagram).into()
     }
 }
 
-impl From<&Graph> for Diagram {
-    fn from(graph: &Graph) -> Diagram {
+impl From<&AmphipodLayout> for AmphipodDiagram {
+    fn from(graph: &AmphipodLayout) -> AmphipodDiagram {
         let amphipods = graph
             .amphipods
             .iter()
-            .map(|(node, amph)| (Graph::node_pos(node), *amph))
+            .map(|(node, amph)| (AmphipodLayout::node_pos(node), *amph))
             .collect();
 
-        let tiles = Graph::all_nodes()
-            .map(|node| Graph::node_pos(&node))
+        let tiles = AmphipodLayout::all_nodes()
+            .map(|node| AmphipodLayout::node_pos(&node))
             .collect();
 
         Self { tiles, amphipods }
     }
 }
 
-impl From<Graph> for Diagram {
-    fn from(graph: Graph) -> Diagram {
+impl From<AmphipodLayout> for AmphipodDiagram {
+    fn from(graph: AmphipodLayout) -> AmphipodDiagram {
         (&graph).into()
     }
 }
 
 impl Day23 {
-    fn parse_diagram(&self) -> Result<Diagram, Error> {
-        let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
-        //let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
+    fn parse_diagram(&self) -> Result<AmphipodDiagram, Error> {
+        //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
+        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
 
         let active_spaces: Vec<(Pos, Option<Amphipod>)> = puzzle_input
             .lines()
@@ -512,7 +628,7 @@ impl Day23 {
             .filter_map(|(pos, opt_amphipod)| opt_amphipod.map(|a| (pos, a)))
             .collect();
 
-        Ok(Diagram { tiles, amphipods })
+        Ok(AmphipodDiagram { tiles, amphipods })
     }
 }
 
@@ -526,40 +642,12 @@ impl Puzzle for Day23 {
     fn part_1(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
         let diagram = self.parse_diagram()?;
 
-        println!("Diagram:\n{}", diagram);
+        let initial: AmphipodLayout = diagram.into();
+        let target = initial.target_arrangement()?;
 
-        let graph: Graph = diagram.into();
+        let path = initial.shortest_path(initial.clone(), target)?;
 
-        graph
-            .allowed_moves()
-            .sorted_by_key(|(src, dest)| {
-                let src = Graph::node_pos(src);
-                let dest = Graph::node_pos(dest);
-                [src.i, src.j, dest.i, dest.j]
-            })
-            .for_each(|(src, dest)| {
-                println!("Move from {:?} to {:?}", src, dest)
-            });
-
-        println!(
-            "Graph: {:?}",
-            graph
-                .amphipods
-                .iter()
-                .sorted_by_key(|(node, _amph)| {
-                    let pos = Graph::node_pos(node);
-                    (pos.i, pos.j)
-                })
-                .collect::<Vec<_>>()
-        );
-
-        println!("Heuristic: {}", graph.cost_heuristic());
-
-        // let round_trip: Diagram = graph.into();
-
-        // println!("Round trip:\n{}", round_trip);
-
-        let result = ();
+        let result = path.into_iter().map(|(_state, cost)| cost).sum::<u64>();
         Ok(Box::new(result))
     }
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
