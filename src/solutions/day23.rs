@@ -7,6 +7,7 @@ use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
+use std::iter::FromIterator;
 
 use itertools::Itertools;
 
@@ -34,6 +35,7 @@ enum Amphipod {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct AmphipodLayout {
+    room_depth: usize,
     amphipods: HashMap<GraphNode, Amphipod>,
 }
 
@@ -50,7 +52,6 @@ impl Hash for AmphipodLayout {
             .sorted()
             .for_each(|pair| pair.hash(hasher))
     }
-    //
 }
 
 impl Display for Pos {
@@ -155,15 +156,81 @@ impl AmphipodDiagram {
             .filter(move |pos| !self.tiles.contains(pos))
             .unique()
     }
+
+    fn room_depth(&self) -> usize {
+        self.tiles
+            .iter()
+            .map(|pos| pos.j)
+            .minmax()
+            .into_option()
+            .map(|(a, b)| (b - a) as usize)
+            .unwrap()
+    }
+
+    fn extend_part_2(&self) -> Self {
+        let inserted_lines = "  #D#C#B#A#\n  #D#B#A#C#".lines();
+
+        let orig = format!("{}", self);
+        let mut lines = orig.lines();
+
+        lines
+            .by_ref()
+            .take(3)
+            .chain(inserted_lines)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .chain(lines)
+            .collect()
+    }
+}
+
+impl<'a> FromIterator<&'a str> for AmphipodDiagram {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = &'a str>,
+    {
+        let active_spaces: Vec<_> = iter
+            .into_iter()
+            .enumerate()
+            .flat_map(|(j, line)| {
+                line.chars().enumerate().map(move |(i, c)| {
+                    (
+                        Pos {
+                            i: i as i64,
+                            j: j as i64,
+                        },
+                        c,
+                    )
+                })
+            })
+            .filter_map(|(pos, c)| match c {
+                '.' => Some((pos, None)),
+                'A' => Some((pos, Some(Amphipod::A))),
+                'B' => Some((pos, Some(Amphipod::B))),
+                'C' => Some((pos, Some(Amphipod::C))),
+                'D' => Some((pos, Some(Amphipod::D))),
+                _ => None,
+            })
+            .collect();
+
+        let tiles = active_spaces.iter().map(|(pos, _)| pos).copied().collect();
+        let amphipods = active_spaces
+            .into_iter()
+            .filter_map(|(pos, opt_amphipod)| opt_amphipod.map(|a| (pos, a)))
+            .collect();
+
+        Self { tiles, amphipods }
+    }
 }
 
 impl AmphipodLayout {
     const HALLWAY_MIN: i64 = 1;
     const HALLWAY_MAX: i64 = 11;
     const ROOM_LOCS: [i64; 4] = [3, 5, 7, 9];
-    const ROOM_DEPTH: usize = 2;
 
-    fn all_nodes() -> impl Iterator<Item = GraphNode> {
+    fn all_nodes_by_depth(
+        room_depth: usize,
+    ) -> impl Iterator<Item = GraphNode> {
         use GraphNode::*;
 
         let hallway =
@@ -171,10 +238,14 @@ impl AmphipodLayout {
         let rooms = Self::ROOM_LOCS
             .iter()
             .copied()
-            .cartesian_product(0..Self::ROOM_DEPTH)
+            .cartesian_product(0..room_depth)
             .map(|(i, steps_in)| Room { i, steps_in });
 
         hallway.chain(rooms)
+    }
+
+    fn all_nodes(&self) -> impl Iterator<Item = GraphNode> {
+        Self::all_nodes_by_depth(self.room_depth)
     }
 
     fn node_pos(node: &GraphNode) -> Pos {
@@ -195,8 +266,8 @@ impl AmphipodLayout {
 
         self.amphipods
             .iter()
-            .flat_map(|(current, amph)| {
-                Self::all_nodes().map(move |target| (*current, target, amph))
+            .flat_map(move |(current, amph)| {
+                self.all_nodes().map(move |target| (*current, target, amph))
             })
             // Will not move to its own location
             .filter(|(current, target, _amph)| current != target)
@@ -220,7 +291,7 @@ impl AmphipodLayout {
             })
             // Will not move into a room that is occupied by other types.
             .filter(move |(_current, target, amph)| match target {
-                Room { i, .. } => (0..Self::ROOM_DEPTH)
+                Room { i, .. } => (0..self.room_depth)
                     .map(|steps_in| Room { i: *i, steps_in })
                     .all(move |node| {
                         self.amphipods
@@ -232,7 +303,7 @@ impl AmphipodLayout {
             })
             // Will always move to the last unoccupied space in a room
             .filter(move |(_current, target, _amph)| match target {
-                Room { i, steps_in } => ((steps_in + 1)..Self::ROOM_DEPTH)
+                Room { i, steps_in } => ((steps_in + 1)..self.room_depth)
                     .map(|deeper| Room {
                         i: *i,
                         steps_in: deeper,
@@ -451,36 +522,6 @@ impl AmphipodLayout {
             .map(|amph| amph.step_cost() * Self::num_steps_to(current, target))
     }
 
-    // fn cost_heuristic(&self) -> u64 {
-    //     self.amphipods
-    //         .iter()
-    //         .map(|(node, amph)| {
-    //             use GraphNode::*;
-
-    //             let target_room = Self::ROOM_LOCS[amph.room_num()];
-
-    //             let target = match node {
-    //                 Room { i, .. } => {
-    //                     if *i == target_room {
-    //                         *node
-    //                     } else {
-    //                         Room {
-    //                             i: target_room,
-    //                             steps_in: 0,
-    //                         }
-    //                     }
-    //                 }
-    //                 _ => Room {
-    //                     i: target_room,
-    //                     steps_in: 0,
-    //                 },
-    //             };
-
-    //             AmphipodLayout::num_steps_to(node, &target) * amph.step_cost()
-    //         })
-    //         .sum()
-    // }
-
     fn target_arrangement(&self) -> Result<Self, Error> {
         let (in_position, out_of_position): (HashMap<_, _>, HashMap<_, _>) =
             self.amphipods.iter().partition(|(pos, amph)| match pos {
@@ -490,29 +531,31 @@ impl AmphipodLayout {
                 _ => false,
             });
 
-        fn fold_func(
-            res_acc: Result<HashMap<GraphNode, Amphipod>, Error>,
-            (_pos, amph): (GraphNode, Amphipod),
-        ) -> Result<HashMap<GraphNode, Amphipod>, Error> {
-            res_acc.and_then(|mut acc| {
-                let i = AmphipodLayout::ROOM_LOCS[amph.room_num()];
-                (0..AmphipodLayout::ROOM_DEPTH)
-                    .map(|steps_in| GraphNode::Room { i, steps_in })
-                    .filter(|pos| !acc.contains_key(pos))
-                    .next()
-                    .ok_or(Error::TooManyAmphipodsForRoom)
-                    .map(move |pos| {
-                        acc.insert(pos, amph);
-                        acc
-                    })
-            })
-        }
+        let fold_func =
+            |res_acc: Result<HashMap<GraphNode, Amphipod>, Error>,
+             (_pos, amph): (GraphNode, Amphipod)| {
+                res_acc.and_then(|mut acc| {
+                    let i = AmphipodLayout::ROOM_LOCS[amph.room_num()];
+                    (0..self.room_depth)
+                        .map(|steps_in| GraphNode::Room { i, steps_in })
+                        .filter(|pos| !acc.contains_key(pos))
+                        .next()
+                        .ok_or(Error::TooManyAmphipodsForRoom)
+                        .map(move |pos| {
+                            acc.insert(pos, amph);
+                            acc
+                        })
+                })
+            };
 
         let amphipods: HashMap<GraphNode, Amphipod> = out_of_position
             .into_iter()
             .fold(Ok(in_position), fold_func)?;
 
-        Ok(Self { amphipods })
+        Ok(Self {
+            amphipods,
+            room_depth: self.room_depth,
+        })
     }
 }
 
@@ -552,7 +595,9 @@ impl DynamicGraph<Self> for AmphipodLayout {
 
 impl From<&AmphipodDiagram> for AmphipodLayout {
     fn from(diagram: &AmphipodDiagram) -> AmphipodLayout {
-        let amphipods = Self::all_nodes()
+        let room_depth = diagram.room_depth();
+
+        let amphipods = Self::all_nodes_by_depth(room_depth)
             .flat_map(|node| {
                 diagram
                     .amphipods
@@ -561,7 +606,10 @@ impl From<&AmphipodDiagram> for AmphipodLayout {
                     .map(|amph| (node, amph))
             })
             .collect();
-        Self { amphipods }
+        Self {
+            amphipods,
+            room_depth,
+        }
     }
 }
 
@@ -579,7 +627,8 @@ impl From<&AmphipodLayout> for AmphipodDiagram {
             .map(|(node, amph)| (AmphipodLayout::node_pos(node), *amph))
             .collect();
 
-        let tiles = AmphipodLayout::all_nodes()
+        let tiles = graph
+            .all_nodes()
             .map(|node| AmphipodLayout::node_pos(&node))
             .collect();
 
@@ -598,37 +647,7 @@ impl Day23 {
         //let puzzle_input = self.puzzle_input(PuzzleInput::Example(0))?;
         let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
 
-        let active_spaces: Vec<(Pos, Option<Amphipod>)> = puzzle_input
-            .lines()
-            .enumerate()
-            .flat_map(|(j, line)| {
-                line.chars().enumerate().map(move |(i, c)| {
-                    (
-                        Pos {
-                            i: i as i64,
-                            j: j as i64,
-                        },
-                        c,
-                    )
-                })
-            })
-            .filter_map(|(pos, c)| match c {
-                '.' => Some((pos, None)),
-                'A' => Some((pos, Some(Amphipod::A))),
-                'B' => Some((pos, Some(Amphipod::B))),
-                'C' => Some((pos, Some(Amphipod::C))),
-                'D' => Some((pos, Some(Amphipod::D))),
-                _ => None,
-            })
-            .collect();
-
-        let tiles = active_spaces.iter().map(|(pos, _)| pos).copied().collect();
-        let amphipods = active_spaces
-            .into_iter()
-            .filter_map(|(pos, opt_amphipod)| opt_amphipod.map(|a| (pos, a)))
-            .collect();
-
-        Ok(AmphipodDiagram { tiles, amphipods })
+        Ok(puzzle_input.lines().collect())
     }
 }
 
@@ -651,7 +670,14 @@ impl Puzzle for Day23 {
         Ok(Box::new(result))
     }
     fn part_2(&self) -> Result<Box<dyn std::fmt::Debug>, Error> {
-        let result = ();
+        let diagram = self.parse_diagram()?.extend_part_2();
+
+        let initial: AmphipodLayout = diagram.into();
+        let target = initial.target_arrangement()?;
+
+        let path = initial.shortest_path(initial.clone(), target)?;
+
+        let result = path.into_iter().map(|(_state, cost)| cost).sum::<u64>();
         Ok(Box::new(result))
     }
 }
