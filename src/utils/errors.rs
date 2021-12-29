@@ -42,6 +42,7 @@ pub enum Error {
     AmphipodAtTargetLocation,
     TooManyAmphipodsForRoom,
     GraphError(graph::Error),
+    InsufficientInputValues,
 }
 
 #[derive(Debug)]
