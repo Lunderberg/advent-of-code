@@ -103,10 +103,7 @@ impl Instruction {
     }
 }
 
-impl<T> RuntimeState<T>
-where
-    T: Clone,
-{
+impl<T> RuntimeState<T> {
     fn new<F>(mut builder: F) -> Self
     where
         F: FnMut() -> T,
@@ -115,6 +112,14 @@ where
         Self { vals }
     }
 
+    // fn into_map<B, F>(self, mut f: F) -> RuntimeState<B>
+    // where
+    //     F: FnMut(T) -> B,
+    // {
+    //     let vals = self.vals.map(|val| f(val));
+    //     RuntimeState::<B> { vals }
+    // }
+
     fn map<B, F>(&self, mut f: F) -> RuntimeState<B>
     where
         F: FnMut(&T) -> B,
@@ -122,6 +127,15 @@ where
         let vals = [0, 1, 2, 3].map(|i| f(&self.vals[i]));
         RuntimeState::<B> { vals }
     }
+
+    // fn map_entry<B, F>(&self, mut f: F) -> RuntimeState<B>
+    // where
+    //     F: FnMut(MemoryLocation, &T) -> B,
+    // {
+    //     let locs = MemoryLocation::locations();
+    //     let vals = [0, 1, 2, 3].map(|i| f(locs[i], &self.vals[i]));
+    //     RuntimeState::<B> { vals }
+    // }
 
     fn iter(&self) -> impl Iterator<Item = (MemoryLocation, &T)> + '_ {
         let locs: Vec<_> = MemoryLocation::locations().into();
@@ -142,6 +156,58 @@ where
         }
     }
 }
+
+// trait EqualValue {
+//     fn equal_value(self, rhs: Self) -> Self;
+// }
+
+// impl EqualValue for i64 {
+//     fn equal_value(self, rhs: Self) -> Self {
+//         (self == rhs) as i64
+//     }
+// }
+
+// impl EqualValue for Expression {
+//     fn equal_value(self, rhs: Self) -> Self {
+//         self.equal_value(rhs)
+//     }
+// }
+
+// impl<T> RuntimeState<T>
+// where
+//     T: From<i64>,
+//     T: Clone,
+//     T: ops::Add<Output = T>,
+//     T: ops::Mul<Output = T>,
+//     T: ops::Div<Output = T>,
+//     T: ops::Rem<Output = T>,
+//     T: EqualValue,
+// {
+//     fn after_instruction<I>(&self, inst: Instruction, mut inputs: I) -> Self
+//     where
+//         I: Iterator<Item = T>,
+//     {
+//         use Instruction::*;
+
+//         let result_vals = self.map_entry(|loc, val| {
+//             if inst.loc() != loc {
+//                 return Ok(self[loc].clone());
+//             }
+//             match inst {
+//                 Input(_) => inputs.next().ok_or(Error::InsufficientInputValues),
+//                 Add(_, arg) => Ok(val.clone() + self.get_arg(&arg)),
+//                 Mul(_, arg) => Ok(val.clone() * self.get_arg(&arg)),
+//                 Div(_, arg) => Ok(val.clone() / self.get_arg(&arg)),
+//                 Mod(_, arg) => Ok(val.clone() % self.get_arg(&arg)),
+//                 Equal(_, arg) => {
+//                     Ok(val.clone().equal_value(self.get_arg(&arg)))
+//                 }
+//             }
+//         });
+
+//         result_vals.into_map(|res| res.unwrap())
+//     }
+// }
 
 impl<T> ops::Index<MemoryLocation> for RuntimeState<T> {
     type Output = T;
@@ -226,18 +292,29 @@ impl ProgramValues {
         }
     }
 
-    fn apply_constraints(&mut self, constraints: &Vec<Expression>) {
+    fn apply_constraints(
+        &mut self,
+        constraints: impl Iterator<Item = Expression>,
+        verbose: bool,
+    ) {
         let mut known_vars: HashSet<Variable> =
             self.target_vars.iter().copied().collect();
         let mut known_exprs: HashMap<Variable, Expression> = HashMap::new();
 
-        let mut to_check: VecDeque<Expression> =
-            constraints.iter().cloned().collect();
+        let mut to_check: VecDeque<Expression> = constraints.collect();
         let mut checked_since_last_success = 0;
 
         while to_check.len() > 0 && checked_since_last_success < to_check.len()
         {
             let equality = to_check.pop_front().unwrap();
+            if verbose {
+                println!(
+                    "Attempting to use constraint {}/{}: {}",
+                    checked_since_last_success,
+                    to_check.len() + 1,
+                    equality
+                );
+            }
 
             let solved_var = equality
                 .variables()
@@ -251,6 +328,9 @@ impl ProgramValues {
             if let Some((var, expr)) = solved_var {
                 // Update the existing equalities and derived
                 // expressions.
+                if verbose {
+                    println!("Defining {} as {}", var, expr);
+                }
 
                 to_check = to_check
                     .iter()
@@ -275,6 +355,9 @@ impl ProgramValues {
             } else {
                 // Push the equality back onto the queue, maybe it'll
                 // be easier to solve next time around.
+                if verbose {
+                    println!("Checking {} later", equality);
+                }
                 to_check.push_back(equality);
                 checked_since_last_success += 1;
             }
@@ -296,7 +379,9 @@ impl ProgramValues {
             .collect();
     }
 
-    fn forward_constraints(&self) -> Vec<Expression> {
+    fn unchanged_var_constraints(
+        &self,
+    ) -> impl Iterator<Item = Expression> + '_ {
         self.states
             .iter()
             .tuple_windows()
@@ -307,12 +392,42 @@ impl ProgramValues {
                     .map(move |loc| (before[loc].clone(), after[loc].clone()))
             })
             .map(|(before, after)| after.equal_value(before))
-            .collect()
     }
 
-    // fn mark_inputs(&mut self) {
+    fn initial_state_constraints(
+        &self,
+    ) -> impl Iterator<Item = Expression> + '_ {
+        self.states[0]
+            .iter()
+            .map(|(_loc, expr)| expr.clone().equal_value(0.into()))
+    }
 
-    // }
+    fn forward_constraints(&self) -> impl Iterator<Item = Expression> + '_ {
+        use Instruction::*;
+        self.states
+            .iter()
+            .tuple_windows()
+            .zip_eq(self.instructions.iter())
+            .filter_map(|((before, after), inst)| {
+                let apply =
+                    |f: &dyn Fn(Expression, Expression) -> Expression| {
+                        let loc = inst.loc();
+                        let a = before[loc].clone();
+                        let b = before.get_arg(&inst.arg().unwrap());
+                        let c = after[loc].clone();
+                        Some(c.equal_value(f(a, b)))
+                    };
+
+                match *inst {
+                    Input(_loc) => None,
+                    Add(_, _) => apply(&|a, b| a + b),
+                    Mul(_, _) => apply(&|a, b| a * b),
+                    Div(_, _) => apply(&|a, b| a / b),
+                    Mod(_, _) => apply(&|a, b| a % b),
+                    Equal(_, _) => apply(&|a, b| a.equal_value(b)),
+                }
+            })
+    }
 
     // fn constraints(&self) -> impl Iterator<Item=(Expression,Expression)> + '_ {
     //     self.states.t
@@ -373,22 +488,17 @@ impl Display for Program {
 impl Display for ProgramValues {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         let instruction_before = std::iter::once(None)
-            .chain(self.instructions.iter().map(|inst| Some(inst)));
+            .chain(self.instructions.iter().enumerate().map(|p| Some(p)));
         self.states.iter().zip(instruction_before).try_for_each(
-            |(state, inst)| {
-                if let Some(inst) = inst {
-                    write!(f, "{}\n", inst)?;
+            |(state, opt_inst)| {
+                if let Some((i, inst)) = opt_inst {
+                    write!(f, "{}/{}, {}\n", i, self.instructions.len(), inst)?;
                 } else {
                     write!(f, "Initial state\n")?;
                 }
 
-                MemoryLocation::locations().iter().try_for_each(|loc| {
-                    write!(
-                        f,
-                        "\t{} = {}\n",
-                        loc,
-                        state[*loc].format(&self.var_names)
-                    )
+                state.iter().try_for_each(|(loc, val)| {
+                    write!(f, "\t{} = {}\n", loc, val.format(&self.var_names))
                 })?;
 
                 Ok(())
@@ -489,11 +599,21 @@ impl Puzzle for Day24 {
         }
 
         let mut flow = ProgramValues::new(&program);
-        flow.apply_constraints(&flow.forward_constraints());
+        let constraints: Vec<_> = flow
+            .unchanged_var_constraints()
+            .chain(flow.initial_state_constraints())
+            //.chain(flow.forward_constraints())
+            .collect();
+        flow.apply_constraints(constraints.into_iter(), false);
+        //println!("{}", flow);
+
+        let constraints: Vec<_> = flow.forward_constraints().collect();
+        // constraints
+        //     .iter()
+        //     .for_each(|c| println!("Constraint: {}", c));
+        println!("About to propagate actual constraints");
+        flow.apply_constraints(constraints.into_iter(), true);
         println!("{}", flow);
-        // flow.forward_constraints()
-        //     .into_iter()
-        //     .for_each(|c| println!("{}", c));
 
         let result = ();
         Ok(Box::new(result))

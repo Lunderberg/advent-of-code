@@ -53,38 +53,58 @@ struct NamedExpression<'a, 'b> {
 }
 
 impl Expression {
+    // Walk through the expression tree.  For each node, execute the
+    // callback.  If the callback returns true, continue recursing
+    // through that branch of the tree.
+    pub fn walk<F>(&self, mut f: F)
+    where
+        F: FnMut(&Expression) -> bool,
+    {
+        self.walk_impl(&mut f);
+    }
+
+    fn walk_impl<F>(&self, f: &mut F)
+    where
+        F: FnMut(&Expression) -> bool,
+    {
+        let recurse = f(self);
+
+        if recurse {
+            self.children().for_each(|child| child.walk_impl(f))
+        }
+    }
+
+    pub fn is_leaf(&self) -> bool {
+        use Expression::*;
+        match self {
+            Impossible | Variable(_) | Int(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn children(&self) -> impl Iterator<Item = &Expression> + '_ {
+        use Expression::*;
+        match self {
+            Not(boxed) => vec![&**boxed].into_iter(),
+
+            Add(boxed) | Sub(boxed) | Mul(boxed) | Div(boxed) | Mod(boxed)
+            | Equal(boxed) => vec![&boxed.0, &boxed.1].into_iter(),
+
+            IfThenElse(boxed) => vec![&boxed.0, &boxed.1, &boxed.2].into_iter(),
+            _ => vec![].into_iter(),
+        }
+    }
+
+    // Visit all nodes.  Equivalent to calling walk() with a function
+    // that always returns true.
     pub fn visit<F>(&self, mut f: F)
     where
         F: FnMut(&Expression),
     {
-        self.visit_impl(&mut f);
-    }
-
-    fn visit_impl<F>(&self, f: &mut F)
-    where
-        F: FnMut(&Expression),
-    {
-        f(self);
-
-        use Expression::*;
-        match self {
-            Not(boxed) => {
-                boxed.visit_impl(f);
-            }
-
-            Add(boxed) | Sub(boxed) | Mul(boxed) | Div(boxed) | Mod(boxed)
-            | Equal(boxed) => {
-                boxed.0.visit_impl(f);
-                boxed.1.visit_impl(f);
-            }
-
-            IfThenElse(boxed) => {
-                boxed.0.visit_impl(f);
-                boxed.1.visit_impl(f);
-                boxed.2.visit_impl(f);
-            }
-            _ => {}
-        }
+        self.walk(|node| {
+            f(node);
+            true
+        })
     }
 
     pub fn equal_value(self, other: Self) -> Self {
@@ -92,49 +112,101 @@ impl Expression {
     }
 
     pub fn simplify(self) -> Self {
+        let mut constraints = Vec::new();
+        self.simplify_impl(&mut constraints)
+    }
+
+    fn simplify_impl(
+        self,
+        constraints: &mut Vec<(Variable, Expression)>,
+    ) -> Self {
         use Expression::*;
 
         match self {
-            Add(boxed) => match *boxed {
-                (Int(a), Int(b)) => Int(a + b),
-                (Int(0), b) => b,
-                (a, Int(0)) => a,
-                _ => Add(boxed),
-            },
-            Mul(boxed) => match *boxed {
-                (Int(a), Int(b)) => Int(a * b),
-                (Int(1), b) => b,
-                (a, Int(1)) => a,
-                (Int(0), _) => Int(0),
-                (_, Int(0)) => Int(0),
-                _ => Mul(boxed),
-            },
-            Div(boxed) => match *boxed {
-                (Int(a), Int(b)) => Int(a / b),
-                (a, Int(1)) => a,
-                (Int(0), _) => Int(0),
-                (_, Int(0)) => Impossible,
-                _ => Div(boxed),
-            },
-            Mod(boxed) => match *boxed {
-                (Int(a), Int(b)) => Int(a % b),
-                (_, Int(0)) => Impossible,
-                (_a, Int(1)) => Int(0),
-                (Int(0), _) => Int(0),
-                //(Int(1), _) => Int(1),
-                _ => Mod(boxed),
-            },
-            Equal(boxed) => match *boxed {
-                (Int(a), Int(b)) => Int((a == b) as i64),
-                (a, Int(0)) => Not(Box::new(a)),
-                (Int(0), b) => Not(Box::new(b)),
-                _ => Equal(boxed),
-            },
-            Not(boxed) => match *boxed {
-                Int(a) => Int((a == 0) as i64),
-                _ => Not(boxed),
-            },
-            _ => self,
+            Impossible | Variable(_) | Int(_) => self,
+
+            Add(boxed) => {
+                let a = boxed.0.simplify_impl(constraints);
+                let b = boxed.1.simplify_impl(constraints);
+                match (a, b) {
+                    (Int(a), Int(b)) => Int(a + b),
+                    (Int(0), b) => b,
+                    (a, Int(0)) => a,
+                    (a, b) => Add(Box::new((a, b))),
+                }
+            }
+            Sub(boxed) => {
+                let a = boxed.0.simplify_impl(constraints);
+                let b = boxed.1.simplify_impl(constraints);
+                match (a, b) {
+                    (Int(a), Int(b)) => Int(a - b),
+                    (Int(0), b) => Mul(Box::new(((-1).into(), b))),
+                    (a, Int(0)) => a,
+                    (a, b) => Sub(Box::new((a, b))),
+                }
+            }
+            Mul(boxed) => {
+                let a = boxed.0.simplify_impl(constraints);
+                let b = boxed.1.simplify_impl(constraints);
+                match (a, b) {
+                    (Int(a), Int(b)) => Int(a * b),
+                    (Int(1), b) => b,
+                    (a, Int(1)) => a,
+                    (Int(0), _) => Int(0),
+                    (_, Int(0)) => Int(0),
+                    (a, b) => Mul(Box::new((a, b))),
+                }
+            }
+            Div(boxed) => {
+                let a = boxed.0.simplify_impl(constraints);
+                let b = boxed.1.simplify_impl(constraints);
+                match (a, b) {
+                    (Int(a), Int(b)) => Int(a / b),
+                    (a, Int(1)) => a,
+                    (Int(0), _) => Int(0),
+                    (_, Int(0)) => Impossible,
+                    (a, b) => Div(Box::new((a, b))),
+                }
+            }
+            Mod(boxed) => {
+                let a = boxed.0.simplify_impl(constraints);
+                let b = boxed.1.simplify_impl(constraints);
+                match (a, b) {
+                    (Int(a), Int(b)) => Int(a % b),
+                    (_, Int(0)) => Impossible,
+                    (_a, Int(1)) => Int(0),
+                    (Int(0), _) => Int(0),
+                    (Int(1), _) => Int(1),
+                    (a, b) => Mod(Box::new((a, b))),
+                }
+            }
+            Equal(boxed) => {
+                let a = boxed.0.simplify_impl(constraints);
+                let b = boxed.1.simplify_impl(constraints);
+                match (a, b) {
+                    (Int(a), Int(b)) => Int((a == b) as i64),
+                    (a, Int(0)) => Not(Box::new(a)),
+                    (Int(0), b) => Not(Box::new(b)),
+                    (a, b) => Equal(Box::new((a, b))),
+                }
+            }
+            Not(boxed) => {
+                let a = boxed.simplify_impl(constraints);
+                match a {
+                    Int(a) => Int((a == 0) as i64),
+                    a => Not(Box::new(a)),
+                }
+            }
+            IfThenElse(boxed) => {
+                let a = boxed.0.simplify_impl(constraints);
+                let b = boxed.1.simplify_impl(constraints);
+                let c = boxed.2.simplify_impl(constraints);
+                match (a, b, c) {
+                    (Int(1), b, _) => b,
+                    (Int(0), _, c) => c,
+                    (a, b, c) => IfThenElse(Box::new((a, b, c))),
+                }
+            }
         }
     }
 
@@ -171,17 +243,18 @@ impl Expression {
     }
 
     pub fn solve_for(&self, var: Variable) -> Option<Expression> {
-        match self {
-            Expression::Equal(boxed) => {
-                let (a, b) = &**boxed;
-                self.solve_for_impl(var, a.clone(), b.clone())
-            }
-            _ => None,
-        }
+        Self::solve_for_impl(var, self.clone(), 1.into())
+            .map(|expr| expr.simplify())
+        // match self {
+        //     Expression::Equal(boxed) => {
+        //         let (a, b) = &**boxed;
+        //         Self::solve_for_impl(var, a.clone(), b.clone())
+        //     }
+        //     _ => None,
+        // }
     }
 
     fn solve_for_impl(
-        &self,
         var: Variable,
         left: Expression,
         right: Expression,
@@ -198,6 +271,13 @@ impl Expression {
         match (var_expr, const_expr) {
             (Impossible, _) | (_, Impossible) => None,
             (Variable(_), expr) => Some(expr),
+            (Equal(boxed), Int(1)) => {
+                let (a, b) = *boxed;
+                Self::solve_for_impl(var, a, b)
+            }
+            (Not(boxed), expr) => {
+                Self::solve_for_impl(var, *boxed, Not(Box::new(expr)))
+            }
             _ => None,
         }
     }
@@ -336,11 +416,23 @@ impl ops::Div for Expression {
     }
 }
 
+impl ops::Rem for Expression {
+    type Output = Expression;
+    fn rem(self, rhs: Self) -> Self {
+        use Expression::*;
+        match (self, rhs) {
+            (Impossible, _) | (_, Impossible) => Impossible,
+            (Int(a), Int(b)) => Int(a % b),
+            (a, b) => Mod(Box::new((a, b))),
+        }
+    }
+}
+
 impl<'a, 'b> Display for NamedExpression<'a, 'b> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         use Expression::*;
 
-        let priority = |node: &Expression| -> usize {
+        let precedence = |node: &Expression| -> usize {
             use Expression::*;
             match node {
                 //
@@ -348,21 +440,43 @@ impl<'a, 'b> Display for NamedExpression<'a, 'b> {
                 Variable(_) => 0,
                 Int(_) => 0,
                 //
-                Add(_) => 10,
-                Sub(_) => 10,
+                Not(expr) => match &**expr {
+                    Equal(_) => 40,
+                    _ => 10,
+                },
                 //
                 Div(_) => 15,
                 //
                 Mul(_) => 20,
                 Mod(_) => 20,
-                Not(expr) => match &**expr {
-                    Equal(_) => 40,
-                    _ => 20,
-                },
+                //
+                Add(_) => 30,
+                Sub(_) => 30,
                 //
                 Equal(_) => 40,
                 //
                 IfThenElse(_) => 50,
+            }
+        };
+
+        let associative = |node: &Expression| -> bool {
+            use Expression::*;
+
+            match node {
+                Impossible => true,
+                Variable(_) => true,
+                Int(_) => true,
+                Not(expr) => match &**expr {
+                    Equal(_) => false,
+                    _ => true,
+                },
+                Div(_) => false,
+                Mul(_) => true,
+                Mod(_) => false,
+                Add(_) => true,
+                Sub(_) => false,
+                Equal(_) => false,
+                IfThenElse(_) => false,
             }
         };
 
@@ -371,7 +485,12 @@ impl<'a, 'b> Display for NamedExpression<'a, 'b> {
                 expr: node,
                 names: self.names,
             };
-            if priority(node) > priority(self.expr) {
+            let child_precedence = precedence(node);
+            let self_precedence = precedence(self.expr);
+            if (child_precedence > self_precedence)
+                || ((child_precedence == self_precedence)
+                    && (!associative(self.expr)))
+            {
                 format!("({})", named)
             } else {
                 format!("{}", named)
@@ -399,9 +518,18 @@ impl<'a, 'b> Display for NamedExpression<'a, 'b> {
                     write!(f, "{}", var)
                 }
             }
-            Equal(boxed) => write!(f, "{} == {}", boxed.0, boxed.1),
-            Add(boxed) => write!(f, "{} + {}", boxed.0, boxed.1),
-            Sub(boxed) => write!(f, "{} - {}", boxed.0, boxed.1),
+            Equal(boxed) => {
+                let (a, b) = &**boxed;
+                write!(f, "{} == {}", format_child(a), format_child(b))
+            }
+            Add(boxed) => {
+                let (a, b) = &**boxed;
+                write!(f, "{} + {}", format_child(a), format_child(b))
+            }
+            Sub(boxed) => {
+                let (a, b) = &**boxed;
+                write!(f, "{} - {}", format_child(a), format_child(b))
+            }
             Mod(boxed) => {
                 let (a, b) = &**boxed;
                 write!(f, "{} % {}", format_child(a), format_child(b))
