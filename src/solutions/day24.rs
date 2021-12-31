@@ -1,8 +1,9 @@
 #![allow(unused_imports)]
 use crate::utils::Error;
+use crate::utils::{Expression, Variable};
 use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::convert::{TryFrom, TryInto};
 use std::fmt::{Display, Formatter};
 use std::ops;
@@ -17,7 +18,7 @@ struct Program {
     instructions: Vec<Instruction>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Instruction {
     Input(MemoryLocation),
     Add(MemoryLocation, Argument),
@@ -42,107 +43,27 @@ enum Argument {
 }
 
 #[derive(Debug)]
-struct RuntimeState {
-    vals: [i64; 4],
+struct RuntimeState<T> {
+    vals: [T; 4],
 }
 
 #[derive(Debug)]
-enum Constraint {
-    IsZero(Expression),
-    RestrictedRange {
-        var: Variable,
-        min: Expression,
-        max: Expression,
-    },
-    BooleanVar(Variable),
-}
-
-#[derive(Debug)]
-struct RuntimeExprs {
-    inputs: VecDeque<Expression>,
-    constraints: Vec<Constraint>,
-    vals: [Expression; 4],
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum Variable {
-    // A value in memory after the program completes, whose value is
-    // unchecked.  (e.g. Memory locations W/X/Y, which are
-    // unconstrained in part 1.)
-    FinalState {
-        loc: MemoryLocation,
-    },
-
-    // A value that is overwritten with an output value as part of the
-    // instruction on line_num.  I think these should only occur as
-    // part of Input commands, since all other instructions are of the
-    // form `a = f(a,b)` and introduce a constraint on the prior value
-    // of `a`.
-    OverwrittenValue {
-        loc: MemoryLocation,
-        line_num: usize,
-    },
-
-    // A value input into the program.
-    InputValue {
-        input_num: usize,
-    },
-
-    // A parameter introduced while unpacking an injective operator.
-    // Additional constraints may be expressed in
-    // `RuntimeConstraints.parameter_constraints`.
-    Parameter {
-        line_num: usize,
-    },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum Expression {
-    // No expression exists that satisfies the constraints.  For
-    // example, backpropagating [0,*,*,*] through the instruction `eql
-    // x x` would result in [Impossible, *,*,*], because no value of x
-    // can produce 0.
-    Impossible,
-
-    // An unconstrained variable, introduced in back propagation.
-    Variable(Variable),
-
-    // An integer literal
-    Int(i64),
-
-    // Unary NOT.  Not(0) = 1.  Not(x) = 0 for all other x.
-    Not(Box<Expression>),
-
-    // Binary operators
-    Add(Box<(Expression, Expression)>),
-    Sub(Box<(Expression, Expression)>),
-    Mul(Box<(Expression, Expression)>),
-    Div(Box<(Expression, Expression)>),
-    Mod(Box<(Expression, Expression)>),
-    Equal(Box<(Expression, Expression)>),
-
-    // Ternary operator.  Any non-zero expression is treated as true.
-    IfThenElse(Box<(Expression, Expression, Expression)>),
-}
-
-impl TryFrom<usize> for MemoryLocation {
-    type Error = Error;
-    fn try_from(i: usize) -> Result<Self, Error> {
-        use MemoryLocation::*;
-        match i {
-            0 => Ok(W),
-            1 => Ok(X),
-            2 => Ok(Y),
-            3 => Ok(Z),
-            _ => Err(Error::InvalidIndex(i)),
-        }
-    }
+struct ProgramValues {
+    target_vars: Vec<Variable>,
+    var_names: HashMap<Variable, String>,
+    states: Vec<RuntimeState<Expression>>,
+    instructions: Vec<Instruction>,
 }
 
 impl MemoryLocation {
     fn locations() -> [MemoryLocation; 4] {
         use MemoryLocation::*;
         [W, X, Y, Z]
+    }
+
+    fn iter() -> impl Iterator<Item = Self> {
+        use MemoryLocation::*;
+        vec![W, X, Y, Z].into_iter()
     }
 
     fn index(&self) -> usize {
@@ -182,451 +103,68 @@ impl Instruction {
     }
 }
 
-impl RuntimeState {
-    fn new() -> Self {
-        Self { vals: [0; 4] }
+impl<T> RuntimeState<T>
+where
+    T: Clone,
+{
+    fn new<F>(mut builder: F) -> Self
+    where
+        F: FnMut() -> T,
+    {
+        let vals = [0; 4].map(|_| builder());
+        Self { vals }
     }
 
-    fn get_arg(&self, arg: &Argument) -> i64 {
-        match arg {
-            Argument::MemLoc(loc) => self[*loc],
-            Argument::Int(num) => *num,
-        }
+    fn map<B, F>(&self, mut f: F) -> RuntimeState<B>
+    where
+        F: FnMut(&T) -> B,
+    {
+        let vals = [0, 1, 2, 3].map(|i| f(&self.vals[i]));
+        RuntimeState::<B> { vals }
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (MemoryLocation, &T)> + '_ {
+        let locs: Vec<_> = MemoryLocation::locations().into();
+
+        locs.into_iter().map(move |loc| (loc, &self[loc]))
     }
 }
 
-impl RuntimeExprs {
-    fn new_final_state() -> Self {
-        let vals = MemoryLocation::locations()
-            .map(|loc| Variable::FinalState { loc }.into());
-        Self {
-            vals,
-            inputs: VecDeque::new(),
-            constraints: Vec::new(),
-        }
-    }
-
-    fn new_initial_state() -> Self {
-        let vals = MemoryLocation::locations().map(|_loc| 0i64.into());
-        Self {
-            vals,
-            inputs: VecDeque::new(),
-            constraints: Vec::new(),
-        }
-    }
-
-    fn get_arg(&self, arg: &Argument) -> Expression {
+impl<T> RuntimeState<T>
+where
+    T: From<i64>,
+    T: Clone,
+{
+    fn get_arg(&self, arg: &Argument) -> T {
         match arg {
             Argument::MemLoc(loc) => self[*loc].clone(),
-            Argument::Int(num) => num.into(),
-        }
-    }
-
-    fn backprop_instruction(
-        mut self,
-        inst: &Instruction,
-        line_num: usize,
-    ) -> Self {
-        println!("-------- Backtracking --------");
-        println!("After {}", inst);
-        self.vals
-            .iter()
-            .enumerate()
-            .map(|(i, expr)| -> (MemoryLocation, _) {
-                (i.try_into().unwrap(), expr)
-            })
-            .for_each(|(loc, expr)| println!("\t{} = {}", loc, expr));
-
-        let loc = inst.loc();
-        let arg = inst.arg().map(|arg| self.get_arg(&arg));
-        let input_var = Variable::OverwrittenValue { loc, line_num };
-
-        // Extract the expression that must be returned by this instruction.
-        let output_expr = std::mem::replace(&mut self[loc], input_var.into());
-
-        match inst {
-            Instruction::Input(..) => {
-                println!("Output expr = {}", output_expr);
-                self.inputs.push_front(output_expr);
-            }
-            Instruction::Equal(..) => {
-                use Expression::*;
-
-                if let Variable(var) = output_expr {
-                    println!("New constraint: {} is bool", var);
-                    self.constraints.push(Constraint::BooleanVar(var));
-                }
-
-                self[loc] = match (arg.unwrap(), output_expr) {
-                    (arg, Int(0)) => !arg,
-                    (arg, Int(1)) => arg,
-                    (_arg, Int(_)) => Expression::Impossible,
-                    (Int(0), output_expr) => !output_expr,
-                    (Int(1), output_expr) => output_expr,
-                    (arg, output_expr) => IfThenElse(Box::new((
-                        output_expr,
-                        arg,
-                        input_var.into(),
-                    ))),
-                };
-            }
-            Instruction::Add(..) => {
-                self[loc] = output_expr - arg.unwrap();
-            }
-            Instruction::Mul(_loc, Argument::Int(0)) => {
-                // Leave self[loc] as an undetermined value.
-                println!("New constraint: {} = 0", output_expr);
-                self.constraints.push(Constraint::IsZero(output_expr));
-            }
-            Instruction::Mul(..) => {
-                self[loc] = output_expr / arg.unwrap();
-            }
-            Instruction::Mod(..) => {
-                let n: Expression = Variable::Parameter { line_num }.into();
-                self[loc] = n * arg.unwrap() + output_expr;
-            }
-            Instruction::Div(_loc, Argument::Int(1)) => {
-                self[loc] = output_expr;
-            }
-            Instruction::Div(..) => {
-                let arg = arg.unwrap();
-                let n = Variable::Parameter { line_num }.into();
-
-                let constraint = Constraint::RestrictedRange {
-                    var: n,
-                    min: 0i64.into(),
-                    max: arg.clone(),
-                };
-                println!("New constraint: {}", constraint);
-                self.constraints.push(constraint);
-                self[loc] = output_expr * arg + n.into();
-            }
-        }
-        println!("Before {}", inst);
-        self.vals
-            .iter()
-            .enumerate()
-            .map(|(i, expr)| -> (MemoryLocation, _) {
-                (i.try_into().unwrap(), expr)
-            })
-            .for_each(|(loc, expr)| println!("\t{} = {}", loc, expr));
-        self
-    }
-
-    fn apply_instruction(
-        mut self,
-        inst: &Instruction,
-        input_num: usize,
-    ) -> Self {
-        println!("-------- Forward Prop --------");
-        println!("Before {}", inst);
-        self.vals
-            .iter()
-            .enumerate()
-            .map(|(i, expr)| -> (MemoryLocation, _) {
-                (i.try_into().unwrap(), expr)
-            })
-            .for_each(|(loc, expr)| println!("\t{} = {}", loc, expr));
-
-        let loc = inst.loc();
-        let a = std::mem::replace(&mut self[loc], 0i64.into());
-        let b = inst
-            .arg()
-            .map(|arg| self.get_arg(&arg))
-            .unwrap_or(0i64.into());
-
-        self[loc] = match inst {
-            Instruction::Input(..) => Variable::InputValue { input_num }.into(),
-            Instruction::Equal(..) => Expression::Equal(Box::new((a, b))),
-            Instruction::Add(..) => Expression::Add(Box::new((a, b))),
-            Instruction::Mul(..) => Expression::Mul(Box::new((a, b))),
-            Instruction::Mod(..) => Expression::Mod(Box::new((a, b))),
-            Instruction::Div(..) => Expression::Div(Box::new((a, b))),
-        }
-        .simplify();
-
-        println!("After {}", inst);
-        self.vals
-            .iter()
-            .enumerate()
-            .map(|(i, expr)| -> (MemoryLocation, _) {
-                (i.try_into().unwrap(), expr)
-            })
-            .for_each(|(loc, expr)| println!("\t{} = {}", loc, expr));
-
-        self
-    }
-}
-
-impl Display for Constraint {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        use Constraint::*;
-        match self {
-            BooleanVar(var) => write!(f, "{} in [0,1]", var),
-            IsZero(expr) => write!(f, "{} = 0", expr),
-            RestrictedRange { var, min, max } => {
-                write!(f, "{} on range [{}, {})", var, min, max)
-            }
+            Argument::Int(num) => (*num).into(),
         }
     }
 }
 
-impl Display for Variable {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        use Variable::*;
-        match self {
-            InputValue { input_num } => write!(f, "i{}", input_num),
-            FinalState { loc } => write!(f, "{}f", loc),
-            OverwrittenValue { loc, line_num } => {
-                write!(f, "{}{}", loc, line_num)
-            }
-            Parameter { line_num } => {
-                write!(f, "n{}", line_num)
-            }
-        }
-    }
-}
-
-impl Display for Expression {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        use Expression::*;
-
-        let with_paren = |node: &Expression| {
-            if node.priority() > self.priority() {
-                format!("({})", node)
-            } else {
-                format!("{}", node)
-            }
-        };
-
-        match self {
-            Impossible => write!(f, "!!!"),
-            Int(num) => write!(f, "{}", num),
-            Not(expr) => match &**expr {
-                Variable { .. } => write!(f, "!{}", expr),
-                Equal(boxed) => write!(f, "{} != {}", boxed.0, boxed.1),
-                _ => write!(f, "!({})", expr),
-            },
-            Variable(var) => write!(f, "{}", var),
-            Equal(boxed) => write!(f, "{} == {}", boxed.0, boxed.1),
-            Add(boxed) => write!(f, "{} + {}", boxed.0, boxed.1),
-            Sub(boxed) => write!(f, "{} - {}", boxed.0, boxed.1),
-            Mod(boxed) => {
-                let (a, b) = &**boxed;
-                write!(f, "{} % {}", with_paren(a), with_paren(b))
-            }
-            Mul(boxed) => {
-                let (a, b) = &**boxed;
-                write!(f, "{} * {}", with_paren(a), with_paren(b))
-            }
-            Div(boxed) => {
-                let (a, b) = &**boxed;
-                write!(f, "{} / {}", with_paren(a), with_paren(b))
-            }
-            IfThenElse(boxed) => {
-                let (cond, if_expr, then_expr) = &**boxed;
-                write!(
-                    f,
-                    "{} ? {} : {}",
-                    with_paren(cond),
-                    with_paren(if_expr),
-                    with_paren(then_expr),
-                )
-            }
-        }
-    }
-}
-
-impl ops::Not for Expression {
-    type Output = Expression;
-    fn not(self) -> Self {
-        use Expression::*;
-        match self {
-            Impossible => Impossible,
-            Int(a) => match a {
-                0 => 1i64.into(),
-                1 => 0i64.into(),
-                _ => Impossible,
-            },
-            Not(a) => *a,
-            _ => Not(Box::new(self)),
-        }
-    }
-}
-
-impl ops::Add for Expression {
-    type Output = Expression;
-    fn add(self, rhs: Self) -> Self {
-        use Expression::*;
-        match (self, rhs) {
-            (Impossible, _) | (_, Impossible) => Impossible,
-            (Int(a), Int(b)) => Int(a + b),
-            (a, b) => Add(Box::new((a, b))),
-        }
-    }
-}
-
-impl ops::Sub for Expression {
-    type Output = Expression;
-    fn sub(self, rhs: Self) -> Self {
-        use Expression::*;
-        match (self, rhs) {
-            (Impossible, _) | (_, Impossible) => Impossible,
-            (Int(a), Int(b)) => Int(a - b),
-            (a, b) => Sub(Box::new((a, b))),
-        }
-    }
-}
-
-impl ops::Mul for Expression {
-    type Output = Expression;
-    fn mul(self, rhs: Self) -> Self {
-        use Expression::*;
-        match (self, rhs) {
-            (Impossible, _) | (_, Impossible) => Impossible,
-            (Int(a), Int(b)) => Int(a * b),
-            (a, b) => Mul(Box::new((a, b))),
-        }
-    }
-}
-
-impl ops::Div for Expression {
-    type Output = Expression;
-    fn div(self, rhs: Self) -> Self {
-        use Expression::*;
-        match (self, rhs) {
-            (Impossible, _) | (_, Impossible) => Impossible,
-            (Int(a), Int(b)) => Int(a / b),
-            (a, b) => Div(Box::new((a, b))),
-        }
-    }
-}
-
-impl From<Variable> for Expression {
-    fn from(var: Variable) -> Self {
-        Self::Variable(var)
-    }
-}
-
-impl From<i64> for Expression {
-    fn from(num: i64) -> Self {
-        Self::Int(num)
-    }
-}
-
-impl From<&i64> for Expression {
-    fn from(num: &i64) -> Self {
-        Self::Int(*num)
-    }
-}
-
-impl Expression {
-    fn priority(&self) -> usize {
-        use Expression::*;
-        match self {
-            //
-            Impossible => 0,
-            Variable(_) => 0,
-            Int(_) => 0,
-            //
-            Add(_) => 10,
-            Sub(_) => 10,
-            //
-            Mul(_) => 20,
-            Mod(_) => 20,
-            Not(_) => 20,
-            //
-            Div(_) => 30,
-            //
-            Equal(_) => 40,
-            //
-            IfThenElse(_) => 50,
-        }
-    }
-
-    fn simplify(self) -> Self {
-        use Expression::*;
-
-        match self {
-            Add(boxed) => match *boxed {
-                (Int(a), Int(b)) => Int(a + b),
-                (Int(0), b) => b,
-                (a, Int(0)) => a,
-                _ => Add(boxed),
-            },
-            Mul(boxed) => match *boxed {
-                (Int(a), Int(b)) => Int(a * b),
-                (Int(1), b) => b,
-                (a, Int(1)) => a,
-                (Int(0), _) => Int(0),
-                (_, Int(0)) => Int(0),
-                _ => Mul(boxed),
-            },
-            Div(boxed) => match *boxed {
-                (Int(a), Int(b)) => Int(a / b),
-                (a, Int(1)) => a,
-                (Int(0), _) => Int(0),
-                (_, Int(0)) => Impossible,
-                _ => Div(boxed),
-            },
-            Mod(boxed) => match *boxed {
-                (Int(a), Int(b)) => Int(a % b),
-                (_, Int(0)) => Impossible,
-                (_a, Int(1)) => Int(0),
-                (Int(0), _) => Int(0),
-                //(Int(1), _) => Int(1),
-                _ => Mod(boxed),
-            },
-            Equal(boxed) => match *boxed {
-                (Int(a), Int(b)) => Int((a == b) as i64),
-                (a, Int(0)) => Not(Box::new(a)),
-                (Int(0), b) => Not(Box::new(b)),
-                _ => Equal(boxed),
-            },
-            Not(boxed) => match *boxed {
-                Int(a) => Int((a == 0) as i64),
-                _ => Not(boxed),
-            },
-            _ => self,
-        }
-    }
-}
-
-impl ops::Index<MemoryLocation> for RuntimeState {
-    type Output = i64;
-    fn index(&self, var: MemoryLocation) -> &i64 {
+impl<T> ops::Index<MemoryLocation> for RuntimeState<T> {
+    type Output = T;
+    fn index(&self, var: MemoryLocation) -> &T {
         &self.vals[var.index()]
     }
 }
 
-impl ops::IndexMut<MemoryLocation> for RuntimeState {
-    fn index_mut(&mut self, var: MemoryLocation) -> &mut i64 {
-        &mut self.vals[var.index()]
-    }
-}
-
-impl ops::Index<MemoryLocation> for RuntimeExprs {
-    type Output = Expression;
-    fn index(&self, var: MemoryLocation) -> &Expression {
-        &self.vals[var.index()]
-    }
-}
-
-impl ops::IndexMut<MemoryLocation> for RuntimeExprs {
-    fn index_mut(&mut self, var: MemoryLocation) -> &mut Expression {
+impl<T> ops::IndexMut<MemoryLocation> for RuntimeState<T> {
+    fn index_mut(&mut self, var: MemoryLocation) -> &mut T {
         &mut self.vals[var.index()]
     }
 }
 
 impl Program {
-    fn execute<I>(&self, inputs: I) -> Result<RuntimeState, Error>
+    fn execute<I>(&self, inputs: I) -> Result<RuntimeState<i64>, Error>
     where
         I: IntoIterator<Item = i64>,
     {
         let mut inputs = inputs.into_iter();
 
         self.instructions.iter().fold(
-            Ok(RuntimeState::new()),
+            Ok(RuntimeState::new(|| 0)),
             |res_state, inst| {
                 use Instruction::*;
 
@@ -659,32 +197,126 @@ impl Program {
             },
         )
     }
+}
 
-    fn backprop_instructions(&self, constraints: RuntimeExprs) -> RuntimeExprs {
-        self.instructions.iter().enumerate().rev().fold(
-            constraints,
-            |state, (line_num, inst)| {
-                state.backprop_instruction(inst, line_num)
-            },
-        )
-    }
-
-    fn prop_inputs(&self) -> RuntimeExprs {
-        self.instructions
+impl ProgramValues {
+    fn new(program: &Program) -> Self {
+        let instructions = program.instructions.clone();
+        let variables: Vec<RuntimeState<Variable>> = (0..=instructions.len())
+            .map(|_| RuntimeState::new(Variable::new))
+            .collect();
+        let states: Vec<RuntimeState<Expression>> = variables
             .iter()
-            .scan(0, |num_inputs, inst| {
-                if let Instruction::Input(_) = inst {
-                    *num_inputs += 1;
-                }
-                Some((*num_inputs - 1, inst))
+            .map(|vars| vars.map(|var| (*var).into()))
+            .collect();
+        let var_names = variables
+            .iter()
+            .enumerate()
+            .flat_map(|(i, state)| {
+                state.iter().map(move |(loc, var)| (i, loc, var))
             })
-            .fold(
-                RuntimeExprs::new_initial_state(),
-                |state, (input_num, inst)| {
-                    state.apply_instruction(inst, input_num)
-                },
-            )
+            .map(|(i, loc, var)| (*var, format!("{}{}", loc, i)))
+            .collect();
+
+        Self {
+            states,
+            instructions,
+            var_names,
+            target_vars: Vec::new(),
+        }
     }
+
+    fn apply_constraints(&mut self, constraints: &Vec<Expression>) {
+        let mut known_vars: HashSet<Variable> =
+            self.target_vars.iter().copied().collect();
+        let mut known_exprs: HashMap<Variable, Expression> = HashMap::new();
+
+        let mut to_check: VecDeque<Expression> =
+            constraints.iter().cloned().collect();
+        let mut checked_since_last_success = 0;
+
+        while to_check.len() > 0 && checked_since_last_success < to_check.len()
+        {
+            let equality = to_check.pop_front().unwrap();
+
+            let solved_var = equality
+                .variables()
+                .difference(&known_vars)
+                .sorted()
+                .rev()
+                .find_map(|&var| {
+                    equality.solve_for(var).map(move |expr| (var, expr))
+                });
+
+            if let Some((var, expr)) = solved_var {
+                // Update the existing equalities and derived
+                // expressions.
+
+                to_check = to_check
+                    .iter()
+                    .map(|prev_expr| {
+                        prev_expr.substitute(var, &expr).simplify()
+                    })
+                    .enumerate()
+                    .map(|(_i, expr)| expr)
+                    .collect();
+                known_exprs = known_exprs
+                    .into_iter()
+                    .map(|(prev_var, prev_expr)| {
+                        (prev_var, prev_expr.substitute(var, &expr).simplify())
+                    })
+                    .collect();
+
+                // Mark this variable as known
+                known_vars.insert(var);
+                known_exprs.insert(var, expr);
+
+                checked_since_last_success = 0;
+            } else {
+                // Push the equality back onto the queue, maybe it'll
+                // be easier to solve next time around.
+                to_check.push_back(equality);
+                checked_since_last_success += 1;
+            }
+        }
+
+        self.states = self
+            .states
+            .iter()
+            .map(|state| {
+                state.map(|expr| {
+                    known_exprs
+                        .iter()
+                        .fold(expr.clone(), |acc, (known_var, known_expr)| {
+                            acc.substitute(*known_var, known_expr)
+                        })
+                        .simplify()
+                })
+            })
+            .collect();
+    }
+
+    fn forward_constraints(&self) -> Vec<Expression> {
+        self.states
+            .iter()
+            .tuple_windows()
+            .zip_eq(self.instructions.iter())
+            .flat_map(|((before, after), inst)| {
+                MemoryLocation::iter()
+                    .filter(move |loc| inst.loc() != *loc)
+                    .map(move |loc| (before[loc].clone(), after[loc].clone()))
+            })
+            .map(|(before, after)| after.equal_value(before))
+            .collect()
+    }
+
+    // fn mark_inputs(&mut self) {
+
+    // }
+
+    // fn constraints(&self) -> impl Iterator<Item=(Expression,Expression)> + '_ {
+    //     self.states.t
+    // }
 }
 
 impl Display for MemoryLocation {
@@ -735,6 +367,33 @@ impl Display for Program {
                 };
                 write!(f, "{}{}", inst, end)
             })
+    }
+}
+
+impl Display for ProgramValues {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let instruction_before = std::iter::once(None)
+            .chain(self.instructions.iter().map(|inst| Some(inst)));
+        self.states.iter().zip(instruction_before).try_for_each(
+            |(state, inst)| {
+                if let Some(inst) = inst {
+                    write!(f, "{}\n", inst)?;
+                } else {
+                    write!(f, "Initial state\n")?;
+                }
+
+                MemoryLocation::locations().iter().try_for_each(|loc| {
+                    write!(
+                        f,
+                        "\t{} = {}\n",
+                        loc,
+                        state[*loc].format(&self.var_names)
+                    )
+                })?;
+
+                Ok(())
+            },
+        )
     }
 }
 
@@ -829,27 +488,12 @@ impl Puzzle for Day24 {
             let _result = program.execute(digits);
         }
 
-        // {
-        //     let mut final_constraints = RuntimeExprs::new();
-        //     final_constraints[MemoryLocation::Z] = 0i64.into();
-
-        //     let initial_constraints =
-        //         program.backprop_instructions(final_constraints);
-        //     initial_constraints
-        //         .constraints
-        //         .iter()
-        //         .for_each(|constraint| println!("{}", constraint));
-        //     initial_constraints
-        //         .inputs
-        //         .iter()
-        //         .enumerate()
-        //         .for_each(|(i, expr)| println!("Input #{} is {}", i, expr));
-        // }
-
-        {
-            let state = program.prop_inputs();
-            println!("Final state: {:?}", state);
-        }
+        let mut flow = ProgramValues::new(&program);
+        flow.apply_constraints(&flow.forward_constraints());
+        println!("{}", flow);
+        // flow.forward_constraints()
+        //     .into_iter()
+        //     .for_each(|c| println!("{}", c));
 
         let result = ();
         Ok(Box::new(result))

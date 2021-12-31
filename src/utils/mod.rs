@@ -21,3 +21,6 @@ pub mod extensions;
 pub mod geometry;
 
 pub mod graph;
+
+mod algebra;
+pub use algebra::*;
