@@ -73,13 +73,15 @@ impl Expression {
     }
 
     pub fn variables(&self) -> HashSet<Variable> {
-        let mut out: HashSet<Variable> = HashSet::new();
-        self.visit(|expr| {
-            if let Expression::Variable(var) = expr {
-                out.insert(*var);
-            }
-        });
-        out
+        self.preorder_iter()
+            .filter_map(|expr| {
+                if let Expression::Variable(var) = expr {
+                    Some(*var)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn substitute(

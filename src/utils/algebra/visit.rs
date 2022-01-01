@@ -30,9 +30,9 @@ impl Expression {
         }
     }
 
-    pub fn children(&self) -> impl Iterator<Item = &Expression> + '_ {
+    pub fn children(&self) -> ChildIterator {
         use Expression::*;
-        match self {
+        let children = match self {
             Not(boxed) => vec![&**boxed].into_iter(),
 
             Add(boxed) | Sub(boxed) | Mul(boxed) | Div(boxed) | Mod(boxed)
@@ -40,7 +40,9 @@ impl Expression {
 
             IfThenElse(boxed) => vec![&boxed.0, &boxed.1, &boxed.2].into_iter(),
             _ => vec![].into_iter(),
-        }
+        };
+
+        ChildIterator { children }
     }
 
     // Visit all nodes.  Equivalent to calling walk() with a function
@@ -54,11 +56,55 @@ impl Expression {
             true
         })
     }
+
+    pub fn preorder_iter(&self) -> PreorderExpressionIterator {
+        PreorderExpressionIterator {
+            root: Some(self),
+            stack: Vec::new(),
+        }
+    }
 }
 
-// struct ExpressionIterator {
+pub struct ChildIterator<'a> {
+    children: <Vec<&'a Expression> as IntoIterator>::IntoIter,
+}
 
-// }
+pub struct PreorderExpressionIterator<'a> {
+    root: Option<&'a Expression>,
+    stack: Vec<ChildIterator<'a>>,
+}
+
+impl<'a> Iterator for ChildIterator<'a> {
+    type Item = &'a Expression;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.children.next()
+    }
+}
+
+impl<'a> Iterator for PreorderExpressionIterator<'a> {
+    type Item = &'a Expression;
+    fn next(&mut self) -> Option<Self::Item> {
+        // Root node needs to be handled separately, because it
+        // wouldn't appear as any child iterator.
+        if let Some(root) = self.root.take() {
+            self.stack.push(root.children());
+            return Some(root);
+        }
+
+        // Pop items off the stack until one of them gives us another
+        // node.
+        while self.stack.len() > 0 {
+            let mut iter = self.stack.pop().unwrap();
+            let next = iter.next();
+            if let Some(item) = next {
+                self.stack.push(iter);
+                self.stack.push(item.children());
+                return Some(item);
+            }
+        }
+        None
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -70,8 +116,6 @@ mod tests {
         let y: Expression = Variable::new().into();
         let expr: Expression =
             3i64 * y.clone() + x.clone().equal_value(y.clone());
-
-        // let expr: Expression = 3 * y + x.equal_value(y);
 
         let mut visited: Vec<Expression> = Vec::new();
 
@@ -95,5 +139,27 @@ mod tests {
             .into_iter()
             .zip(expected.into_iter())
             .for_each(|(a, b)| assert_eq!(a, b));
+    }
+
+    #[test]
+    fn test_preorder_iter() {
+        let x: Expression = Variable::new().into();
+        let y: Expression = Variable::new().into();
+        let expr: Expression = 3i64 * y.clone() + x.clone();
+
+        let visited: Vec<_> = expr.preorder_iter().collect();
+
+        let expected = vec![
+            3i64 * y.clone() + x.clone(),
+            3i64 * y.clone(),
+            3i64.into(),
+            y.clone(),
+            x.clone(),
+        ];
+        assert_eq!(visited.len(), expected.len());
+        visited
+            .into_iter()
+            .zip(expected.into_iter())
+            .for_each(|(a, b)| assert_eq!(a, &b));
     }
 }
