@@ -1,5 +1,62 @@
 use super::Expression;
 
+// pub struct VisitorBuilder<Pre, FilterChildren, Leaf, Post> {
+//     pre_visit: Option<Pre>,
+//     filter_children: Option<FilterChildren>,
+//     leaf_visit: Option<Leaf>,
+//     post_visit: Option<Post>,
+// }
+
+// impl<Pre, FilterChildren, Leaf, Post>
+//     VisitorBuilder<Pre, FilterChildren, Leaf, Post>
+// where
+//     Pre: FnMut(&Expression),
+//     Leaf: FnMut(&Expression),
+//     Post: FnMut(&Expression),
+//     FilterChildren: FnMut(&Expression) -> bool,
+// {
+//     fn new() -> Self {
+//         Self {
+//             pre_visit: None,
+//             filter_children: None,
+//             leaf_visit: None,
+//             post_visit: None,
+//         }
+//     }
+
+//     fn pre_visit(mut self, func: Pre) -> Self {
+//         self.pre_visit = Some(func);
+//         self
+//     }
+
+//     fn filter_children(mut self, func: FilterChildren) -> Self {
+//         self.filter_children = Some(func);
+//         self
+//     }
+// }
+
+// struct Visitor {}
+
+// pub trait Visitor {
+//     // Pre-visit of nodes with children.  If the return value is true,
+//     // the expression's children will be visited.  If the return value
+//     // is false, none of the children will be visited, nor will
+//     // post_visit be called for the expression.
+//     fn pre_visit(&mut self, expr: &Expression) -> bool;
+
+//     // Visit of nodes without children.
+//     fn leaf_visit(&mut self, expr: &Expression);
+
+//     // Pre-visit of nodes with children
+//     fn post_visit(&mut self, expr: &Expression);
+
+//     // Walk through an expression
+//     fn walk(&mut self, expr: &Expression) {
+//         let stack = vec![Traversal::PreVisit(expr)];
+//         while stack.len() > 0 {}
+//     }
+// }
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Traversal<'a> {
     PreVisit(&'a Expression),
