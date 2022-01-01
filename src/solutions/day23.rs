@@ -572,7 +572,7 @@ impl DynamicGraph<Self> for AmphipodLayout {
             .unwrap()
     }
 
-    fn heuristic_between(&self, a: &Self, b: &Self) -> u64 {
+    fn heuristic_between(&self, a: &Self, b: &Self) -> Option<u64> {
         let possible_target_map: HashMap<Amphipod, HashSet<GraphNode>> = b
             .amphipods
             .iter()
@@ -580,16 +580,18 @@ impl DynamicGraph<Self> for AmphipodLayout {
             .into_grouping_map()
             .collect();
 
-        a.amphipods
-            .iter()
-            .map(|(a_pos, amph)| {
-                possible_target_map[amph]
-                    .iter()
-                    .map(|b_pos| a.cost_to_apply(a_pos, b_pos))
-                    .fold_ok(u64::MAX, |acc, cost| acc.min(cost))
-            })
-            .fold_ok(0, |acc, cost| acc + cost)
-            .unwrap()
+        Some(
+            a.amphipods
+                .iter()
+                .map(|(a_pos, amph)| {
+                    possible_target_map[amph]
+                        .iter()
+                        .map(|b_pos| a.cost_to_apply(a_pos, b_pos))
+                        .fold_ok(u64::MAX, |acc, cost| acc.min(cost))
+                })
+                .fold_ok(0, |acc, cost| acc + cost)
+                .unwrap(),
+        )
     }
 }
 

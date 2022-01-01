@@ -12,9 +12,9 @@ pub enum Error {
     CircularReversePath,
 }
 
-pub trait DynamicGraphNode: Eq + Hash {}
+pub trait DynamicGraphNode: Eq + Hash + std::fmt::Debug {}
 
-impl<T> DynamicGraphNode for T where T: Eq + Hash {}
+impl<T> DynamicGraphNode for T where T: Eq + Hash + std::fmt::Debug {}
 
 // Internal structure for path-finding.  Implements Ord based on the
 // sum of src_to_pos and heuristic_to_dest.
@@ -71,8 +71,10 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
     fn connections_from(&self, node: &T) -> Vec<(T, u64)>;
 
     // Used for A* search.  If no such heuristic can be generated,
-    // return 0 to fall back to using Dijkstra's.
-    fn heuristic_between(&self, a: &T, b: &T) -> u64;
+    // return 0 to fall back to using Dijkstra's.  If None, implies
+    // that it's impossible to reach the target node from the
+    // specified point.
+    fn heuristic_between(&self, node_from: &T, node_to: &T) -> Option<u64>;
 
     // Returns the shortest path from initial to target, along with
     // the cost of each segment of the path.  Includes the target, but
@@ -83,14 +85,15 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
         target: T,
     ) -> Result<Vec<(T, u64)>, Error> {
         let get_heuristic =
-            |pos: &T| -> u64 { self.heuristic_between(pos, &target) };
+            |pos: &T| -> Option<u64> { self.heuristic_between(pos, &target) };
 
         let mut search_queue: PriorityQueue<T, SearchPointInfo> =
             PriorityQueue::new();
         let initial_info = SearchPointInfo {
             node_index: None,
             src_to_pos: 0,
-            heuristic_to_dest: get_heuristic(&initial),
+            heuristic_to_dest: get_heuristic(&initial)
+                .ok_or(Error::NoPathToTarget)?,
             previous_edge: None,
         };
         search_queue.push(initial, initial_info);
@@ -116,8 +119,12 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
 
             connected_nodes
                 .into_iter()
-                .map(|(new_node, edge_weight)| {
-                    let heuristic_to_dest = get_heuristic(&new_node);
+                .filter_map(|(new_node, edge_weight)| {
+                    get_heuristic(&new_node).map(move |heuristic_to_dest| {
+                        (new_node, edge_weight, heuristic_to_dest)
+                    })
+                })
+                .map(|(new_node, edge_weight, heuristic_to_dest)| {
                     let info = SearchPointInfo {
                         node_index: None,
                         src_to_pos: src_to_node + edge_weight,

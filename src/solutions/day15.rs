@@ -71,9 +71,9 @@ impl DynamicGraph<GridPos> for RiskMap {
             .collect()
     }
 
-    fn heuristic_between(&self, a: &GridPos, b: &GridPos) -> u64 {
+    fn heuristic_between(&self, a: &GridPos, b: &GridPos) -> Option<u64> {
         let min_cost_per_step = 1;
-        min_cost_per_step * (self.grid.manhattan_dist(a, b) as u64)
+        Some(min_cost_per_step * (self.grid.manhattan_dist(a, b) as u64))
     }
 }
 
