@@ -54,7 +54,7 @@ impl Expression {
             .copied()
             .map(|var| (var, var.into()))
             .collect();
-        let mut implied_constraints: Vec<Expression> = Vec::new();
+        let implied_constraints: Vec<Expression> = Vec::new();
 
         let mut to_check: VecDeque<Expression> =
             constraints.iter().cloned().collect();

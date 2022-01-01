@@ -7,7 +7,7 @@ pub struct Variable {
     pub(crate) id: usize,
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expression {
     // No expression exists that satisfies the constraints.  For
     // example, backpropagating [0,*,*,*] through the instruction `eql
@@ -158,62 +158,32 @@ impl ops::Not for Expression {
     }
 }
 
-impl ops::Add for Expression {
-    type Output = Expression;
-    fn add(self, rhs: Self) -> Self {
-        use Expression::*;
-        match (self, rhs) {
-            (Impossible, _) | (_, Impossible) => Impossible,
-            (Int(a), Int(b)) => Int(a + b),
-            (a, b) => Add(Box::new((a, b))),
+macro_rules! binary_operator_type {
+    ($op:ident, $func:ident, $variant:ident, $lhs:ty, $rhs:ty) => {
+        impl ops::$op<$rhs> for $lhs {
+            type Output = Expression;
+            fn $func(self, rhs: $rhs) -> Expression {
+                Expression::$variant(Box::new((self.into(), rhs.into())))
+            }
         }
-    }
+    };
 }
 
-impl ops::Sub for Expression {
-    type Output = Expression;
-    fn sub(self, rhs: Self) -> Self {
-        use Expression::*;
-        match (self, rhs) {
-            (Impossible, _) | (_, Impossible) => Impossible,
-            (Int(a), Int(b)) => Int(a - b),
-            (a, b) => Sub(Box::new((a, b))),
-        }
-    }
+macro_rules! binary_operator {
+    ($op:ident, $func:ident, $variant:ident) => {
+        binary_operator_type!($op, $func, $variant, Expression, Expression);
+        binary_operator_type!($op, $func, $variant, Expression, Variable);
+        binary_operator_type!($op, $func, $variant, Expression, i64);
+        binary_operator_type!($op, $func, $variant, Variable, Expression);
+        binary_operator_type!($op, $func, $variant, Variable, Variable);
+        binary_operator_type!($op, $func, $variant, Variable, i64);
+        binary_operator_type!($op, $func, $variant, i64, Expression);
+        binary_operator_type!($op, $func, $variant, i64, Variable);
+    };
 }
 
-impl ops::Mul for Expression {
-    type Output = Expression;
-    fn mul(self, rhs: Self) -> Self {
-        use Expression::*;
-        match (self, rhs) {
-            (Impossible, _) | (_, Impossible) => Impossible,
-            (Int(a), Int(b)) => Int(a * b),
-            (a, b) => Mul(Box::new((a, b))),
-        }
-    }
-}
-
-impl ops::Div for Expression {
-    type Output = Expression;
-    fn div(self, rhs: Self) -> Self {
-        use Expression::*;
-        match (self, rhs) {
-            (Impossible, _) | (_, Impossible) => Impossible,
-            (Int(a), Int(b)) => Int(a / b),
-            (a, b) => Div(Box::new((a, b))),
-        }
-    }
-}
-
-impl ops::Rem for Expression {
-    type Output = Expression;
-    fn rem(self, rhs: Self) -> Self {
-        use Expression::*;
-        match (self, rhs) {
-            (Impossible, _) | (_, Impossible) => Impossible,
-            (Int(a), Int(b)) => Int(a % b),
-            (a, b) => Mod(Box::new((a, b))),
-        }
-    }
-}
+binary_operator!(Add, add, Add);
+binary_operator!(Sub, sub, Sub);
+binary_operator!(Mul, mul, Mul);
+binary_operator!(Div, div, Div);
+binary_operator!(Rem, rem, Mod);

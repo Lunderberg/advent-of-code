@@ -55,3 +55,45 @@ impl Expression {
         })
     }
 }
+
+// struct ExpressionIterator {
+
+// }
+
+#[cfg(test)]
+mod tests {
+    use super::super::*;
+
+    #[test]
+    fn test_visit() {
+        let x: Expression = Variable::new().into();
+        let y: Expression = Variable::new().into();
+        let expr: Expression =
+            3i64 * y.clone() + x.clone().equal_value(y.clone());
+
+        // let expr: Expression = 3 * y + x.equal_value(y);
+
+        let mut visited: Vec<Expression> = Vec::new();
+
+        expr.walk(|node| {
+            visited.push(node.clone());
+            match node {
+                Expression::Equal(_) => false,
+                _ => true,
+            }
+        });
+
+        let expected = vec![
+            3i64 * y.clone() + x.clone().equal_value(y.clone()),
+            3i64 * y.clone(),
+            3i64.into(),
+            y.clone(),
+            x.clone().equal_value(y.clone()),
+        ];
+        assert_eq!(visited.len(), expected.len());
+        visited
+            .into_iter()
+            .zip(expected.into_iter())
+            .for_each(|(a, b)| assert_eq!(a, b));
+    }
+}
