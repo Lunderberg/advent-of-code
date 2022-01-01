@@ -292,83 +292,17 @@ impl ProgramValues {
         }
     }
 
-    fn apply_constraints(
-        &mut self,
-        constraints: impl Iterator<Item = Expression>,
-        verbose: bool,
-    ) {
-        let mut known_vars: HashSet<Variable> =
-            self.target_vars.iter().copied().collect();
-        let mut known_exprs: HashMap<Variable, Expression> = HashMap::new();
-
-        let mut to_check: VecDeque<Expression> = constraints.collect();
-        let mut checked_since_last_success = 0;
-
-        while to_check.len() > 0 && checked_since_last_success < to_check.len()
-        {
-            let equality = to_check.pop_front().unwrap();
-            if verbose {
-                println!(
-                    "Attempting to use constraint {}/{}: {}",
-                    checked_since_last_success,
-                    to_check.len() + 1,
-                    equality
-                );
-            }
-
-            let solved_var = equality
-                .variables()
-                .difference(&known_vars)
-                .sorted()
-                .rev()
-                .find_map(|&var| {
-                    equality.solve_for(var).map(move |expr| (var, expr))
-                });
-
-            if let Some((var, expr)) = solved_var {
-                // Update the existing equalities and derived
-                // expressions.
-                if verbose {
-                    println!("Defining {} as {}", var, expr);
-                }
-
-                to_check = to_check
-                    .iter()
-                    .map(|prev_expr| {
-                        prev_expr.substitute(var, &expr).simplify()
-                    })
-                    .enumerate()
-                    .map(|(_i, expr)| expr)
-                    .collect();
-                known_exprs = known_exprs
-                    .into_iter()
-                    .map(|(prev_var, prev_expr)| {
-                        (prev_var, prev_expr.substitute(var, &expr).simplify())
-                    })
-                    .collect();
-
-                // Mark this variable as known
-                known_vars.insert(var);
-                known_exprs.insert(var, expr);
-
-                checked_since_last_success = 0;
-            } else {
-                // Push the equality back onto the queue, maybe it'll
-                // be easier to solve next time around.
-                if verbose {
-                    println!("Checking {} later", equality);
-                }
-                to_check.push_back(equality);
-                checked_since_last_success += 1;
-            }
-        }
+    fn apply_constraints(&mut self, constraints: Vec<Expression>) {
+        let solution =
+            Expression::solve_system(&constraints, &self.target_vars);
 
         self.states = self
             .states
             .iter()
             .map(|state| {
                 state.map(|expr| {
-                    known_exprs
+                    solution
+                        .definitions
                         .iter()
                         .fold(expr.clone(), |acc, (known_var, known_expr)| {
                             acc.substitute(*known_var, known_expr)
@@ -604,15 +538,15 @@ impl Puzzle for Day24 {
             .chain(flow.initial_state_constraints())
             //.chain(flow.forward_constraints())
             .collect();
-        flow.apply_constraints(constraints.into_iter(), false);
-        //println!("{}", flow);
+        flow.apply_constraints(constraints);
+        println!("{}", flow);
 
         let constraints: Vec<_> = flow.forward_constraints().collect();
         // constraints
         //     .iter()
         //     .for_each(|c| println!("Constraint: {}", c));
         println!("About to propagate actual constraints");
-        flow.apply_constraints(constraints.into_iter(), true);
+        flow.apply_constraints(constraints);
         println!("{}", flow);
 
         let result = ();
