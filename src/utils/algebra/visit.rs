@@ -1,5 +1,27 @@
 use super::Expression;
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum Traversal<'a> {
+    PreVisit(&'a Expression),
+    LeafVisit(&'a Expression),
+    PostVisit(&'a Expression),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum TraversalMut<'a> {
+    PreVisit(&'a mut Expression),
+    LeafVisit(&'a mut Expression),
+    PostVisit(&'a mut Expression),
+}
+
+pub struct ChildIterator<'a> {
+    children: <Vec<&'a Expression> as IntoIterator>::IntoIter,
+}
+
+pub struct ExpressionIterator<'a> {
+    stack: Vec<Traversal<'a>>,
+}
+
 impl Expression {
     // Walk through the expression tree.  For each node, execute the
     // callback.  If the callback returns true, continue recursing
@@ -57,21 +79,35 @@ impl Expression {
         })
     }
 
-    pub fn preorder_iter(&self) -> PreorderExpressionIterator {
-        PreorderExpressionIterator {
-            root: Some(self),
-            stack: Vec::new(),
+    pub fn iter(&self) -> ExpressionIterator {
+        ExpressionIterator {
+            stack: vec![self.as_traversal()],
         }
     }
-}
 
-pub struct ChildIterator<'a> {
-    children: <Vec<&'a Expression> as IntoIterator>::IntoIter,
-}
+    fn as_traversal(&self) -> Traversal<'_> {
+        if self.is_leaf() {
+            Traversal::LeafVisit(self)
+        } else {
+            Traversal::PreVisit(self)
+        }
+    }
 
-pub struct PreorderExpressionIterator<'a> {
-    root: Option<&'a Expression>,
-    stack: Vec<ChildIterator<'a>>,
+    pub fn preorder_iter(&self) -> impl Iterator<Item = &Expression> + '_ {
+        self.iter().filter_map(|node| match node {
+            Traversal::PreVisit(node) => Some(node),
+            Traversal::LeafVisit(node) => Some(node),
+            Traversal::PostVisit(_) => None,
+        })
+    }
+
+    pub fn postorder_iter(&self) -> impl Iterator<Item = &Expression> + '_ {
+        self.iter().filter_map(|node| match node {
+            Traversal::PreVisit(_) => None,
+            Traversal::LeafVisit(node) => Some(node),
+            Traversal::PostVisit(node) => Some(node),
+        })
+    }
 }
 
 impl<'a> Iterator for ChildIterator<'a> {
@@ -81,28 +117,28 @@ impl<'a> Iterator for ChildIterator<'a> {
     }
 }
 
-impl<'a> Iterator for PreorderExpressionIterator<'a> {
-    type Item = &'a Expression;
+impl<'a> DoubleEndedIterator for ChildIterator<'a> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.children.next_back()
+    }
+}
+
+impl<'a> Iterator for ExpressionIterator<'a> {
+    type Item = Traversal<'a>;
     fn next(&mut self) -> Option<Self::Item> {
-        // Root node needs to be handled separately, because it
-        // wouldn't appear as any child iterator.
-        if let Some(root) = self.root.take() {
-            self.stack.push(root.children());
-            return Some(root);
+        use Traversal::*;
+
+        let res = self.stack.pop();
+
+        if let Some(PreVisit(node)) = res {
+            self.stack.push(PostVisit(node));
+            node.children()
+                .rev()
+                .map(|child| child.as_traversal())
+                .for_each(|visit| self.stack.push(visit));
         }
 
-        // Pop items off the stack until one of them gives us another
-        // node.
-        while self.stack.len() > 0 {
-            let mut iter = self.stack.pop().unwrap();
-            let next = iter.next();
-            if let Some(item) = next {
-                self.stack.push(iter);
-                self.stack.push(item.children());
-                return Some(item);
-            }
-        }
-        None
+        res
     }
 }
 
@@ -161,5 +197,63 @@ mod tests {
             .into_iter()
             .zip(expected.into_iter())
             .for_each(|(a, b)| assert_eq!(a, &b));
+    }
+
+    #[test]
+    fn test_postorder_iter() {
+        let x: Expression = Variable::new().into();
+        let y: Expression = Variable::new().into();
+        let expr: Expression = 3i64 * y.clone() + x.clone();
+
+        let visited: Vec<_> = expr.postorder_iter().collect();
+
+        let expected = vec![
+            3i64.into(),
+            y.clone(),
+            3i64 * y.clone(),
+            x.clone(),
+            3i64 * y.clone() + x.clone(),
+        ];
+        println!("Visited: {:?}", visited);
+        println!("Expected: {:?}", expected);
+        assert_eq!(visited.len(), expected.len());
+        visited
+            .into_iter()
+            .zip(expected.into_iter())
+            .for_each(|(a, b)| assert_eq!(a, &b));
+    }
+
+    #[test]
+    fn test_iter() {
+        let x: Expression = Variable::new().into();
+        let y: Expression = Variable::new().into();
+        let expr: Expression = 3i64 * y.clone() + x.clone();
+
+        let visited: Vec<_> = expr.iter().collect();
+
+        use super::Traversal::*;
+
+        let nodes = vec![
+            3i64 * y.clone() + x.clone(),
+            3i64 * y.clone(),
+            3i64.into(),
+            y.clone(),
+            x.clone(),
+        ];
+
+        let expected = vec![
+            PreVisit(&nodes[0]),
+            PreVisit(&nodes[1]),
+            LeafVisit(&nodes[2]),
+            LeafVisit(&nodes[3]),
+            PostVisit(&nodes[1]),
+            LeafVisit(&nodes[4]),
+            PostVisit(&nodes[0]),
+        ];
+        assert_eq!(visited.len(), expected.len());
+        visited
+            .into_iter()
+            .zip(expected.into_iter())
+            .for_each(|(a, b)| assert_eq!(a, b));
     }
 }
