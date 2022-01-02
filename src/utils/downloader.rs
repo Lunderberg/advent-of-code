@@ -121,7 +121,9 @@ impl Downloader {
         .from_utf8()
         .from_file(path)?;
 
-        Ok(RcDomWalker::new(dom.document)
+        Ok(dom
+            .document
+            .walk()
             .filter(|handle| match handle.data {
                 NodeData::Element { ref name, .. } => {
                     name.local.to_string() == "pre"
@@ -129,7 +131,8 @@ impl Downloader {
                 _ => false,
             })
             .map(|handle| {
-                RcDomWalker::new(handle)
+                handle
+                    .walk()
                     .filter_map(|handle| match &handle.data {
                         NodeData::Text { contents } => {
                             Some(contents.borrow().to_string())
@@ -172,6 +175,16 @@ impl Downloader {
         }
 
         Ok(path)
+    }
+}
+
+trait GraphWalker {
+    fn walk(&self) -> RcDomWalker;
+}
+
+impl GraphWalker for Handle {
+    fn walk(&self) -> RcDomWalker {
+        RcDomWalker::new(self.clone())
     }
 }
 
