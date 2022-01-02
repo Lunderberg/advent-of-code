@@ -325,20 +325,6 @@ fn active_segments(digit: u8) -> Result<impl Iterator<Item = Segment>, Error> {
         .into_iter())
 }
 
-impl Day08 {
-    fn get_light_sequences(&self) -> Result<Vec<LightSequence>, Error> {
-        // let puzzle_input = self
-        //     .puzzle_input(PuzzleInput::Example(1))?
-        //     .replace("\n", "");
-        // let puzzle_input = self
-        //     .puzzle_input(PuzzleInput::Example(2))?
-        //     .replace("|\n", "|");
-        let puzzle_input = self.puzzle_input(PuzzleInput::User)?;
-
-        puzzle_input.lines().map(|s| s.parse()).collect()
-    }
-}
-
 impl Puzzle for Day08 {
     const DAY: u8 = 8;
     const IMPLEMENTED: bool = true;
