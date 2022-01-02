@@ -3,7 +3,7 @@
 use std::collections::VecDeque;
 
 use crate::utils::Error;
-use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
+use crate::utils::Puzzle;
 
 use itertools::Itertools;
 

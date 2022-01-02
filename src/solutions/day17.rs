@@ -1,7 +1,7 @@
 #![allow(unused_imports)]
 use crate::utils::extensions::*;
 use crate::utils::Error;
-use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
+use crate::utils::Puzzle;
 
 use core::ops::RangeInclusive;
 use std::str::FromStr;

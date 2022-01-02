@@ -21,3 +21,6 @@ pub mod extensions;
 pub mod geometry;
 
 pub mod graph;
+
+mod downloader;
+pub use downloader::{DownloadSource, Downloader};

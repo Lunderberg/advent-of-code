@@ -1,7 +1,7 @@
 #![allow(unused_imports)]
 use crate::utils::Error;
 use crate::utils::{Adjacency, GridMap, GridPos};
-use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
+use crate::utils::Puzzle;
 
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};

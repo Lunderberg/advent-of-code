@@ -2,7 +2,7 @@
 use crate::utils::graph::DynamicGraph;
 use crate::utils::Adjacency;
 use crate::utils::Error;
-use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
+use crate::utils::Puzzle;
 
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};

@@ -29,6 +29,8 @@ fn main() -> Result<(), Error> {
         PuzzleInputSource::User
     };
 
+    let mut downloader = utils::Downloader::new()?;
+
     let mut runners: Vec<Box<dyn PuzzleRunner>> = days
         .into_iter()
         .map(|day| {
@@ -39,9 +41,9 @@ fn main() -> Result<(), Error> {
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    runners
-        .iter_mut()
-        .try_for_each(|runner| runner.parse_inputs(input_source))?;
+    runners.iter_mut().try_for_each(|runner| {
+        runner.parse_inputs(&mut downloader, input_source)
+    })?;
 
     runners
         .iter()

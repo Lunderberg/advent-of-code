@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 use crate::utils::Error;
-use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
+use crate::utils::Puzzle;
 
 use crate::utils::{Adjacency, GridMap};
 

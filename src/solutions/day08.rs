@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 use crate::utils::Error;
-use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
+use crate::utils::Puzzle;
 
 use std::collections::{HashMap, HashSet};
 use std::convert::{TryFrom, TryInto};

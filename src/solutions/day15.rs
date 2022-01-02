@@ -2,7 +2,7 @@
 use crate::utils::graph::DynamicGraph;
 use crate::utils::Error;
 use crate::utils::{Adjacency, GridMap, GridPos};
-use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
+use crate::utils::Puzzle;
 
 use priority_queue::PriorityQueue;
 use std::cmp::Reverse;

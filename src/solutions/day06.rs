@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use itertools::Itertools;
 
 use crate::utils::Error;
-use crate::utils::{Puzzle, PuzzleExtensions, PuzzleInput};
+use crate::utils::Puzzle;
 
 pub struct Day06;
 
