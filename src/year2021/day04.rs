@@ -2,8 +2,7 @@
 
 use std::collections::VecDeque;
 
-use crate::utils::Error;
-use crate::utils::Puzzle;
+use crate::{Puzzle,Error};
 
 use itertools::Itertools;
 

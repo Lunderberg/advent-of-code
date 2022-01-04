@@ -1,4 +1,4 @@
-use crate::utils::Error;
+use crate::Error;
 
 use std::ops;
 use std::str::FromStr;

@@ -3,8 +3,7 @@ use std::collections::VecDeque;
 
 use itertools::Itertools;
 
-use crate::utils::Error;
-use crate::utils::Puzzle;
+use crate::{Puzzle,Error};
 
 pub struct Day06;
 

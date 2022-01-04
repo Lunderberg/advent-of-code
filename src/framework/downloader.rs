@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use itertools::Itertools;
 
-use crate::utils::Error;
+use crate::Error;
 
 use html5ever::tendril::TendrilSink;
 use markup5ever_rcdom::{Handle, NodeData};

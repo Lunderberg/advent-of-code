@@ -1,4 +1,5 @@
-use crate::utils::{DownloadSource, Downloader, Error};
+use super::{DownloadSource, Downloader};
+use crate::Error;
 
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
@@ -139,9 +140,4 @@ pub trait Puzzle {
 
     type Part2Result: std::fmt::Debug;
     fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error>;
-}
-
-pub enum PuzzleInput {
-    User,
-    Example(i32),
 }

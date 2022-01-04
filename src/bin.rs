@@ -1,7 +1,9 @@
 use structopt::StructOpt;
 
-use aoc2021::utils;
-use aoc2021::utils::{Error, PuzzleInputSource, PuzzlePart, PuzzleRunner};
+use aoc::{
+    framework::{Downloader, PuzzleInputSource, PuzzlePart, PuzzleRunner},
+    Error,
+};
 
 #[derive(Debug, StructOpt)]
 struct Options {
@@ -16,7 +18,7 @@ fn main() -> Result<(), Error> {
     let opt = Options::from_args();
 
     let days: Vec<_> = opt.days.unwrap_or_else(|| {
-        utils::iter_solutions()
+        aoc::year2021::iter_solutions()
             .last()
             .iter()
             .map(|p| p.day())
@@ -29,12 +31,12 @@ fn main() -> Result<(), Error> {
         PuzzleInputSource::User
     };
 
-    let mut downloader = utils::Downloader::new()?;
+    let mut downloader = Downloader::new()?;
 
     let mut runners: Vec<Box<dyn PuzzleRunner>> = days
         .into_iter()
         .map(|day| {
-            utils::iter_solutions()
+            aoc::year2021::iter_solutions()
                 .filter(|p| p.day() == day)
                 .next()
                 .ok_or(Error::NoneError)

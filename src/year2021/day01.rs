@@ -1,6 +1,5 @@
 #![allow(unused_imports)]
-use crate::utils::Error;
-use crate::utils::Puzzle;
+use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 

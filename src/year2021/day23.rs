@@ -1,8 +1,7 @@
 #![allow(unused_imports)]
 use crate::utils::graph::DynamicGraph;
 use crate::utils::Adjacency;
-use crate::utils::Error;
-use crate::utils::Puzzle;
+use crate::{Puzzle,Error};
 
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};

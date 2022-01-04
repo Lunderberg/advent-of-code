@@ -1,6 +1,5 @@
 #![allow(unused_imports)]
-use crate::utils::Error;
-use crate::utils::Puzzle;
+use crate::{Puzzle,Error};
 
 use std::cmp::Reverse;
 use std::collections::HashMap;

@@ -1,7 +1,6 @@
 #![allow(unused_imports)]
-use crate::utils::Error;
 use crate::utils::GridMap;
-use crate::utils::Puzzle;
+use crate::{Error, Puzzle};
 
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
