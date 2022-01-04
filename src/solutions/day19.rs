@@ -2,7 +2,7 @@
 use crate::utils::Error;
 use crate::utils::Puzzle;
 
-use crate::utils::geometry::{Mat3, Vector3};
+use crate::utils::geometry::{Matrix, Vector};
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -12,13 +12,13 @@ pub struct Day19;
 
 #[derive(Debug, Clone)]
 pub struct Scanner {
-    beacons: Vec<Vector3>,
+    beacons: Vec<Vector<3>>,
 }
 
 #[derive(Debug)]
 struct ScannerSet {
-    beacons: Vec<Vector3>,
-    scanners: Vec<Vector3>,
+    beacons: Vec<Vector<3>>,
+    scanners: Vec<Vector<3>>,
 }
 
 impl Scanner {
@@ -30,7 +30,7 @@ impl Scanner {
         let beacons = lines
             .by_ref()
             .take_while(|line| line.len() > 0)
-            .map(|line| line.parse::<Vector3>())
+            .map(|line| line.parse::<Vector<3>>())
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(Self { beacons })
@@ -40,7 +40,7 @@ impl Scanner {
 impl ScannerSet {
     fn new(scanner: &Scanner) -> Self {
         let beacons = scanner.beacons.clone();
-        let scanners = vec![Vector3::new([0, 0, 0])];
+        let scanners = vec![Vector::<3>::new([0, 0, 0])];
         Self { beacons, scanners }
     }
 
@@ -48,7 +48,7 @@ impl ScannerSet {
     // an offset in (x,y,z) space.  The assignment of coordinates
     // and the signs are uncertain, so the .abs() and sorting
     // produce a consistent key.
-    fn relative_key(a: &Vector3, b: &Vector3) -> [i64; 3] {
+    fn relative_key(a: &Vector<3>, b: &Vector<3>) -> [i64; 3] {
         let mut output = [0; 3];
 
         (*a - *b)
@@ -65,7 +65,7 @@ impl ScannerSet {
 
     // Generator of all combinations between observed beacons.
     fn beacon_offsets<'a>(
-        beacons: &'a Vec<Vector3>,
+        beacons: &'a Vec<Vector<3>>,
     ) -> impl Iterator<Item = ([i64; 3], HashSet<usize>)> + 'a {
         beacons.iter().enumerate().tuple_combinations().map(
             |((ia, a), (ib, b))| {
@@ -75,8 +75,8 @@ impl ScannerSet {
     }
 
     fn identify_shared_observations(
-        observed_a: &Vec<Vector3>,
-        observed_b: &Vec<Vector3>,
+        observed_a: &Vec<Vector<3>>,
+        observed_b: &Vec<Vector<3>>,
     ) -> Result<HashMap<usize, usize>, Error> {
         // Make a lookup map from the (a,b,c) offset array into the
         // pair of other.beacons indices that generates that offset.
@@ -122,9 +122,9 @@ impl ScannerSet {
     }
 
     fn locate_coordinate_system(
-        self_beacons: &Vec<Vector3>,
-        other_beacons: &Vec<Vector3>,
-    ) -> Result<(Mat3, Vector3), Error> {
+        self_beacons: &Vec<Vector<3>>,
+        other_beacons: &Vec<Vector<3>>,
+    ) -> Result<(Matrix<3, 3>, Vector<3>), Error> {
         let mapping = ScannerSet::identify_shared_observations(
             self_beacons,
             other_beacons,
@@ -150,7 +150,7 @@ impl ScannerSet {
             .map(|(self_diff, other_diff)| (self_diff, other_diff))
             .collect();
 
-        let rotation_matrix = Mat3::iter_90degrees()
+        let rotation_matrix = Matrix::<3, 3>::iter_90degrees()
             .filter(|mat| {
                 offset_pairs.iter().all(|(self_offset, other_offset)| {
                     *self_offset == *mat * *other_offset
