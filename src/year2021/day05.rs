@@ -1,7 +1,7 @@
 #![allow(unused_imports)]
 use regex::Regex;
 
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
@@ -42,6 +42,7 @@ impl VentLine {
 impl Day05 {}
 
 impl Puzzle for Day05 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 5;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;

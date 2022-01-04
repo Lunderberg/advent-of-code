@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
@@ -484,6 +484,7 @@ impl TraversalState {
 }
 
 impl Puzzle for Day12 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 12;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;

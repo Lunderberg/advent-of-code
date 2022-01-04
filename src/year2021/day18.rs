@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use std::borrow::BorrowMut;
 use std::fmt::{Debug, Formatter};
@@ -285,6 +285,7 @@ impl Snailfish {
 }
 
 impl Puzzle for Day18 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 18;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 7;

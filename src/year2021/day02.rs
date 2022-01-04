@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
@@ -81,6 +81,7 @@ fn final_position_part2(commands: &Vec<Command>) -> SubmarineState {
 pub struct Day02;
 
 impl Puzzle for Day02 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 2;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;

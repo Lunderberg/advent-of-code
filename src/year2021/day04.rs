@@ -2,7 +2,7 @@
 
 use std::collections::VecDeque;
 
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
@@ -155,6 +155,7 @@ impl BingoGame {
 }
 
 impl Puzzle for Day04 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 4;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;

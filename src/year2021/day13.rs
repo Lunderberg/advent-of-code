@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
@@ -87,6 +87,7 @@ impl Transparency {
 }
 
 impl Puzzle for Day13 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 13;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 1;

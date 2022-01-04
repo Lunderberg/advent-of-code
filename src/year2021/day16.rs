@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 use crate::utils::extensions::*;
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
@@ -219,6 +219,7 @@ impl Length {
 }
 
 impl Puzzle for Day16 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 16;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 1;

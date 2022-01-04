@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use crate::utils::{Adjacency, GridMap};
 
@@ -112,6 +112,7 @@ impl Image {
 }
 
 impl Puzzle for Day20 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 20;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 5;

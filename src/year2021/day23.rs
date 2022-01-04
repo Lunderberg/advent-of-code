@@ -1,7 +1,7 @@
 #![allow(unused_imports)]
 use crate::utils::graph::DynamicGraph;
 use crate::utils::Adjacency;
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
@@ -644,6 +644,7 @@ impl From<AmphipodLayout> for AmphipodDiagram {
 }
 
 impl Puzzle for Day23 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 23;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;

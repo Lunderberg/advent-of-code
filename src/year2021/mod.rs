@@ -26,8 +26,8 @@ mod day25;
 
 use crate::framework::{PuzzleRunner, PuzzleRunnerImpl};
 
-pub fn iter_solutions() -> impl Iterator<Item = Box<dyn PuzzleRunner>> {
-    let puzzles: Vec<Box<dyn PuzzleRunner>> = vec![
+pub fn solutions() -> Vec<Box<dyn PuzzleRunner>> {
+    vec![
         PuzzleRunnerImpl::<day01::Day01>::new(),
         PuzzleRunnerImpl::<day02::Day02>::new(),
         PuzzleRunnerImpl::<day03::Day03>::new(),
@@ -53,7 +53,5 @@ pub fn iter_solutions() -> impl Iterator<Item = Box<dyn PuzzleRunner>> {
         PuzzleRunnerImpl::<day23::Day23>::new(),
         PuzzleRunnerImpl::<day24::Day24>::new(),
         PuzzleRunnerImpl::<day25::Day25>::new(),
-    ];
-
-    puzzles.into_iter().filter(|p| p.implemented())
+    ]
 }

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use std::collections::{HashMap, HashSet};
 use std::convert::{TryFrom, TryInto};
@@ -325,6 +325,7 @@ fn active_segments(digit: u8) -> Result<impl Iterator<Item = Segment>, Error> {
 }
 
 impl Puzzle for Day08 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 8;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 1;

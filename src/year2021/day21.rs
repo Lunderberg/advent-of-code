@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use std::cmp::Reverse;
 use std::collections::HashMap;
@@ -160,6 +160,7 @@ impl PlayerState {
 }
 
 impl Puzzle for Day21 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 21;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;

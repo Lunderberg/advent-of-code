@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 use crate::utils::extensions::*;
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use core::ops::RangeInclusive;
 use std::str::FromStr;
@@ -157,6 +157,7 @@ impl FromStr for Target {
 }
 
 impl Puzzle for Day17 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 17;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;

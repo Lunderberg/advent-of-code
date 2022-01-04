@@ -40,6 +40,7 @@ pub enum PuzzleInputSource {
 }
 
 pub trait PuzzleRunner {
+    fn year(&self) -> u32;
     fn day(&self) -> u8;
     fn implemented(&self) -> bool;
 
@@ -80,6 +81,10 @@ impl<T> PuzzleRunner for PuzzleRunnerImpl<T>
 where
     T: Puzzle,
 {
+    fn year(&self) -> u32 {
+        T::YEAR
+    }
+
     fn day(&self) -> u8 {
         T::DAY
     }
@@ -126,6 +131,7 @@ where
 }
 
 pub trait Puzzle {
+    const YEAR: u32;
     const DAY: u8;
     const IMPLEMENTED: bool;
     const EXAMPLE_NUM: u8;

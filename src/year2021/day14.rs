@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
@@ -78,6 +78,7 @@ impl Polymer {
 }
 
 impl Puzzle for Day14 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 14;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;

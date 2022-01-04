@@ -145,6 +145,7 @@ impl Display for Tile {
 }
 
 impl Puzzle for Day25 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 25;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;

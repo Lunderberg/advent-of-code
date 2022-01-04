@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use crate::utils::geometry::{Matrix, Vector};
 
@@ -228,6 +228,7 @@ impl ScannerSet {
 }
 
 impl Puzzle for Day19 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 19;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 5;

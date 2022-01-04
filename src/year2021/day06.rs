@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 
 use itertools::Itertools;
 
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 pub struct Day06;
 
@@ -17,6 +17,7 @@ impl Day06 {
 }
 
 impl Puzzle for Day06 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 6;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;

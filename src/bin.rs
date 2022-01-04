@@ -7,7 +7,10 @@ use aoc::{
 
 #[derive(Debug, StructOpt)]
 struct Options {
-    #[structopt(short = "d", long = "days")]
+    #[structopt(short = "y", long = "year")]
+    year: Option<u32>,
+
+    #[structopt(short = "d", long = "day")]
     days: Option<Vec<u8>>,
 
     #[structopt(short = "e", long = "example-input")]
@@ -15,15 +18,36 @@ struct Options {
 }
 
 fn main() -> Result<(), Error> {
+    let runners: Vec<Box<dyn PuzzleRunner>> = aoc::year2021::solutions();
+
     let opt = Options::from_args();
 
-    let days: Vec<_> = opt.days.unwrap_or_else(|| {
-        aoc::year2021::iter_solutions()
-            .last()
+    let year = opt.year.unwrap_or_else(|| {
+        runners
             .iter()
-            .map(|p| p.day())
-            .collect()
+            .filter(|runner| runner.implemented())
+            .map(|runner| runner.year())
+            .max()
+            .unwrap()
     });
+
+    let days: Vec<_> = opt.days.unwrap_or_else(|| {
+        vec![runners
+            .iter()
+            .filter(|runner| runner.implemented() && runner.year() == year)
+            .map(|runner| runner.day())
+            .max()
+            .unwrap()]
+    });
+
+    let mut active_runners: Vec<_> = runners
+        .into_iter()
+        .filter(|runner| {
+            runner.implemented()
+                && runner.year() == year
+                && days.contains(&runner.day())
+        })
+        .collect();
 
     let input_source = if opt.use_example_input {
         PuzzleInputSource::Example
@@ -33,21 +57,11 @@ fn main() -> Result<(), Error> {
 
     let mut downloader = Downloader::new()?;
 
-    let mut runners: Vec<Box<dyn PuzzleRunner>> = days
-        .into_iter()
-        .map(|day| {
-            aoc::year2021::iter_solutions()
-                .filter(|p| p.day() == day)
-                .next()
-                .ok_or(Error::NoneError)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    runners.iter_mut().try_for_each(|runner| {
+    active_runners.iter_mut().try_for_each(|runner| {
         runner.parse_inputs(&mut downloader, input_source)
     })?;
 
-    runners
+    active_runners
         .iter()
         .flat_map(|runner| PuzzlePart::iter().map(move |part| (runner, part)))
         .map(|(runner, puzzle_part)| {

@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
@@ -8,6 +8,7 @@ pub struct Day07;
 impl Day07 {}
 
 impl Puzzle for Day07 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 7;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;

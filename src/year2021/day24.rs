@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 use crate::utils::graph::DynamicGraph;
-use crate::{Puzzle,Error};
+use crate::{Error, Puzzle};
 
 use std::collections::{HashMap, VecDeque};
 use std::convert::{TryFrom, TryInto};
@@ -462,6 +462,7 @@ impl FromStr for MemoryLocation {
 }
 
 impl Puzzle for Day24 {
+    const YEAR: u32 = 2021;
     const DAY: u8 = 24;
     const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 2;
