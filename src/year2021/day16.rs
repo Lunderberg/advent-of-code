@@ -101,9 +101,7 @@ impl Literal {
             .by_ref()
             .tuples()
             .take_while_inclusive(|(b, _, _, _, _)| *b)
-            .flat_map(|(_, a, b, c, d)| {
-                core::array::IntoIter::new([a, b, c, d])
-            })
+            .flat_map(|(_, a, b, c, d)| IntoIterator::into_iter([a, b, c, d]))
             .collect_bits();
         Ok(Self { value })
     }
