@@ -4,8 +4,6 @@ use crate::Error;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-const YEAR: u32 = 2021;
-
 #[derive(Debug, Clone, Copy)]
 pub enum PuzzlePart {
     Part1,
@@ -105,7 +103,7 @@ where
             }
         };
         let line_iter =
-            downloader.puzzle_input(YEAR, T::DAY as u32, download_source)?;
+            downloader.puzzle_input(T::YEAR, T::DAY as u32, download_source)?;
         let parsed_input = T::parse_input(line_iter)?;
 
         self.input_cache.insert(input_source, parsed_input);
