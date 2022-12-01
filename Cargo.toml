@@ -27,3 +27,9 @@ num = "*"
 
 html5ever = "*"
 markup5ever_rcdom = "*"
+
+[build-dependencies]
+proc-macro2 = "*"
+quote = "*"
+prettyplease = "*"
+syn = "*"
