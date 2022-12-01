@@ -37,7 +37,8 @@ impl Downloader {
             .quantum(1)
             .interval(std::time::Duration::new(5, 0))
             .build();
-        let aoc_session_id = std::env::var("AOC_SESSION_ID")?;
+        let aoc_session_id = std::env::var("AOC_SESSION_ID")
+            .map_err(|_| Error::MissingAdventOfCodeSessionId)?;
         Ok(Downloader {
             rate_limiter,
             aoc_session_id,
@@ -213,10 +214,7 @@ impl Iterator for RcDomWalker {
 
         while !self.stack.is_empty() {
             let (parent, index) = self.stack.last_mut().unwrap();
-            let child = parent
-                .children
-                .borrow()
-                .get(*index).cloned();
+            let child = parent.children.borrow().get(*index).cloned();
 
             if let Some(child) = child {
                 *index += 1;

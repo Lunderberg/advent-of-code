@@ -5,6 +5,7 @@ pub enum Error {
     // Used by framework
     NoCachedInputAvailable,
     ExampleBlockNotFound(u8),
+    MissingAdventOfCodeSessionId,
 
     // Used by puzzle solutions.
     WrongInt(std::num::ParseIntError),
