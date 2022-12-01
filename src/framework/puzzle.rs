@@ -70,7 +70,7 @@ impl<T: 'static> PuzzleRunnerImpl<T>
 where
     T: Puzzle,
 {
-    pub fn new() -> Box<dyn PuzzleRunner> {
+    pub fn new_box() -> Box<dyn PuzzleRunner> {
         Box::new(Self {
             input_cache: HashMap::new(),
         })

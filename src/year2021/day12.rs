@@ -269,7 +269,7 @@ impl CaveSystem {
     }
 
     fn topological_sort(
-        forward_edges: &Vec<Vec<usize>>,
+        forward_edges: &[Vec<usize>],
     ) -> Result<Vec<usize>, Error> {
         let forward_edges: Vec<HashSet<usize>> = forward_edges
             .iter()

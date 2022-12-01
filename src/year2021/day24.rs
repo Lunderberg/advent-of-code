@@ -30,7 +30,7 @@ struct ChecksumGraph {
     reverse_search: bool,
 }
 
-#[derive(Debug, Hash, Eq)]
+#[derive(Debug, Eq)]
 struct ChecksumState {
     rounds_completed: usize,
     most_recent_digit: i64,
@@ -41,6 +41,14 @@ impl std::cmp::PartialEq for ChecksumState {
     fn eq(&self, rhs: &Self) -> bool {
         (self.rounds_completed, self.z_value)
             == (rhs.rounds_completed, rhs.z_value)
+    }
+}
+
+impl std::hash::Hash for ChecksumState {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.rounds_completed.hash(state);
+        self.most_recent_digit.hash(state);
+        self.z_value.hash(state);
     }
 }
 
@@ -126,9 +134,9 @@ impl DynamicGraph<ChecksumState> for ChecksumGraph {
 
         if node_from == node_to {
             Some(0)
-        } else if node_from.rounds_completed >= node_to.rounds_completed {
-            None
-        } else if node_from.z_value > max_value {
+        } else if (node_from.rounds_completed >= node_to.rounds_completed)
+            || (node_from.z_value > max_value)
+        {
             None
         } else {
             let cheapest_digit = if self.reverse_search { 1 } else { 9 };

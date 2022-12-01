@@ -76,12 +76,11 @@ impl Transparency {
     }
 
     fn fold_coordinate(coordinate: i64, fold_line: i64) -> Result<i64, Error> {
-        if coordinate < fold_line {
-            Ok(coordinate)
-        } else if coordinate > fold_line {
-            Ok(fold_line - (coordinate - fold_line))
-        } else {
-            Err(Error::DotOnFoldLine)
+        use std::cmp::Ordering::*;
+        match coordinate.cmp(&fold_line) {
+            Less => Ok(coordinate),
+            Greater => Ok(fold_line - (coordinate - fold_line)),
+            Equal => Err(Error::DotOnFoldLine),
         }
     }
 }
@@ -100,8 +99,7 @@ impl Puzzle for Day13 {
             .by_ref()
             .take_while(|line| !line.is_empty())
             .map(|line| -> Result<_, Error> {
-                line
-                    .split(',')
+                line.split(',')
                     .map(|s| s.parse::<i64>())
                     .tuples()
                     .map(|(a, b)| -> Result<_, Error> { Ok((a?, b?)) })

@@ -283,13 +283,6 @@ impl<T> GridMap<T> {
             .map(move |(index, val)| (GridPos { index }, val))
     }
 
-    pub fn into_iter(self) -> impl Iterator<Item = (GridPos, T)> {
-        self.values
-            .into_iter()
-            .enumerate()
-            .map(move |(index, val)| (GridPos { index }, val))
-    }
-
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (GridPos, &mut T)> {
         self.values
             .iter_mut()
@@ -309,6 +302,31 @@ impl<T> GridMap<T> {
         let (bx, by) = b.as_xy(self);
 
         (ax - bx).abs() + (ay - by).abs()
+    }
+}
+
+pub struct GridMapIterator<T> {
+    inner: std::iter::Enumerate<std::vec::IntoIter<T>>,
+}
+
+impl<T> Iterator for GridMapIterator<T> {
+    type Item = (GridPos, T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner
+            .next()
+            .map(|(index, val)| (GridPos { index }, val))
+    }
+}
+
+impl<T> IntoIterator for GridMap<T> {
+    type Item = (GridPos, T);
+
+    type IntoIter = GridMapIterator<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let inner = self.values.into_iter().enumerate();
+        Self::IntoIter { inner }
     }
 }
 

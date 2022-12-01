@@ -161,7 +161,8 @@ impl LightSequence {
                     .collect();
                 let patterns: Vec<&HashSet<Segment>> = vec
                     .iter()
-                    .flat_map(|(_, patterns)| patterns.iter()).copied()
+                    .flat_map(|(_, patterns)| patterns.iter())
+                    .copied()
                     .collect();
                 (digits, patterns)
             })
@@ -203,7 +204,7 @@ impl LightSequence {
             .all(|vals| vals.len() == 1)
     }
 
-    fn interpret_results(&self, _segment_map: &Vec<Segment>) -> Vec<u8> {
+    fn interpret_results(&self, _segment_map: &[Segment]) -> Vec<u8> {
         let reference_digits: Vec<HashSet<Segment>> = (0..=9)
             .map(|d| Ok(active_segments(d)?.collect()))
             .collect::<Result<_, Error>>()
@@ -259,7 +260,8 @@ impl SegmentConstraints {
                         let rewired_lit =
                             lighted_segments.contains(rewired_seg);
                         *actual_lit != rewired_lit
-                    }).copied()
+                    })
+                    .copied()
                     .collect::<Vec<Segment>>()
                     .into_iter()
                     .for_each(|incorrect_option| {
@@ -348,10 +350,9 @@ impl Puzzle for Day08 {
         Ok(parsed
             .iter()
             .flat_map(|seq| {
-                seq.outputs.iter().filter(|set| match set.len() {
-                    2 | 3 | 4 | 7 => true,
-                    _ => false,
-                })
+                seq.outputs
+                    .iter()
+                    .filter(|set| matches!(set.len(), 2 | 3 | 4 | 7))
             })
             .count())
     }
@@ -453,13 +454,12 @@ where
                 .unwrap_or(0);
 
             let first_failing_pos = (first_test_required..permutation.len())
-                .filter(|&pos| {
+                .find(|&pos| {
                     let items = (0..=pos)
                         .map(|i| self.items[permutation[i]].clone())
                         .collect();
                     !(self.validity)(items)
-                })
-                .next();
+                });
 
             // If one of the tests failed, mark the location of the
             // most recent success/failure, then move on.

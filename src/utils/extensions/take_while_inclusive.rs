@@ -1,8 +1,8 @@
 pub trait TakeWhileInclusive: Iterator {
-    fn take_while_inclusive<'a, P>(
-        &'a mut self,
+    fn take_while_inclusive<P>(
+        &mut self,
         predicate: P,
-    ) -> TakeWhileInclusiveIter<'a, Self, P>
+    ) -> TakeWhileInclusiveIter<'_, Self, P>
     where
         Self: Sized,
         P: FnMut(&Self::Item) -> bool,

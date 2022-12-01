@@ -6,7 +6,7 @@ use itertools::Itertools;
 pub struct Day03;
 
 impl Day03 {
-    fn get_bit_mask(entries: &Vec<Vec<bool>>) -> Result<usize, Error> {
+    fn get_bit_mask(entries: &[Vec<bool>]) -> Result<usize, Error> {
         let num_bits = entries
             .iter()
             .map(|entry| entry.len())
@@ -16,7 +16,7 @@ impl Day03 {
     }
 
     fn filter_most_frequent(
-        entries: &Vec<Vec<bool>>,
+        entries: &[Vec<bool>],
         reverse_filter: bool,
     ) -> Result<usize, Error> {
         let mut remaining: Vec<Option<&Vec<bool>>> =

@@ -28,17 +28,14 @@ impl std::str::FromStr for Command {
     }
 }
 
-#[derive(Debug)]
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct SubmarineState {
     forward_pos: i64,
     depth: i64,
     aim: i64,
 }
 
-
-
-fn final_position_part1(commands: &Vec<Command>) -> SubmarineState {
+fn final_position_part1(commands: &[Command]) -> SubmarineState {
     let mut pos = SubmarineState::default();
     commands.iter().for_each(|c| match c {
         Command::Up(val) => {
@@ -54,7 +51,7 @@ fn final_position_part1(commands: &Vec<Command>) -> SubmarineState {
     pos
 }
 
-fn final_position_part2(commands: &Vec<Command>) -> SubmarineState {
+fn final_position_part2(commands: &[Command]) -> SubmarineState {
     let mut pos = SubmarineState::default();
     commands.iter().for_each(|c| match c {
         Command::Up(val) => {

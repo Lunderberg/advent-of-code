@@ -32,7 +32,7 @@ enum Amphipod {
     D,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq)]
 struct AmphipodLayout {
     room_depth: usize,
     amphipods: HashMap<GraphNode, Amphipod>,
@@ -42,6 +42,12 @@ struct AmphipodLayout {
 enum GraphNode {
     Hallway { i: i64 },
     Room { i: i64, steps_in: usize },
+}
+
+impl PartialEq for AmphipodLayout {
+    fn eq(&self, other: &Self) -> bool {
+        self.room_depth == other.room_depth && self.amphipods == other.amphipods
+    }
 }
 
 impl Hash for AmphipodLayout {
@@ -536,7 +542,8 @@ impl AmphipodLayout {
                 res_acc.and_then(|mut acc| {
                     let i = AmphipodLayout::ROOM_LOCS[amph.room_num()];
                     (0..self.room_depth)
-                        .map(|steps_in| GraphNode::Room { i, steps_in }).find(|pos| !acc.contains_key(pos))
+                        .map(|steps_in| GraphNode::Room { i, steps_in })
+                        .find(|pos| !acc.contains_key(pos))
                         .ok_or(Error::TooManyAmphipodsForRoom)
                         .map(move |pos| {
                             acc.insert(pos, amph);

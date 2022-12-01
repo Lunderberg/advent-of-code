@@ -63,9 +63,9 @@ impl ScannerSet {
     }
 
     // Generator of all combinations between observed beacons.
-    fn beacon_offsets<'a>(
-        beacons: &'a Vec<Vector<3>>,
-    ) -> impl Iterator<Item = ([i64; 3], HashSet<usize>)> + 'a {
+    fn beacon_offsets(
+        beacons: &[Vector<3>],
+    ) -> impl Iterator<Item = ([i64; 3], HashSet<usize>)> + '_ {
         beacons.iter().enumerate().tuple_combinations().map(
             |((ia, a), (ib, b))| {
                 (Self::relative_key(b, a), [ia, ib].iter().copied().collect())
@@ -74,8 +74,8 @@ impl ScannerSet {
     }
 
     fn identify_shared_observations(
-        observed_a: &Vec<Vector<3>>,
-        observed_b: &Vec<Vector<3>>,
+        observed_a: &[Vector<3>],
+        observed_b: &[Vector<3>],
     ) -> Result<HashMap<usize, usize>, Error> {
         // Make a lookup map from the (a,b,c) offset array into the
         // pair of other.beacons indices that generates that offset.
@@ -121,8 +121,8 @@ impl ScannerSet {
     }
 
     fn locate_coordinate_system(
-        self_beacons: &Vec<Vector<3>>,
-        other_beacons: &Vec<Vector<3>>,
+        self_beacons: &[Vector<3>],
+        other_beacons: &[Vector<3>],
     ) -> Result<(Matrix<3, 3>, Vector<3>), Error> {
         let mapping = ScannerSet::identify_shared_observations(
             self_beacons,
