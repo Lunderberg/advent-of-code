@@ -18,7 +18,10 @@ struct Options {
 }
 
 fn main() -> Result<(), Error> {
-    let runners: Vec<Box<dyn PuzzleRunner>> = aoc::year2021::solutions();
+    let runners: Vec<Box<dyn PuzzleRunner>> = std::iter::empty()
+        .chain(aoc::year2021::solutions())
+        .chain(aoc::year2022::solutions())
+        .collect();
 
     let opt = Options::from_args();
 
