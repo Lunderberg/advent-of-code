@@ -243,16 +243,16 @@ impl Program {
                                 .ok_or(Error::InsufficientInputValues)?;
                         }
                         Add(var, arg) => {
-                            state[*var] = state[*var] + state._get_arg(arg);
+                            state[*var] += state._get_arg(arg);
                         }
                         Mul(var, arg) => {
-                            state[*var] = state[*var] * state._get_arg(arg);
+                            state[*var] *= state._get_arg(arg);
                         }
                         Div(var, arg) => {
-                            state[*var] = state[*var] / state._get_arg(arg);
+                            state[*var] /= state._get_arg(arg);
                         }
                         Mod(var, arg) => {
-                            state[*var] = state[*var] % state._get_arg(arg);
+                            state[*var] %= state._get_arg(arg);
                         }
                         Equal(var, arg) => {
                             state[*var] =
@@ -436,10 +436,10 @@ impl FromStr for Argument {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Error> {
         s.parse::<MemoryLocation>()
-            .map(|var| Argument::MemLoc(var))
+            .map(Argument::MemLoc)
             .or_else(|_| {
                 s.parse::<i64>()
-                    .map(|val| Argument::Int(val))
+                    .map(Argument::Int)
                     .map_err(|_| Error::InvalidString(s.to_string()))
             })
     }

@@ -28,7 +28,7 @@ impl Scanner {
 
         let beacons = lines
             .by_ref()
-            .take_while(|line| line.len() > 0)
+            .take_while(|line| !line.is_empty())
             .map(|line| line.parse::<Vector<3>>())
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -178,7 +178,7 @@ impl ScannerSet {
             .beacons
             .iter()
             .map(|other_obs| location + rotation_matrix * *other_obs)
-            .chain(self.beacons.iter().copied().map(|val| val))
+            .chain(self.beacons.iter().copied())
             .unique()
             .collect();
 
@@ -200,10 +200,10 @@ impl ScannerSet {
 
         let mut state = Self::new(queue.pop_front().unwrap());
 
-        while queue.len() > 0 {
+        while !queue.is_empty() {
             let scanner = queue.pop_front().unwrap();
 
-            let res = state.merge_observations(&scanner);
+            let res = state.merge_observations(scanner);
 
             match res {
                 Ok(merged) => {

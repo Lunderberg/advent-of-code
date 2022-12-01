@@ -123,7 +123,7 @@ impl Puzzle for Day20 {
     ) -> Result<Self::ParsedInput, Error> {
         let enhancement = lines
             .by_ref()
-            .take_while(|line| line.len() > 0)
+            .take_while(|line| !line.is_empty())
             .flat_map(|line| line.chars())
             .map(|c| c.to_string().parse::<Pixel>())
             .collect::<Result<_, _>>()?;

@@ -37,12 +37,12 @@ impl HeightMap {
 
         let mut output: Vec<GridPos> = Vec::new();
 
-        while search_stack.len() > 0 {
+        while !search_stack.is_empty() {
             let point = search_stack.pop().unwrap();
             if self.map[point] != 9 {
                 output.push(point);
                 self.adjacent_points(point)
-                    .filter(|adj| !touched.contains(&adj))
+                    .filter(|adj| !touched.contains(adj))
                     .collect::<Vec<_>>()
                     .iter()
                     .for_each(|adj| {

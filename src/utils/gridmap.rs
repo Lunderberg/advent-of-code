@@ -76,7 +76,7 @@ impl InputGridPos {
                     && *y >= 0
                     && *x < (map.x_size as i64)
                     && *y < (map.y_size as i64);
-                coordinates_valid.then(|| GridPos {
+                coordinates_valid.then_some(GridPos {
                     index: (*y as usize) * map.x_size + (*x as usize),
                 })
             }
@@ -147,7 +147,7 @@ impl<T> FromIterator<(usize, usize, T)> for GridMap<T> {
             .sorted_by_key(|(pos, _val)| *pos)
             .enumerate()
             .map(|(i, (pos, val))| {
-                (i == pos).then(|| val).ok_or_else(|| {
+                (i == pos).then_some(val).ok_or({
                     if i < pos {
                         GridMapError::MissingValue
                     } else {
@@ -217,7 +217,7 @@ where
             .into_iter()
             .try_for_each(|mut chunk| -> Result<_, std::fmt::Error> {
                 chunk.try_for_each(|val| write!(f, "{}", val))?;
-                write!(f, "\n")?;
+                writeln!(f)?;
                 Ok(())
             })?;
         Ok(())
@@ -254,8 +254,7 @@ impl<T> GridMap<T> {
     {
         let pos = pos.into();
         self.adjacent_points_internal(pos, adj)
-            .map(|(adj_pos, _xy)| adj_pos)
-            .flatten()
+            .filter_map(|(adj_pos, _xy)| adj_pos)
     }
 
     pub fn adjacent_values_default<P>(

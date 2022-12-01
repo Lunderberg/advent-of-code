@@ -250,15 +250,13 @@ impl Snailfish {
             .filter(|(i_target, _val)| *i_target < leaves.len())
             .collect::<Vec<_>>();
 
-        let explode_performed = append_steps.len() > 0;
+        let explode_performed = !append_steps.is_empty();
 
         append_steps.into_iter().for_each(|(i_target, val)| {
             *leaves[i_target].snailfish.as_mut_value().unwrap() += val;
         });
 
-        self.iter_mut(|view| view.snailfish.is_leaf_pair())
-            .filter(|view| view.depth >= 4)
-            .next()
+        self.iter_mut(|view| view.snailfish.is_leaf_pair()).find(|view| view.depth >= 4)
             .iter_mut()
             .for_each(|view| {
                 *view.snailfish = 0.into();
@@ -269,9 +267,7 @@ impl Snailfish {
 
     fn split_step(&mut self) -> bool {
         let mut to_split = self
-            .iter_mut(|view| view.snailfish.is_value())
-            .filter(|view| view.snailfish.as_value().unwrap() >= 10)
-            .next();
+            .iter_mut(|view| view.snailfish.is_value()).find(|view| view.snailfish.as_value().unwrap() >= 10);
 
         to_split.iter_mut().for_each(|view| {
             let val = view.snailfish.as_value().unwrap();

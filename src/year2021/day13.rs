@@ -22,7 +22,7 @@ pub enum FoldInstruction {
 impl std::str::FromStr for FoldInstruction {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.split("=")
+        s.split('=')
             .tuples()
             .map(|(a, b)| {
                 let fold_pos = b.parse::<i64>()?;
@@ -51,7 +51,7 @@ impl Display for Transparency {
                 };
                 write!(f, "{}", c)?;
                 if x == x_max {
-                    write!(f, "\n")?;
+                    writeln!(f)?;
                 }
                 Ok(())
             })
@@ -98,14 +98,14 @@ impl Puzzle for Day13 {
     ) -> Result<Self::ParsedInput, Error> {
         let dots = lines
             .by_ref()
-            .take_while(|line| line.len() > 0)
+            .take_while(|line| !line.is_empty())
             .map(|line| -> Result<_, Error> {
-                Ok(line
+                line
                     .split(',')
                     .map(|s| s.parse::<i64>())
                     .tuples()
                     .map(|(a, b)| -> Result<_, Error> { Ok((a?, b?)) })
-                    .exactly_one()??)
+                    .exactly_one()?
             })
             .collect::<Result<_, _>>()?;
 

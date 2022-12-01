@@ -67,9 +67,7 @@ impl Polymer {
                 vec![(*a, *counts), (*b, *counts)].into_iter()
             })
             .chain(vec![(self.first, 1), (self.last, 1)].into_iter())
-            .into_group_map()
-            .into_iter()
-            .map(|(_element, counts)| counts.iter().sum::<usize>() / 2)
+            .into_group_map().into_values().map(|counts| counts.iter().sum::<usize>() / 2)
             .minmax()
             .into_option()
             .map(|(min, max)| max - min)
@@ -89,14 +87,14 @@ impl Puzzle for Day14 {
     ) -> Result<Self::ParsedInput, Error> {
         let polymer = lines
             .by_ref()
-            .take_while(|line| line.len() > 0)
+            .take_while(|line| !line.is_empty())
             .map(|line| line.parse::<Polymer>())
             .exactly_one()??;
 
         let rules = InsertionRules {
             rules: lines
                 .map(|line| -> Result<_, Error> {
-                    Ok(line
+                    line
                         .split(" -> ")
                         .tuples()
                         .map(|(before, after)| -> Result<_, Error> {
@@ -107,7 +105,7 @@ impl Puzzle for Day14 {
                             let insertion = after.chars().exactly_one()?;
                             Ok((initial, insertion))
                         })
-                        .exactly_one()??)
+                        .exactly_one()?
                 })
                 .try_collect()?,
         };
@@ -121,7 +119,7 @@ impl Puzzle for Day14 {
 
         (0..10)
             .fold(polymer.clone(), |state: Polymer, _| {
-                state.apply_rules(&rules)
+                state.apply_rules(rules)
             })
             .minmax_diff()
     }
@@ -131,7 +129,7 @@ impl Puzzle for Day14 {
         let (polymer, rules) = parsed;
 
         (0..40)
-            .fold(polymer.clone(), |state, _| state.apply_rules(&rules))
+            .fold(polymer.clone(), |state, _| state.apply_rules(rules))
             .minmax_diff()
     }
 }

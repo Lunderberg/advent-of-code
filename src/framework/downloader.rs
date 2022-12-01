@@ -151,7 +151,7 @@ impl Downloader {
             ".",
             ".cache",
             &self.aoc_session_id,
-            &url.as_str().replace("/", "_"),
+            &url.as_str().replace('/', "_"),
         ]
         .iter()
         .collect();
@@ -211,13 +211,12 @@ impl Iterator for RcDomWalker {
             return Some(handle);
         }
 
-        while self.stack.len() > 0 {
+        while !self.stack.is_empty() {
             let (parent, index) = self.stack.last_mut().unwrap();
             let child = parent
                 .children
                 .borrow()
-                .get(*index)
-                .map(|child| child.clone());
+                .get(*index).cloned();
 
             if let Some(child) = child {
                 *index += 1;

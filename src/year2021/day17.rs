@@ -29,7 +29,7 @@ impl Target {
         self.yvel_range()
             .cartesian_product(self.xvel_range())
             .map(|(yvel, xvel)| Probe::new(xvel, yvel))
-            .filter(move |probe| probe.path_intersects(&self))
+            .filter(move |probe| probe.path_intersects(self))
     }
 
     fn contains(&self, x: &i64, y: &i64) -> bool {
@@ -166,7 +166,7 @@ impl Puzzle for Day17 {
     fn parse_input<'a>(
         lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error> {
-        Ok(lines.exactly_one()?.parse()?)
+        lines.exactly_one()?.parse()
     }
 
     type Part1Result = i64;

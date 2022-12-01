@@ -191,7 +191,7 @@ impl Puzzle for Day21 {
 
     type Part1Result = u64;
     fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
-        let mut state = parsed.clone();
+        let mut state = *parsed;
         state.winning_score = 1000;
 
         let mut die = DeterministicDie::new();
@@ -204,7 +204,7 @@ impl Puzzle for Day21 {
 
     type Part2Result = usize;
     fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
-        let mut state = parsed.clone();
+        let mut state = *parsed;
         state.winning_score = 21;
         let state = state.as_full_state();
 

@@ -29,7 +29,7 @@ impl Puzzle for Day07 {
     fn part_1(
         crab_pos: &Self::ParsedInput,
     ) -> Result<Self::Part1Result, Error> {
-        let (low, high) = match crab_pos.iter().map(|x| *x).minmax() {
+        let (low, high) = match crab_pos.iter().copied().minmax() {
             itertools::MinMaxResult::NoElements => Err(Error::CannotFindMinMax),
             itertools::MinMaxResult::OneElement(_) => {
                 Err(Error::CannotFindMinMax)
@@ -49,7 +49,7 @@ impl Puzzle for Day07 {
     fn part_2(
         crab_pos: &Self::ParsedInput,
     ) -> Result<Self::Part1Result, Error> {
-        let (low, high) = match crab_pos.iter().map(|x| *x).minmax() {
+        let (low, high) = match crab_pos.iter().copied().minmax() {
             itertools::MinMaxResult::NoElements => Err(Error::CannotFindMinMax),
             itertools::MinMaxResult::OneElement(_) => {
                 Err(Error::CannotFindMinMax)

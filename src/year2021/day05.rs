@@ -56,7 +56,7 @@ impl Puzzle for Day05 {
         )
         .unwrap();
 
-        Ok(lines
+        lines
             .map(|line| -> Result<_, Error> {
                 let captures = reg.captures(line).ok_or(Error::Mismatch)?;
                 let vals = vec!["x1", "y1", "x2", "y2"]
@@ -81,7 +81,7 @@ impl Puzzle for Day05 {
                     },
                 })
             })
-            .collect::<Result<Vec<_>, _>>()?)
+            .collect::<Result<Vec<_>, _>>()
     }
 
     type Part1Result = usize;
@@ -89,8 +89,7 @@ impl Puzzle for Day05 {
         Ok(parsed
             .iter()
             .filter(|vent_line| !vent_line.is_diagonal())
-            .map(|vent_line| vent_line.vent_locations())
-            .flatten()
+            .flat_map(|vent_line| vent_line.vent_locations())
             .counts()
             .into_iter()
             .filter(|(_loc, num_occurrences)| *num_occurrences > 1)
@@ -101,8 +100,7 @@ impl Puzzle for Day05 {
     fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
         Ok(parsed
             .iter()
-            .map(|vent_line| vent_line.vent_locations())
-            .flatten()
+            .flat_map(|vent_line| vent_line.vent_locations())
             .counts()
             .into_iter()
             .filter(|(_loc, num_occurrences)| *num_occurrences > 1)

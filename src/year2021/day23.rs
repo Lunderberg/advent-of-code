@@ -536,9 +536,7 @@ impl AmphipodLayout {
                 res_acc.and_then(|mut acc| {
                     let i = AmphipodLayout::ROOM_LOCS[amph.room_num()];
                     (0..self.room_depth)
-                        .map(|steps_in| GraphNode::Room { i, steps_in })
-                        .filter(|pos| !acc.contains_key(pos))
-                        .next()
+                        .map(|steps_in| GraphNode::Room { i, steps_in }).find(|pos| !acc.contains_key(pos))
                         .ok_or(Error::TooManyAmphipodsForRoom)
                         .map(move |pos| {
                             acc.insert(pos, amph);

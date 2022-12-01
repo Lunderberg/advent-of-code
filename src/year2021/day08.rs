@@ -61,16 +61,14 @@ impl std::str::FromStr for Segment {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Error> {
         let char = s.chars().exactly_one()?;
-        match char {
-            _ => Err(Error::UnknownChar(char)),
-        }
+        Err(Error::UnknownChar(char))
     }
 }
 
 impl std::str::FromStr for LightSequence {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(s.lines()
+        s.lines()
             .exactly_one()?
             .split('|')
             .tuples()
@@ -79,7 +77,7 @@ impl std::str::FromStr for LightSequence {
                     string
                         .split(' ')
                         .map(|s| s.trim())
-                        .filter(|s| s.len() > 0)
+                        .filter(|s| !s.is_empty())
                         .map(|s| {
                             s.chars()
                                 .map(|c| c.try_into())
@@ -92,7 +90,7 @@ impl std::str::FromStr for LightSequence {
                     outputs: unpack(b)?,
                 })
             })
-            .exactly_one()??)
+            .exactly_one()?
     }
 }
 
@@ -158,15 +156,12 @@ impl LightSequence {
             .map(|vec: Vec<(Vec<&u8>, &Vec<&HashSet<Segment>>)>| {
                 let digits: Vec<u8> = vec
                     .iter()
-                    .map(|(vals, _)| vals.iter())
-                    .flatten()
+                    .flat_map(|(vals, _)| vals.iter())
                     .map(|d| **d)
                     .collect();
                 let patterns: Vec<&HashSet<Segment>> = vec
                     .iter()
-                    .map(|(_, patterns)| patterns.iter())
-                    .flatten()
-                    .map(|p| *p)
+                    .flat_map(|(_, patterns)| patterns.iter()).copied()
                     .collect();
                 (digits, patterns)
             })
@@ -264,8 +259,7 @@ impl SegmentConstraints {
                         let rewired_lit =
                             lighted_segments.contains(rewired_seg);
                         *actual_lit != rewired_lit
-                    })
-                    .map(|s| *s)
+                    }).copied()
                     .collect::<Vec<Segment>>()
                     .into_iter()
                     .for_each(|incorrect_option| {
@@ -294,7 +288,7 @@ impl SegmentConstraints {
 
         // The set of constraints is valid if every segment still has
         // some possible values.
-        self.allowed_values.iter().all(|vals| vals.len() > 0)
+        self.allowed_values.iter().all(|vals| !vals.is_empty())
     }
 }
 
@@ -337,8 +331,8 @@ impl Puzzle for Day08 {
         lines
             .scan(None, |partial: &mut Option<String>, line| {
                 if let Some(partial) = partial.take() {
-                    Some(partial.to_string() + line)
-                } else if line.ends_with("|") {
+                    Some(partial + line)
+                } else if line.ends_with('|') {
                     *partial = Some(line.to_string());
                     None
                 } else {
@@ -353,13 +347,12 @@ impl Puzzle for Day08 {
     fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
         Ok(parsed
             .iter()
-            .map(|seq| {
+            .flat_map(|seq| {
                 seq.outputs.iter().filter(|set| match set.len() {
                     2 | 3 | 4 | 7 => true,
                     _ => false,
                 })
             })
-            .flatten()
             .count())
     }
 

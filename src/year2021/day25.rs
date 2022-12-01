@@ -180,7 +180,7 @@ impl Puzzle for Day25 {
         })
         .enumerate()
         .tuples()
-        .find_map(|((_, before), (i, after))| (before == after).then(|| i))
+        .find_map(|((_, before), (i, after))| (before == after).then_some(i))
         .unwrap())
     }
 

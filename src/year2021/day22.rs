@@ -113,7 +113,7 @@ impl Cuboid {
                     .sorted()
                     .tuple_windows()
                     .filter(|(low, high)| low < high)
-                    .filter(move |(low, _high)| self_range.contains(&low))
+                    .filter(move |(low, _high)| self_range.contains(low))
                     .map(move |(low, high)| {
                         (other_range.contains(&low), low..high)
                     })
@@ -234,7 +234,7 @@ impl Puzzle for Day22 {
 
         let final_state =
             parsed.iter().fold(WorldState::new(), |state, command| {
-                state.after_command(&command)
+                state.after_command(command)
             });
 
         Ok(final_state
@@ -248,7 +248,7 @@ impl Puzzle for Day22 {
     fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
         let final_state =
             parsed.iter().fold(WorldState::new(), |state, command| {
-                state.after_command(&command)
+                state.after_command(command)
             });
 
         Ok(final_state

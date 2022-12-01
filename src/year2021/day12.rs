@@ -157,7 +157,7 @@ impl CaveSystem {
         let mut to_visit: Vec<TraversalState> = vec![initial_state];
         let mut initial_edge_map: HashMap<usize, Vec<usize>> = HashMap::new();
 
-        while to_visit.len() > 0 {
+        while !to_visit.is_empty() {
             let state = to_visit.pop().unwrap();
 
             let state_num = initial_indexing.get(&state).copied().unwrap();
@@ -281,12 +281,11 @@ impl CaveSystem {
         forward_edges
             .iter()
             .enumerate()
-            .map(|(index_from, indices_to)| {
+            .flat_map(|(index_from, indices_to)| {
                 indices_to
                     .iter()
                     .map(move |index_to| (index_from, index_to))
             })
-            .flatten()
             .for_each(|(index_from, index_to)| {
                 reverse_edges[*index_to].insert(index_from);
             });
@@ -294,7 +293,7 @@ impl CaveSystem {
         let mut ordered_indices: Vec<usize> = reverse_edges
             .iter()
             .enumerate()
-            .filter_map(|(i, incoming)| (incoming.len() == 0).then(|| i))
+            .filter_map(|(i, incoming)| incoming.is_empty().then_some(i))
             .collect();
         let mut currently_processing = 0;
 
@@ -304,7 +303,7 @@ impl CaveSystem {
                 .iter()
                 .filter(|index_to| {
                     reverse_edges[**index_to].remove(&pruned_node);
-                    reverse_edges[**index_to].len() == 0
+                    reverse_edges[**index_to].is_empty()
                 })
                 .for_each(|index_to| ordered_indices.push(*index_to));
 
@@ -328,7 +327,7 @@ impl CaveSystem {
         let mut unfinished: Vec<Vec<usize>> = vec![vec![0]];
         let mut finished: Vec<Vec<usize>> = Vec::new();
 
-        while unfinished.len() > 0 {
+        while !unfinished.is_empty() {
             let path = unfinished.pop().unwrap();
             let state = *path.last().unwrap();
             connections[state]

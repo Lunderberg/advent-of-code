@@ -124,8 +124,8 @@ where
             .ok_or(Error::NoCachedInputAvailable)?;
 
         Ok(match puzzle_part {
-            PuzzlePart::Part1 => format!("{:?}", T::part_1(&input)?),
-            PuzzlePart::Part2 => format!("{:?}", T::part_2(&input)?),
+            PuzzlePart::Part1 => format!("{:?}", T::part_1(input)?),
+            PuzzlePart::Part2 => format!("{:?}", T::part_2(input)?),
         })
     }
 }

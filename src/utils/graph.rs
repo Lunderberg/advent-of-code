@@ -101,7 +101,7 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
         let mut finalized_nodes: HashMap<T, SearchPointInfo> = HashMap::new();
         let mut found_target = false;
 
-        while search_queue.len() > 0 {
+        while !search_queue.is_empty() {
             let (node, mut info) = search_queue.pop().unwrap();
 
             let src_to_node = info.src_to_pos;
@@ -159,7 +159,7 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
         std::iter::successors(Some(Ok(last)), |res| {
             res.as_ref()
                 .ok()
-                .map(|(_node, info)| {
+                .and_then(|(_node, info)| {
                     info.previous_edge.as_ref().map(|edge| {
                         index_lookup
                             .get_mut(edge.initial_node)
@@ -169,7 +169,6 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
                             })
                     })
                 })
-                .flatten()
         })
         .filter_map_ok(|(node, info)| {
             info.previous_edge.map(move |edge| (node, edge.edge_weight))

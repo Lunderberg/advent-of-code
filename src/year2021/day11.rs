@@ -98,21 +98,21 @@ impl OctopusMap {
         let mut flash_stack: Vec<_> = self
             .map
             .iter()
-            .flat_map(|(pos, octo)| octo.ready_to_flash().then(|| pos))
+            .flat_map(|(pos, octo)| octo.ready_to_flash().then_some(pos))
             .collect();
         let mut all_flashes: HashSet<_> = flash_stack.iter().copied().collect();
 
-        while flash_stack.len() > 0 {
-            let flashing = flash_stack.pop().unwrap().into();
+        while !flash_stack.is_empty() {
+            let flashing = flash_stack.pop().unwrap();
             self.map[flashing].try_flash();
 
             self.adjacent_points(flashing)
-                .filter(|adj| !all_flashes.contains(&adj))
+                .filter(|adj| !all_flashes.contains(adj))
                 .collect::<Vec<_>>()
                 .into_iter()
                 .filter_map(|adj| {
                     self.map[adj].accumulate();
-                    self.map[adj].ready_to_flash().then(|| adj)
+                    self.map[adj].ready_to_flash().then_some(adj)
                 })
                 .collect::<Vec<_>>()
                 .into_iter()
@@ -139,11 +139,11 @@ impl OctopusMap {
                 .filter_map(|(pos, octo)| {
                     let orig = *octo;
                     octo.try_flash();
-                    (orig != *octo).then(|| pos)
+                    (orig != *octo).then_some(pos)
                 })
                 .collect();
 
-            if flashing.len() == 0 {
+            if flashing.is_empty() {
                 break;
             }
 
@@ -217,7 +217,7 @@ impl Puzzle for Day11 {
                 Some(map.is_synchronized())
             })
             .enumerate()
-            .flat_map(|(iter, b)| b.then(|| iter + 1))
+            .flat_map(|(iter, b)| b.then_some(iter + 1))
             .next()
             .unwrap())
     }

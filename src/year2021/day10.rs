@@ -147,7 +147,7 @@ impl ProgramLine {
             .next()
             .map_or_else(
                 || ParseResult::OpenDelimiters(stack),
-                |token| ParseResult::IllegalCharacter(token),
+                ParseResult::IllegalCharacter,
             )
     }
 }
@@ -169,7 +169,7 @@ impl Puzzle for Day10 {
     fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
         Ok(parsed
             .iter()
-            .map(|line| {
+            .filter_map(|line| {
                 if let ParseResult::IllegalCharacter(token) =
                     line.parse_brackets()
                 {
@@ -178,7 +178,6 @@ impl Puzzle for Day10 {
                     None
                 }
             })
-            .flatten()
             .map(|token| token.syntax_points())
             .sum::<u64>())
     }
@@ -187,7 +186,7 @@ impl Puzzle for Day10 {
     fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
         let points = parsed
             .iter()
-            .map(|line| {
+            .filter_map(|line| {
                 if let ParseResult::OpenDelimiters(stack) =
                     line.parse_brackets()
                 {
@@ -196,7 +195,6 @@ impl Puzzle for Day10 {
                     None
                 }
             })
-            .flatten()
             .map(|stack| {
                 stack
                     .iter()

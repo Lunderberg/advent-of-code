@@ -20,7 +20,7 @@ impl Day03 {
         reverse_filter: bool,
     ) -> Result<usize, Error> {
         let mut remaining: Vec<Option<&Vec<bool>>> =
-            entries.iter().map(|entry| Some(entry)).collect();
+            entries.iter().map(Some).collect();
         let num_bits = entries
             .iter()
             .map(|entry| entry.len())
@@ -73,7 +73,7 @@ impl Puzzle for Day03 {
     fn parse_input<'a>(
         lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error> {
-        Ok(lines
+        lines
             .map(|line| {
                 line.chars()
                     .map(move |c| match c {
@@ -83,16 +83,15 @@ impl Puzzle for Day03 {
                     })
                     .collect::<Result<Vec<_>, _>>()
             })
-            .collect::<Result<Vec<_>, _>>()?)
+            .collect::<Result<Vec<_>, _>>()
     }
 
     type Part1Result = usize;
     fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
-        let bit_mask = Self::get_bit_mask(&parsed)?;
+        let bit_mask = Self::get_bit_mask(parsed)?;
         let gamma = parsed
             .iter()
-            .map(|entry: &Vec<bool>| entry.iter().enumerate())
-            .flatten()
+            .flat_map(|entry: &Vec<bool>| entry.iter().enumerate())
             .into_group_map()
             .into_iter()
             .sorted_by_key(|(bitnum, _vals)| bitnum.to_owned())
@@ -108,8 +107,8 @@ impl Puzzle for Day03 {
 
     type Part2Result = usize;
     fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
-        let oxy = Self::filter_most_frequent(&parsed, false)?;
-        let carbon_dioxide = Self::filter_most_frequent(&parsed, true)?;
+        let oxy = Self::filter_most_frequent(parsed, false)?;
+        let carbon_dioxide = Self::filter_most_frequent(parsed, true)?;
         Ok(oxy * carbon_dioxide)
     }
 }

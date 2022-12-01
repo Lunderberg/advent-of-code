@@ -49,10 +49,7 @@ impl BingoBoard {
         Self::straight_lines()
             .map(|locations| {
                 locations.map(|loc| &self.tiles[loc]).collect::<Vec<_>>()
-            })
-            .filter(|tiles| tiles.iter().all(|tile| tile.called))
-            .next()
-            .is_some()
+            }).any(|tiles| tiles.iter().all(|tile| tile.called))
     }
 
     fn call_number(&mut self, num: u32) {
@@ -114,7 +111,7 @@ impl std::fmt::Display for BingoBoard {
 
 impl std::fmt::Display for BingoGame {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Upcoming numbers = {:?}\n", self.numbers_called)?;
+        writeln!(f, "Upcoming numbers = {:?}", self.numbers_called)?;
         self.boards
             .iter()
             .enumerate()
@@ -177,8 +174,7 @@ impl Puzzle for Day04 {
             .into_iter()
             .map(|chunk| -> Result<_, Error> {
                 let tiles = chunk
-                    .map(|line| line.split(' '))
-                    .flatten()
+                    .flat_map(|line| line.split(' '))
                     .filter(|s| !s.is_empty())
                     .map(|s| s.parse::<u32>())
                     .map_ok(|number| BingoTile {

@@ -29,21 +29,14 @@ impl std::str::FromStr for Command {
 }
 
 #[derive(Debug)]
+#[derive(Default)]
 struct SubmarineState {
     forward_pos: i64,
     depth: i64,
     aim: i64,
 }
 
-impl std::default::Default for SubmarineState {
-    fn default() -> Self {
-        Self {
-            forward_pos: 0,
-            depth: 0,
-            aim: 0,
-        }
-    }
-}
+
 
 fn final_position_part1(commands: &Vec<Command>) -> SubmarineState {
     let mut pos = SubmarineState::default();
@@ -95,13 +88,13 @@ impl Puzzle for Day02 {
 
     type Part1Result = i64;
     fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
-        let pos = final_position_part1(&parsed);
+        let pos = final_position_part1(parsed);
         Ok(pos.depth * pos.forward_pos)
     }
 
     type Part2Result = i64;
     fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
-        let pos = final_position_part2(&parsed);
+        let pos = final_position_part2(parsed);
         Ok(pos.depth * pos.forward_pos)
     }
 }
