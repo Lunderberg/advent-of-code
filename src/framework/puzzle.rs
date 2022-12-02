@@ -46,6 +46,7 @@ pub trait PuzzleRunner {
         &mut self,
         downloader: &mut Downloader,
         input_source: PuzzleInputSource,
+        verbose: bool,
     ) -> Result<(), Error>;
 
     // Run the puzzle, using the cached inputs.  If successful, return
@@ -90,6 +91,7 @@ where
         &mut self,
         downloader: &mut Downloader,
         input_source: PuzzleInputSource,
+        verbose: bool,
     ) -> Result<(), Error> {
         let download_source = match input_source {
             PuzzleInputSource::User => DownloadSource::User,
@@ -99,7 +101,13 @@ where
         };
         let line_iter =
             downloader.puzzle_input(T::YEAR, T::DAY as u32, download_source)?;
-        let parsed_input = T::parse_input(line_iter)?;
+        let parsed_input = if verbose {
+            T::parse_input(
+                line_iter.inspect(|line| println!("Parsing line {line}")),
+            )
+        } else {
+            T::parse_input(line_iter)
+        }?;
 
         self.input_cache.insert(input_source, parsed_input);
 

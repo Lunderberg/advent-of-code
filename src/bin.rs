@@ -11,10 +11,13 @@ struct Options {
     year: Option<u32>,
 
     #[structopt(short = "d", long = "day")]
-    days: Option<Vec<u8>>,
+    day: Option<u8>,
 
     #[structopt(short = "e", long = "example-input")]
     use_example_input: bool,
+
+    #[structopt(short = "v", long = "verbose")]
+    verbose: bool,
 }
 
 fn main() -> Result<(), Error> {
@@ -29,19 +32,19 @@ fn main() -> Result<(), Error> {
         runners.iter().map(|runner| runner.year()).max().unwrap()
     });
 
-    let days: Vec<_> = opt.days.unwrap_or_else(|| {
-        vec![runners
+    let day = opt.day.unwrap_or_else(|| {
+        runners
             .iter()
             .filter(|runner| runner.year() == year)
             .map(|runner| runner.day())
             .max()
-            .unwrap()]
+            .unwrap()
     });
 
-    let mut active_runners: Vec<_> = runners
+    let mut runner = runners
         .into_iter()
-        .filter(|runner| runner.year() == year && days.contains(&runner.day()))
-        .collect();
+        .find(|runner| runner.year() == year && runner.day() == day)
+        .unwrap();
 
     let input_source = if opt.use_example_input {
         PuzzleInputSource::Example
@@ -51,25 +54,21 @@ fn main() -> Result<(), Error> {
 
     let mut downloader = Downloader::new()?;
 
-    active_runners.iter_mut().try_for_each(|runner| {
-        runner.parse_inputs(&mut downloader, input_source)
-    })?;
+    runner.parse_inputs(&mut downloader, input_source, opt.verbose)?;
 
-    active_runners
-        .iter()
-        .flat_map(|runner| PuzzlePart::iter().map(move |part| (runner, part)))
-        .map(|(runner, puzzle_part)| {
-            let res = runner.run_puzzle_part(puzzle_part, input_source);
-            (runner.day(), puzzle_part, res)
+    PuzzlePart::iter()
+        .map(|part| {
+            let res = runner.run_puzzle_part(part, input_source);
+            (part, res)
         })
-        .inspect(|(day, part, res)| {
-            println!("Day {:02}, {}", day, part);
+        .inspect(|(part, res)| {
+            println!("{:04}-12-{:02}, {}", runner.year(), runner.day(), part);
             match res {
                 Ok(val) => println!("{}", val),
                 Err(error) => println!("Error: {:?}", error),
             }
         })
-        .map(|(_day, _part, res)| res)
+        .map(|(_part, res)| res)
         .collect::<Result<Vec<_>, Error>>()?;
 
     Ok(())

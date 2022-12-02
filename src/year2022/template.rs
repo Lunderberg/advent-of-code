@@ -12,18 +12,18 @@ impl Puzzle for ThisDay {
 
     type ParsedInput = ();
     fn parse_input<'a>(
-        mut lines: impl Iterator<Item = &'a str>,
+        lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error> {
-        todo!()
+        Err(Error::NotYetImplemented)
     }
 
     type Part1Result = ();
     fn part_1(values: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
-        todo!()
+        Err(Error::NotYetImplemented)
     }
 
     type Part2Result = ();
     fn part_2(values: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
-        todo!()
+        Err(Error::NotYetImplemented)
     }
 }
