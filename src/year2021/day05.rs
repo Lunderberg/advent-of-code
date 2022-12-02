@@ -5,7 +5,7 @@ use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
-pub struct Day05;
+pub struct ThisDay;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct Pos {
@@ -39,9 +39,9 @@ impl VentLine {
     }
 }
 
-impl Day05 {}
+impl ThisDay {}
 
-impl Puzzle for Day05 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 5;
     const EXAMPLE_NUM: u8 = 0;

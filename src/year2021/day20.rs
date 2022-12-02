@@ -8,7 +8,7 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 
-pub struct Day20;
+pub struct ThisDay;
 
 #[derive(Debug, Clone)]
 pub struct Image {
@@ -111,7 +111,7 @@ impl Image {
     }
 }
 
-impl Puzzle for Day20 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 20;
     const EXAMPLE_NUM: u8 = 5;

@@ -3,9 +3,9 @@ use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
-pub struct Day03;
+pub struct ThisDay;
 
-impl Day03 {
+impl ThisDay {
     fn get_bit_mask(entries: &[Vec<bool>]) -> Result<usize, Error> {
         let num_bits = entries
             .iter()
@@ -63,7 +63,7 @@ impl Day03 {
     }
 }
 
-impl Puzzle for Day03 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 3;
     const EXAMPLE_NUM: u8 = 0;

@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 
 use itertools::Itertools;
 
-pub struct Day13;
+pub struct ThisDay;
 
 #[derive(Debug, Clone)]
 pub struct Transparency {
@@ -85,7 +85,7 @@ impl Transparency {
     }
 }
 
-impl Puzzle for Day13 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 13;
     const EXAMPLE_NUM: u8 = 1;

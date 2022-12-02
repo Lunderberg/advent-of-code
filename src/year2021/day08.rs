@@ -8,7 +8,7 @@ use std::fmt::{Debug, Formatter};
 
 use itertools::Itertools;
 
-pub struct Day08;
+pub struct ThisDay;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 struct Segment(u8);
@@ -320,7 +320,7 @@ fn active_segments(digit: u8) -> Result<impl Iterator<Item = Segment>, Error> {
         .into_iter())
 }
 
-impl Puzzle for Day08 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 8;
     const EXAMPLE_NUM: u8 = 1;

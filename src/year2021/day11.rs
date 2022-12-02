@@ -7,7 +7,7 @@ use std::fmt::{Display, Formatter};
 
 use itertools::Itertools;
 
-pub struct Day11;
+pub struct ThisDay;
 
 #[derive(Debug, Clone)]
 pub struct OctopusMap {
@@ -185,7 +185,7 @@ impl std::str::FromStr for Octopus {
     }
 }
 
-impl Puzzle for Day11 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 11;
     const EXAMPLE_NUM: u8 = 1;

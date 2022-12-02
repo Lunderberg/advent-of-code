@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use itertools::Itertools;
 
-pub struct Day19;
+pub struct ThisDay;
 
 #[derive(Debug, Clone)]
 pub struct Scanner {
@@ -227,7 +227,7 @@ impl ScannerSet {
     }
 }
 
-impl Puzzle for Day19 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 19;
     const EXAMPLE_NUM: u8 = 5;

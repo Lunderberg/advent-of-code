@@ -8,7 +8,7 @@ use std::str::FromStr;
 use itertools::Itertools;
 use regex::Regex;
 
-pub struct Day17;
+pub struct ThisDay;
 
 #[derive(Debug)]
 pub struct Target {
@@ -156,7 +156,7 @@ impl FromStr for Target {
     }
 }
 
-impl Puzzle for Day17 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 17;
     const EXAMPLE_NUM: u8 = 0;

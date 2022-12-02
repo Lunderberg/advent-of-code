@@ -5,9 +5,9 @@ use itertools::Itertools;
 
 use crate::{Error, Puzzle};
 
-pub struct Day06;
+pub struct ThisDay;
 
-impl Day06 {
+impl ThisDay {
     fn advance_fish_population(num_days: u32, population: &mut VecDeque<u64>) {
         (0..num_days).for_each(|_day| {
             population[7] += population[0];
@@ -16,7 +16,7 @@ impl Day06 {
     }
 }
 
-impl Puzzle for Day06 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 6;
     const EXAMPLE_NUM: u8 = 0;

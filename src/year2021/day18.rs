@@ -8,7 +8,7 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 
-pub struct Day18;
+pub struct ThisDay;
 
 #[derive(Clone)]
 pub enum Snailfish {
@@ -282,7 +282,7 @@ impl Snailfish {
     }
 }
 
-impl Puzzle for Day18 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 18;
     const EXAMPLE_NUM: u8 = 7;

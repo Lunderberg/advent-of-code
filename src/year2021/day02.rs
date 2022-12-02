@@ -68,9 +68,9 @@ fn final_position_part2(commands: &[Command]) -> SubmarineState {
     pos
 }
 
-pub struct Day02;
+pub struct ThisDay;
 
-impl Puzzle for Day02 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 2;
     const EXAMPLE_NUM: u8 = 0;

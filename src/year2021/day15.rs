@@ -7,7 +7,7 @@ use priority_queue::PriorityQueue;
 use std::cmp::Reverse;
 use std::collections::HashMap;
 
-pub struct Day15;
+pub struct ThisDay;
 
 #[derive(Debug)]
 pub struct RiskMap {
@@ -76,7 +76,7 @@ impl DynamicGraph<GridPos> for RiskMap {
     }
 }
 
-impl Puzzle for Day15 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 15;
     const EXAMPLE_NUM: u8 = 0;

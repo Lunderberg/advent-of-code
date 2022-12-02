@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 
-pub struct Day12;
+pub struct ThisDay;
 
 #[derive(Debug)]
 pub struct CaveSystem {
@@ -482,7 +482,7 @@ impl TraversalState {
     }
 }
 
-impl Puzzle for Day12 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 12;
     const EXAMPLE_NUM: u8 = 0;

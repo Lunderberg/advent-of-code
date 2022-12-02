@@ -3,9 +3,9 @@ use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
-pub struct ThisPuzzle;
+pub struct ThisDay;
 
-impl Puzzle for ThisPuzzle {
+impl Puzzle for ThisDay {
     const EXAMPLE_NUM: u8 = 0;
     const YEAR: u32 = 2022;
     const DAY: u8 = 1;

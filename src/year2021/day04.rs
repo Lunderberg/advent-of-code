@@ -6,7 +6,7 @@ use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
-pub struct Day04;
+pub struct ThisDay;
 
 #[derive(Debug, Clone)]
 struct BingoTile {
@@ -152,7 +152,7 @@ impl BingoGame {
     }
 }
 
-impl Puzzle for Day04 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 4;
     const EXAMPLE_NUM: u8 = 0;

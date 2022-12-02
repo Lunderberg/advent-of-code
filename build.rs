@@ -67,7 +67,7 @@ fn generate(mod_path: &Path) -> String {
         pub fn solutions() -> impl Iterator<Item = Box<dyn PuzzleRunner>> {
             vec![
                 #(
-                    PuzzleRunnerImpl::<#modules::ThisPuzzle>::new_box(),
+                    PuzzleRunnerImpl::<#modules::ThisDay>::new_box(),
                 )*
             ]
                 .into_iter()

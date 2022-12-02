@@ -8,7 +8,7 @@ use std::fmt::{Display, Formatter};
 use itertools::Itertools;
 use priority_queue::PriorityQueue;
 
-pub struct Day21;
+pub struct ThisDay;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 enum GameState {
@@ -159,7 +159,7 @@ impl PlayerState {
     }
 }
 
-impl Puzzle for Day21 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 21;
     const EXAMPLE_NUM: u8 = 0;

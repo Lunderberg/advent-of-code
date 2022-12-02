@@ -10,7 +10,7 @@ use std::iter::FromIterator;
 
 use itertools::Itertools;
 
-pub struct Day23;
+pub struct ThisDay;
 
 #[derive(Debug, Clone)]
 pub struct AmphipodDiagram {
@@ -648,7 +648,7 @@ impl From<AmphipodLayout> for AmphipodDiagram {
     }
 }
 
-impl Puzzle for Day23 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 23;
     const EXAMPLE_NUM: u8 = 0;

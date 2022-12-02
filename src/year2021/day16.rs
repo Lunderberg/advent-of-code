@@ -4,7 +4,7 @@ use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
-pub struct Day16;
+pub struct ThisDay;
 
 #[derive(Debug)]
 struct Packet {
@@ -216,7 +216,7 @@ impl Length {
     }
 }
 
-impl Puzzle for Day16 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 16;
     const EXAMPLE_NUM: u8 = 1;

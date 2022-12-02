@@ -6,7 +6,7 @@ use itertools::Itertools;
 
 use std::collections::HashSet;
 
-pub struct Day09;
+pub struct ThisDay;
 
 #[derive(Debug)]
 pub struct HeightMap {
@@ -64,7 +64,7 @@ impl std::str::FromStr for HeightMap {
     }
 }
 
-impl Puzzle for Day09 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 9;
     const EXAMPLE_NUM: u8 = 0;

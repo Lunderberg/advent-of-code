@@ -5,7 +5,7 @@ use itertools::Itertools;
 
 use std::collections::HashMap;
 
-pub struct Day14;
+pub struct ThisDay;
 
 #[derive(Debug, Clone)]
 pub struct Polymer {
@@ -77,7 +77,7 @@ impl Polymer {
     }
 }
 
-impl Puzzle for Day14 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 14;
     const EXAMPLE_NUM: u8 = 0;

@@ -5,7 +5,7 @@ use std::fmt::{Debug, Formatter};
 
 use itertools::Itertools;
 
-pub struct Day10;
+pub struct ThisDay;
 
 pub struct ProgramLine {
     tokens: Vec<Token>,
@@ -152,7 +152,7 @@ impl ProgramLine {
     }
 }
 
-impl Puzzle for Day10 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 10;
     const EXAMPLE_NUM: u8 = 1;

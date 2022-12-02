@@ -10,7 +10,7 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 
-pub struct Day24;
+pub struct ThisDay;
 
 #[derive(Debug)]
 pub struct Program {
@@ -469,7 +469,7 @@ impl FromStr for MemoryLocation {
     }
 }
 
-impl Puzzle for Day24 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 24;
     const EXAMPLE_NUM: u8 = 2;

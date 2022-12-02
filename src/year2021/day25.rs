@@ -9,7 +9,7 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 
-pub struct Day25;
+pub struct ThisDay;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct CucumberMap {
@@ -144,7 +144,7 @@ impl Display for Tile {
     }
 }
 
-impl Puzzle for Day25 {
+impl Puzzle for ThisDay {
     const YEAR: u32 = 2021;
     const DAY: u8 = 25;
     const EXAMPLE_NUM: u8 = 0;
