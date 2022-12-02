@@ -155,7 +155,6 @@ impl ProgramLine {
 impl Puzzle for Day10 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 10;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 1;
 
     type ParsedInput = Vec<ProgramLine>;

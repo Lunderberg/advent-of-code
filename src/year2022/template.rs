@@ -6,7 +6,6 @@ use itertools::Itertools;
 pub struct ThisPuzzle;
 
 impl Puzzle for ThisPuzzle {
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
     const YEAR: u32 = 2022;
     const DAY: u8 = 1;

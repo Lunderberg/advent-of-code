@@ -49,7 +49,8 @@ impl BingoBoard {
         Self::straight_lines()
             .map(|locations| {
                 locations.map(|loc| &self.tiles[loc]).collect::<Vec<_>>()
-            }).any(|tiles| tiles.iter().all(|tile| tile.called))
+            })
+            .any(|tiles| tiles.iter().all(|tile| tile.called))
     }
 
     fn call_number(&mut self, num: u32) {
@@ -154,7 +155,6 @@ impl BingoGame {
 impl Puzzle for Day04 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 4;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = BingoGame;

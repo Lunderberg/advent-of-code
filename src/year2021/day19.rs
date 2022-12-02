@@ -230,7 +230,6 @@ impl ScannerSet {
 impl Puzzle for Day19 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 19;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 5;
 
     type ParsedInput = Vec<Scanner>;

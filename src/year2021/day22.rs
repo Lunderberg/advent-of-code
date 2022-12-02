@@ -216,7 +216,6 @@ impl FromStr for Command {
 impl Puzzle for Day22 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 22;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 2;
 
     type ParsedInput = Vec<Command>;

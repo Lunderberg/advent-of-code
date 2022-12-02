@@ -8,7 +8,6 @@ pub struct ThisPuzzle;
 impl Puzzle for ThisPuzzle {
     const YEAR: u32 = 2022;
     const DAY: u8 = 1;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = Vec<Vec<i32>>;

@@ -26,18 +26,13 @@ fn main() -> Result<(), Error> {
     let opt = Options::from_args();
 
     let year = opt.year.unwrap_or_else(|| {
-        runners
-            .iter()
-            .filter(|runner| runner.implemented())
-            .map(|runner| runner.year())
-            .max()
-            .unwrap()
+        runners.iter().map(|runner| runner.year()).max().unwrap()
     });
 
     let days: Vec<_> = opt.days.unwrap_or_else(|| {
         vec![runners
             .iter()
-            .filter(|runner| runner.implemented() && runner.year() == year)
+            .filter(|runner| runner.year() == year)
             .map(|runner| runner.day())
             .max()
             .unwrap()]
@@ -45,11 +40,7 @@ fn main() -> Result<(), Error> {
 
     let mut active_runners: Vec<_> = runners
         .into_iter()
-        .filter(|runner| {
-            runner.implemented()
-                && runner.year() == year
-                && days.contains(&runner.day())
-        })
+        .filter(|runner| runner.year() == year && days.contains(&runner.day()))
         .collect();
 
     let input_source = if opt.use_example_input {

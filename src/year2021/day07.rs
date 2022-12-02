@@ -10,7 +10,6 @@ impl Day07 {}
 impl Puzzle for Day07 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 7;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = Vec<i64>;

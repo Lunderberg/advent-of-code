@@ -472,7 +472,6 @@ impl FromStr for MemoryLocation {
 impl Puzzle for Day24 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 24;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 2;
 
     type ParsedInput = Program;

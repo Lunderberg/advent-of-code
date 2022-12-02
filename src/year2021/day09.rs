@@ -67,7 +67,6 @@ impl std::str::FromStr for HeightMap {
 impl Puzzle for Day09 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 9;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = HeightMap;

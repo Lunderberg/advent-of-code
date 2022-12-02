@@ -19,7 +19,6 @@ impl Day06 {
 impl Puzzle for Day06 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 6;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = VecDeque<u64>;
@@ -29,8 +28,10 @@ impl Puzzle for Day06 {
         // Use a mutable vector to accumulate the results.
         let mut output: VecDeque<u64> = (0..9).map(|_i| 0).collect();
         lines.next().unwrap().split(',').try_for_each(
-            |s| -> Result<(), Error> { output[s.parse::<usize>()?] += 1;
-            Ok(()) },
+            |s| -> Result<(), Error> {
+                output[s.parse::<usize>()?] += 1;
+                Ok(())
+            },
         )?;
 
         // // HashSet of counts, then convert to vector.

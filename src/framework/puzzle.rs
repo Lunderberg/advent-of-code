@@ -40,7 +40,6 @@ pub enum PuzzleInputSource {
 pub trait PuzzleRunner {
     fn year(&self) -> u32;
     fn day(&self) -> u8;
-    fn implemented(&self) -> bool;
 
     // Download and parse the results
     fn parse_inputs(
@@ -87,10 +86,6 @@ where
         T::DAY
     }
 
-    fn implemented(&self) -> bool {
-        T::IMPLEMENTED
-    }
-
     fn parse_inputs(
         &mut self,
         downloader: &mut Downloader,
@@ -131,7 +126,6 @@ where
 pub trait Puzzle {
     const YEAR: u32;
     const DAY: u8;
-    const IMPLEMENTED: bool;
     const EXAMPLE_NUM: u8;
 
     type ParsedInput;

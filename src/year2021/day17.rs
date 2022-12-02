@@ -159,7 +159,6 @@ impl FromStr for Target {
 impl Puzzle for Day17 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 17;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = Target;

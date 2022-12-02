@@ -188,7 +188,6 @@ impl std::str::FromStr for Octopus {
 impl Puzzle for Day11 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 11;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 1;
 
     type ParsedInput = OctopusMap;

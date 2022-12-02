@@ -67,7 +67,9 @@ impl Polymer {
                 vec![(*a, *counts), (*b, *counts)].into_iter()
             })
             .chain(vec![(self.first, 1), (self.last, 1)].into_iter())
-            .into_group_map().into_values().map(|counts| counts.iter().sum::<usize>() / 2)
+            .into_group_map()
+            .into_values()
+            .map(|counts| counts.iter().sum::<usize>() / 2)
             .minmax()
             .into_option()
             .map(|(min, max)| max - min)
@@ -78,7 +80,6 @@ impl Polymer {
 impl Puzzle for Day14 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 14;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = (Polymer, InsertionRules);
@@ -94,8 +95,7 @@ impl Puzzle for Day14 {
         let rules = InsertionRules {
             rules: lines
                 .map(|line| -> Result<_, Error> {
-                    line
-                        .split(" -> ")
+                    line.split(" -> ")
                         .tuples()
                         .map(|(before, after)| -> Result<_, Error> {
                             let initial = before

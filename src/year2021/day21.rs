@@ -162,7 +162,6 @@ impl PlayerState {
 impl Puzzle for Day21 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 21;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = InProgressGameState;

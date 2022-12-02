@@ -256,7 +256,8 @@ impl Snailfish {
             *leaves[i_target].snailfish.as_mut_value().unwrap() += val;
         });
 
-        self.iter_mut(|view| view.snailfish.is_leaf_pair()).find(|view| view.depth >= 4)
+        self.iter_mut(|view| view.snailfish.is_leaf_pair())
+            .find(|view| view.depth >= 4)
             .iter_mut()
             .for_each(|view| {
                 *view.snailfish = 0.into();
@@ -267,7 +268,8 @@ impl Snailfish {
 
     fn split_step(&mut self) -> bool {
         let mut to_split = self
-            .iter_mut(|view| view.snailfish.is_value()).find(|view| view.snailfish.as_value().unwrap() >= 10);
+            .iter_mut(|view| view.snailfish.is_value())
+            .find(|view| view.snailfish.as_value().unwrap() >= 10);
 
         to_split.iter_mut().for_each(|view| {
             let val = view.snailfish.as_value().unwrap();
@@ -283,7 +285,6 @@ impl Snailfish {
 impl Puzzle for Day18 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 18;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 7;
 
     type ParsedInput = Vec<Snailfish>;

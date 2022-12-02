@@ -66,7 +66,6 @@ impl Day03 {
 impl Puzzle for Day03 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 3;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = Vec<Vec<bool>>;

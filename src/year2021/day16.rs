@@ -219,7 +219,6 @@ impl Length {
 impl Puzzle for Day16 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 16;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 1;
 
     type ParsedInput = Vec<bool>;

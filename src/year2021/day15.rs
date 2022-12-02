@@ -79,7 +79,6 @@ impl DynamicGraph<GridPos> for RiskMap {
 impl Puzzle for Day15 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 15;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = RiskMap;

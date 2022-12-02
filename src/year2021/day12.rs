@@ -485,7 +485,6 @@ impl TraversalState {
 impl Puzzle for Day12 {
     const YEAR: u32 = 2021;
     const DAY: u8 = 12;
-    const IMPLEMENTED: bool = true;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = CaveSystem;
