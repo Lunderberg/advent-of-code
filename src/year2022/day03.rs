@@ -11,7 +11,7 @@ pub struct RuckSack {
 
 impl RuckSack {
     fn in_both_compartments(&self) -> impl Iterator<Item = u32> {
-        let n = (self.contents.len() / 2) as usize;
+        let n = self.contents.len() / 2;
         let first: HashSet<u32> = self.contents[..n].iter().copied().collect();
         let second: HashSet<u32> = self.contents[n..].iter().copied().collect();
         first
