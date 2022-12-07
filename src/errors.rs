@@ -50,6 +50,13 @@ pub enum Error {
     TooManyAmphipodsForRoom,
     GraphError(graph::Error),
     InsufficientInputValues,
+
+    // 2022-12-07
+    NoSuchINode(usize),
+    NotADirectory(usize),
+    AlreadyAtRootDir,
+    ParentNotADirectory,
+    NameNotFoundInDirectory,
 }
 
 #[derive(Debug)]
