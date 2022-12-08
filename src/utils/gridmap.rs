@@ -76,7 +76,7 @@ impl InputGridPos {
                     && *y >= 0
                     && *x < (map.x_size as i64)
                     && *y < (map.y_size as i64);
-                coordinates_valid.then_some(GridPos {
+                coordinates_valid.then(|| GridPos {
                     index: (*y as usize) * map.x_size + (*x as usize),
                 })
             }
@@ -303,6 +303,31 @@ impl<T> GridMap<T> {
 
         (ax - bx).abs() + (ay - by).abs()
     }
+
+    pub fn top_left(&self) -> GridPos {
+        GridPos { index: 0 }
+    }
+
+    pub fn bottom_right(&self) -> GridPos {
+        InputGridPos::XY((self.x_size as i64) - 1, (self.y_size as i64) - 1)
+            .normalize(self)
+            .unwrap()
+    }
+
+    pub fn iter_ray(
+        &self,
+        start: GridPos,
+        step: (i64, i64),
+    ) -> impl Iterator<Item = (GridPos, &T)> + '_ {
+        std::iter::successors(Some((start, &self[start])), move |(prev, _)| {
+            let (prev_x, prev_y) = prev.as_xy(self);
+            let x = prev_x + step.0;
+            let y = prev_y + step.1;
+            InputGridPos::XY(x, y)
+                .normalize(self)
+                .map(|gridpos| (gridpos, &self[gridpos]))
+        })
+    }
 }
 
 pub struct GridMapIterator<T> {
@@ -340,17 +365,5 @@ impl<T> Index<GridPos> for GridMap<T> {
 impl<T> IndexMut<GridPos> for GridMap<T> {
     fn index_mut(&mut self, pos: GridPos) -> &mut T {
         &mut self.values[pos.index]
-    }
-}
-
-impl<T> GridMap<T> {
-    pub fn top_left(&self) -> GridPos {
-        GridPos { index: 0 }
-    }
-
-    pub fn bottom_right(&self) -> GridPos {
-        InputGridPos::XY((self.x_size as i64) - 1, (self.y_size as i64) - 1)
-            .normalize(self)
-            .unwrap()
     }
 }
