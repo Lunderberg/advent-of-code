@@ -159,6 +159,13 @@ impl<const N: usize> Vector<N> {
             .map(|(a, b)| (a - b).abs())
             .sum()
     }
+
+    pub fn map<F>(&self, func: F) -> Self
+    where
+        F: FnMut(i64) -> i64,
+    {
+        Self(self.0.map(func))
+    }
 }
 
 impl Vector<3> {
@@ -375,10 +382,7 @@ mod tests {
     fn test_matrix_matrix_mul() {
         let a = Matrix::<1, 3>::new([[0, 1, 2]]);
         let b = Matrix::<3, 2>::new([[10, 20], [30, 40], [50, 60]]);
-        let c = Matrix::<1, 2>::new([[
-            30 + 50 * 2,
-            40 + 60 * 2,
-        ]]);
+        let c = Matrix::<1, 2>::new([[30 + 50 * 2, 40 + 60 * 2]]);
         println!("{:?} * {:?} = {:?}", a, b, a * b);
         assert_eq!(a * b, c);
     }
@@ -387,11 +391,7 @@ mod tests {
     fn test_matrix_vector_mul() {
         let a = Matrix::<3, 2>::new([[0, 1], [2, 3], [4, 5]]);
         let b = Vector::<2>::new([10, 20]);
-        let c = Vector::<3>::new([
-            20,
-            10 * 2 + 20 * 3,
-            10 * 4 + 20 * 5,
-        ]);
+        let c = Vector::<3>::new([20, 10 * 2 + 20 * 3, 10 * 4 + 20 * 5]);
         assert_eq!(a * b, c);
     }
 }
