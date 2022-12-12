@@ -65,6 +65,13 @@ impl SearchPointInfo {
     }
 }
 
+pub enum SearchResult<T> {
+    Success { path: Vec<(T, u64)> },
+    HeuristicFailsOnStartPoint,
+    NoPathToTarget { reachable: Vec<T> },
+    OtherError(Error),
+}
+
 pub trait DynamicGraph<T: DynamicGraphNode> {
     // Given a node, return all nodes directly excessible from that
     // node, along with the cost associated with each edge.
@@ -84,19 +91,38 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
         initial: T,
         target: T,
     ) -> Result<Vec<(T, u64)>, Error> {
+        match self.shortest_path_search_result(initial, target) {
+            SearchResult::Success { path } => Ok(path),
+            SearchResult::HeuristicFailsOnStartPoint => {
+                Err(Error::NoPathToTarget)
+            }
+            SearchResult::NoPathToTarget { .. } => Err(Error::NoPathToTarget),
+            SearchResult::OtherError(err) => Err(err),
+        }
+    }
+
+    fn shortest_path_search_result(
+        &self,
+        initial: T,
+        target: T,
+    ) -> SearchResult<T> {
         let get_heuristic =
             |pos: &T| -> Option<u64> { self.heuristic_between(pos, &target) };
 
         let mut search_queue: PriorityQueue<T, SearchPointInfo> =
             PriorityQueue::new();
-        let initial_info = SearchPointInfo {
-            node_index: None,
-            src_to_pos: 0,
-            heuristic_to_dest: get_heuristic(&initial)
-                .ok_or(Error::NoPathToTarget)?,
-            previous_edge: None,
-        };
-        search_queue.push(initial, initial_info);
+
+        if let Some(initial_heuristic) = get_heuristic(&initial) {
+            let initial_info = SearchPointInfo {
+                node_index: None,
+                src_to_pos: 0,
+                heuristic_to_dest: initial_heuristic,
+                previous_edge: None,
+            };
+            search_queue.push(initial, initial_info);
+        } else {
+            return SearchResult::HeuristicFailsOnStartPoint;
+        }
 
         let mut finalized_nodes: HashMap<T, SearchPointInfo> = HashMap::new();
         let mut found_target = false;
@@ -144,7 +170,8 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
         }
 
         if !found_target {
-            return Err(Error::NoPathToTarget);
+            let reachable = finalized_nodes.into_keys().collect();
+            return SearchResult::NoPathToTarget { reachable };
         }
 
         let mut index_lookup: Vec<Option<(T, SearchPointInfo)>> =
@@ -156,10 +183,9 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
 
         let last: (T, SearchPointInfo) =
             index_lookup.last_mut().unwrap().take().unwrap();
-        std::iter::successors(Some(Ok(last)), |res| {
-            res.as_ref()
-                .ok()
-                .and_then(|(_node, info)| {
+        let res_path: Result<Vec<_>, _> =
+            std::iter::successors(Some(Ok(last)), |res| {
+                res.as_ref().ok().and_then(|(_node, info)| {
                     info.previous_edge.as_ref().map(|edge| {
                         index_lookup
                             .get_mut(edge.initial_node)
@@ -169,13 +195,18 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
                             })
                     })
                 })
-        })
-        .filter_map_ok(|(node, info)| {
-            info.previous_edge.map(move |edge| (node, edge.edge_weight))
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
-        .collect()
+            })
+            .filter_map_ok(|(node, info)| {
+                info.previous_edge.map(move |edge| (node, edge.edge_weight))
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect();
+
+        match res_path {
+            Ok(path) => SearchResult::Success { path },
+            Err(err) => SearchResult::OtherError(err),
+        }
     }
 }

@@ -124,8 +124,9 @@ impl CaveSystem {
             .flat_map(|(a, b)| vec![(a, b), (b, a)].into_iter())
             .into_group_map();
 
-        let start = *cave_map.get(&Cave::Start).ok_or(Error::NoStartCave)?;
-        let end = *cave_map.get(&Cave::End).ok_or(Error::NoEndCave)?;
+        let start =
+            *cave_map.get(&Cave::Start).ok_or(Error::NoStartPosition)?;
+        let end = *cave_map.get(&Cave::End).ok_or(Error::NoEndPosition)?;
 
         Ok(Self {
             caves,
