@@ -1,5 +1,6 @@
 use crate::Error;
 
+use std::fmt::{Display, Formatter};
 use std::ops;
 use std::str::FromStr;
 
@@ -94,6 +95,20 @@ impl<const N: usize> ops::Index<usize> for Vector<N> {
     }
 }
 
+impl<const N: usize> Display for Vector<N> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "(")?;
+        self.iter().enumerate().try_for_each(|(i, val)| {
+            if i > 0 {
+                write!(f, ",")?;
+            }
+            write!(f, "{val}")
+        })?;
+        write!(f, ")")?;
+        Ok(())
+    }
+}
+
 impl<const N: usize, const M: usize> ops::Index<(usize, usize)>
     for Matrix<N, M>
 {
@@ -166,6 +181,43 @@ impl<const N: usize> Vector<N> {
     {
         Self(self.0.map(func))
     }
+
+    pub fn zip_map<F>(&self, other: &Self, mut func: F) -> Self
+    where
+        F: FnMut(i64, i64) -> i64,
+    {
+        let mut result = Self::zero();
+        self.iter()
+            .zip(other.iter())
+            .map(|(a, b)| func(a, b))
+            .zip(result.iter_mut())
+            .for_each(|(val, out)| {
+                *out = val;
+            });
+        result
+    }
+
+    /// Points from self to other, including both endpoints.  Assumes
+    /// that only one coordinate differs between self and other.
+    pub fn cardinal_points_to(
+        &self,
+        other: &Self,
+    ) -> impl Iterator<Item = Vector<N>> + '_ {
+        let delta = *other - *self;
+        let step = delta.map(|val| val.signum());
+        let len = delta.manhattan_dist(&Vector::zero());
+        (0..=len).map(move |i| *self + step * i)
+    }
+}
+
+impl Vector<2> {
+    pub fn x(&self) -> i64 {
+        self.0[0]
+    }
+
+    pub fn y(&self) -> i64 {
+        self.0[1]
+    }
 }
 
 impl Vector<3> {
@@ -179,6 +231,12 @@ impl Vector<3> {
 
     pub fn z(&self) -> i64 {
         self.0[2]
+    }
+}
+
+impl<const N: usize> From<[i64; N]> for Vector<N> {
+    fn from(values: [i64; N]) -> Self {
+        Self::new(values)
     }
 }
 
