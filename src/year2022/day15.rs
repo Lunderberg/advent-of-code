@@ -56,12 +56,6 @@ impl Sensor {
         let xmax = self.loc.x() + max_dx;
         xmin..=xmax
     }
-
-    fn can_see(&self, pos: Vector<2>) -> bool {
-        let dist_beacon = self.loc.manhattan_dist(&self.beacon);
-        let dist_pos = self.loc.manhattan_dist(&pos);
-        dist_pos <= dist_beacon
-    }
 }
 
 impl From<RangeInclusive<i64>> for Region1D {
@@ -73,10 +67,6 @@ impl From<RangeInclusive<i64>> for Region1D {
 }
 
 impl Region1D {
-    fn is_empty(&self) -> bool {
-        !self.ranges.iter().any(|range| !range.is_empty())
-    }
-
     fn total_elements(&self) -> i64 {
         self.ranges
             .iter()
@@ -180,7 +170,7 @@ impl Puzzle for ThisDay {
         let xmin = *ranges.iter().map(|range| range.start()).min().unwrap();
         let xmax = *ranges.iter().map(|range| range.end()).max().unwrap();
 
-        let region = sensors
+        let _region = sensors
             .iter()
             .map(|sensor| sensor.range_covered(row_y))
             .map(|range| -> Region1D { range.into() })
@@ -218,7 +208,7 @@ impl Puzzle for ThisDay {
                         .restrict(search_range.clone()),
                 )
             })
-            .find(|(y, region)| region.total_elements() < row_elements)
+            .find(|(_y, region)| region.total_elements() < row_elements)
             .map(|(y, region)| -> Vector<2> {
                 [
                     region
