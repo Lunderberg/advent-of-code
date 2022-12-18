@@ -27,18 +27,15 @@ struct SearchPointInfo {
     // fastest path from the initial node.  Only the initial node may
     // have previous_edge: None.
     previous_edge: Option<GraphEdge>,
+    num_out_edges: Option<usize>,
 }
 
-#[derive(PartialEq, Eq)]
-struct GraphEdge {
+#[derive(Debug, PartialEq, Eq)]
+pub struct GraphEdge {
     // Index into a vector of nodes, where all elements of that vector
     // have the fastest path known.
-    initial_node: usize,
-    edge_weight: u64,
-    // Can't be set initially, because it can't yet be added to the
-    // vector of nodes with known paths. Is there anywhere I can even
-    // set this?
-    final_node: Option<usize>,
+    pub initial_node: usize,
+    pub edge_weight: u64,
 }
 
 impl PartialEq for SearchPointInfo {
@@ -70,6 +67,14 @@ pub enum SearchResult<T> {
     HeuristicFailsOnStartPoint,
     NoPathToTarget { reachable: Vec<T> },
     OtherError(Error),
+}
+
+#[derive(Debug)]
+pub struct DijkstraSearchNode<T> {
+    pub node: T,
+    pub distance: u64,
+    pub backref: Option<GraphEdge>,
+    pub num_out_edges: usize,
 }
 
 pub trait DynamicGraph<T: DynamicGraphNode> {
@@ -118,6 +123,7 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
                 src_to_pos: 0,
                 heuristic_to_dest: initial_heuristic,
                 previous_edge: None,
+                num_out_edges: None,
             };
             search_queue.push(initial, initial_info);
         } else {
@@ -136,6 +142,7 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
 
             let node_index = finalized_nodes.len();
             info.node_index = Some(node_index);
+            info.num_out_edges = Some(connected_nodes.len());
 
             finalized_nodes.insert(node, info);
 
@@ -158,8 +165,8 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
                         previous_edge: Some(GraphEdge {
                             initial_node: node_index,
                             edge_weight,
-                            final_node: None,
                         }),
+                        num_out_edges: None,
                     };
                     (new_node, info)
                 })
@@ -208,5 +215,80 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
             Ok(path) => SearchResult::Success { path },
             Err(err) => SearchResult::OtherError(err),
         }
+    }
+
+    // Returns the short
+    fn dijkstra_paths(&self, initial: T) -> Vec<DijkstraSearchNode<T>> {
+        let mut results: HashMap<T, SearchPointInfo> = HashMap::new();
+        let mut search_queue: PriorityQueue<T, SearchPointInfo> =
+            PriorityQueue::new();
+        search_queue.push(
+            initial,
+            SearchPointInfo {
+                node_index: None,
+                src_to_pos: 0,
+                heuristic_to_dest: 0,
+                previous_edge: None,
+                num_out_edges: None,
+            },
+        );
+
+        let mut num_processed = 0;
+
+        while !search_queue.is_empty() {
+            num_processed += 1;
+            if num_processed % 10000 == 0 {
+                println!(
+                    "Processed {num_processed} nodes, queue size = {}",
+                    search_queue.len()
+                );
+            }
+
+            let (node, mut info) = search_queue.pop().unwrap();
+            let out_connections = self.connections_from(&node);
+
+            let node_index = results.len();
+            info.node_index = Some(node_index);
+            info.num_out_edges = Some(out_connections.len());
+
+            let src_to_node: u64 = info.src_to_pos;
+
+            out_connections
+                .into_iter()
+                .filter(|(new_node, _edge_weight)| {
+                    !results.contains_key(new_node) && new_node != &node
+                })
+                .map(|(new_node, edge_weight)| {
+                    (
+                        new_node,
+                        SearchPointInfo {
+                            node_index: None,
+                            src_to_pos: src_to_node + edge_weight,
+                            heuristic_to_dest: 0,
+                            previous_edge: Some(GraphEdge {
+                                initial_node: node_index,
+                                edge_weight,
+                            }),
+                            num_out_edges: None,
+                        },
+                    )
+                })
+                .for_each(|(new_node, info)| {
+                    search_queue.push_increase(new_node, info);
+                });
+
+            results.insert(node, info);
+        }
+
+        results
+            .into_iter()
+            .sorted_by_key(|(_node, info)| info.node_index.unwrap())
+            .map(|(node, info)| DijkstraSearchNode {
+                node,
+                distance: info.src_to_pos,
+                backref: info.previous_edge,
+                num_out_edges: info.num_out_edges.unwrap(),
+            })
+            .collect()
     }
 }
