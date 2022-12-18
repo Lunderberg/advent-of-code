@@ -1,43 +1,86 @@
 #![allow(unused_imports)]
+use crate::utils::extensions::TakeWhileInclusive;
 use crate::utils::graph::DynamicGraph;
 use crate::{Error, Puzzle};
 
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
 
 use bit_set::BitSet;
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 
 #[derive(Debug)]
 pub struct ValveSystem {
     valves: Vec<Valve>,
-    cached_path_lengths: HashMap<(usize, usize), i64>,
+    cached_path_lengths: HashMap<(usize, usize), u64>,
 }
 
 #[derive(Debug)]
 struct Valve {
     name: String,
     index: usize,
-    flow_rate: i64,
+    flow_rate: u64,
     tunnels: Vec<usize>,
 }
 
 struct ValveSpec {
     name: String,
-    flow_rate: i64,
+    flow_rate: u64,
     tunnels: Vec<String>,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+enum ActorState {
+    Start { location: usize },
+    MoveTo { dest: usize, time_to_finish: u64 },
+    Idle,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct SearchState {
-    time_remaining: u8,
-    location: usize,
-    valves_to_open: BitSet,
+    time_remaining: u64,
+    my_state: ActorState,
+    elephant_state: ActorState,
+    valves_available: BitSet,
     open_valves: BitSet,
-    // pressure_released: i64,
+}
+
+#[derive(Debug, Default, Clone)]
+struct ActorChoiceResult {
+    valves_claimed: BitSet,
+    valves_opened: BitSet,
+}
+
+struct ActorDisplay<'a> {
+    system: &'a ValveSystem,
+    actor: &'a ActorState,
+}
+
+impl Display for ActorDisplay<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self.actor {
+            ActorState::Start { location } => {
+                write!(f, "Start({})", self.system.valves[*location].name)
+            }
+            ActorState::MoveTo {
+                dest,
+                time_to_finish: time_remaining,
+            } => write!(
+                f,
+                "MoveTo({}, t={time_remaining})",
+                self.system.valves[*dest].name
+            ),
+            ActorState::Idle => write!(f, "Idle"),
+        }
+    }
 }
 
 impl ValveSystem {
+    fn max_flow_rate(&self) -> u64 {
+        self.valves.iter().map(|valve| valve.flow_rate).sum()
+    }
+
     fn useful_valves(&self) -> BitSet {
         self.valves
             .iter()
@@ -63,58 +106,78 @@ impl ValveSystem {
                 self.dijkstra_paths(from_index)
                     .into_iter()
                     .filter(|res| useful_valves.contains(res.node))
-                    .map(move |res| {
-                        ((from_index, res.node), res.distance as i64)
-                    })
+                    .map(move |res| ((from_index, res.node), res.distance))
             })
             .collect()
     }
 
-    fn initial_state(&self) -> Result<SearchState, Error> {
+    fn initial_state_part_1(&self) -> Result<SearchState, Error> {
         let location = self.start_location().ok_or(Error::NoStartPosition)?;
         Ok(SearchState {
             time_remaining: 30,
-            location,
-            valves_to_open: self.useful_valves(),
+            my_state: ActorState::Start { location },
+            elephant_state: ActorState::Idle,
+            valves_available: self.useful_valves(),
             open_valves: BitSet::with_capacity(self.valves.len()),
-            // pressure_released: 0,
+        })
+    }
+    fn initial_state_part_2(&self) -> Result<SearchState, Error> {
+        let location = self.start_location().ok_or(Error::NoStartPosition)?;
+        Ok(SearchState {
+            time_remaining: 26,
+            my_state: ActorState::Start { location },
+            elephant_state: ActorState::Start { location },
+            valves_available: self.useful_valves(),
+            open_valves: BitSet::with_capacity(self.valves.len()),
         })
     }
 }
 
 impl SearchState {
-    fn current_rate(&self, system: &ValveSystem) -> i64 {
+    fn current_rate(&self, system: &ValveSystem) -> u64 {
         self.open_valves
             .iter()
             .map(|index| system.valves[index].flow_rate)
             .sum()
     }
 
-    fn pressure_relief_if_idle(&self, system: &ValveSystem) -> i64 {
-        self.current_rate(system) * (self.time_remaining as i64)
-    }
+    // fn pressure_relief_if_idle(&self, system: &ValveSystem) -> u64 {
+    //     self.current_rate(system) * self.time_remaining
+    // }
 
-    fn pressure_relief_of_idealized_path(&self, system: &ValveSystem) -> i64 {
-        self.valves_to_open
-            .iter()
-            .map(|index| system.valves[index].flow_rate)
-            .sorted_by_key(|rate| std::cmp::Reverse(*rate))
-            .take((self.time_remaining as usize) / 2)
-            .enumerate()
-            .map(|(i, rate)| {
-                let t: u8 = self
-                    .time_remaining
-                    .checked_sub(2 * (i + 1) as u8)
-                    .expect("Check sub failure during idealized path");
-                (t as i64) * rate
-            })
-            .sum::<i64>()
-    }
+    // fn pressure_relief_of_idealized_path(&self, system: &ValveSystem) -> u64 {
+    //     match self.my_state {
+    //         ActorState::Start { location } => {
+    //             Some((location, self.time_remaining))
+    //         }
+    //         ActorState::MoveTo {
+    //             dest,
+    //             time_to_finish,
+    //         } => Some((dest, self.time_remaining - time_to_finish)),
+    //         ActorState::Idle => None,
+    //     }
+    //     .map_or(0, |(location, time_remaining)| {
+    //         self.valves_available
+    //             .difference(&std::iter::once(location).collect())
+    //             .map(|index| system.valves[index].flow_rate)
+    //             .sorted_by_key(|rate| std::cmp::Reverse(*rate))
+    //             .take((time_remaining as usize) / 2)
+    //             .enumerate()
+    //             .map(|(i, rate)| {
+    //                 let t: u64 = self
+    //                     .time_remaining
+    //                     .checked_sub(2 * (i + 1) as u64)
+    //                     .expect("Check sub failure during idealized path");
+    //                 t * rate
+    //             })
+    //             .sum::<u64>()
+    //     })
+    // }
 
-    fn pressure_relief_upper_bound(&self, system: &ValveSystem) -> i64 {
-        self.pressure_relief_if_idle(system)
-            + self.pressure_relief_of_idealized_path(system)
-    }
+    // fn pressure_relief_upper_bound(&self, system: &ValveSystem) -> u64 {
+    //     self.pressure_relief_if_idle(system)
+    //         + self.pressure_relief_of_idealized_path(system)
+    // }
 }
 
 impl DynamicGraph<SearchState> for ValveSystem {
@@ -123,67 +186,68 @@ impl DynamicGraph<SearchState> for ValveSystem {
             return Vec::new();
         }
 
-        let current_rate = node.current_rate(&self);
-        let ideal = node.pressure_relief_upper_bound(&self);
+        let max_flow_rate = self.max_flow_rate();
+        let time_remaining = node.time_remaining.checked_sub(1).unwrap();
 
-        // println!("Current node: {node:?}");
-        // println!("Ideal pressure relief would be {ideal}, from_open={}, from idealized path = {}", node.pressure_relief_if_idle(self), node.pressure_relief_of_idealized_path(self));
-        // println!("Current rate: {}", node.current_rate(&self));
-
-        let output: Vec<_> = node
-            .valves_to_open
-            .iter()
-            .map(|location| {
-                let distance = self
-                    .cached_path_lengths
-                    .get(&(node.location, location))
-                    .unwrap();
-                let time = (*distance as u8) + 1;
-                (location, time)
+        node.my_state
+            .next_state_options(
+                &node.valves_available,
+                &self.cached_path_lengths,
+                node.time_remaining,
+            )
+            .into_iter()
+            .flat_map(|(my_state, my_results)| {
+                let valves_available: BitSet = node
+                    .valves_available
+                    .difference(&my_results.valves_claimed)
+                    .collect();
+                node.elephant_state
+                    .next_state_options(
+                        &valves_available,
+                        &self.cached_path_lengths,
+                        node.time_remaining,
+                    )
+                    .map(move |(elephant_state, elephant_results)| {
+                        let valves_claimed: BitSet = my_results
+                            .valves_claimed
+                            .union(&elephant_results.valves_claimed)
+                            .collect();
+                        let valves_opened: BitSet = my_results
+                            .valves_opened
+                            .union(&elephant_results.valves_opened)
+                            .collect();
+                        (
+                            my_state.clone(),
+                            elephant_state,
+                            ActorChoiceResult {
+                                valves_claimed,
+                                valves_opened,
+                            },
+                        )
+                    })
             })
-            .filter(|(_location, time)| *time < node.time_remaining)
-            .map(|(location, time)| -> SearchState {
-                let time_remaining = node
-                    .time_remaining
-                    .checked_sub(time)
-                    .expect("Checked sub underflow in connections_from()");
-                let location_bits: BitSet = std::iter::once(location).collect();
-                let valves_to_open =
-                    node.valves_to_open.difference(&location_bits).collect();
-                let open_valves =
-                    node.open_valves.union(&location_bits).collect();
-                SearchState {
+            .map(|(my_state, elephant_state, choice_results)| {
+                let valves_available: BitSet = node
+                    .valves_available
+                    .difference(&choice_results.valves_claimed)
+                    .collect();
+                let open_valves: BitSet = node
+                    .open_valves
+                    .union(&choice_results.valves_opened)
+                    .collect();
+                let new_search_state = SearchState {
                     time_remaining,
-                    location,
-                    valves_to_open,
+                    my_state,
+                    elephant_state,
+                    valves_available,
                     open_valves,
-                }
-            })
-            .map(|next_state| {
-                let ideal_from_next =
-                    next_state.pressure_relief_upper_bound(&self);
-                let relief_during_steps = current_rate
-                    * ((node.time_remaining - next_state.time_remaining)
-                        as i64);
-                let pseudo_dist =
-                    ideal - (ideal_from_next + relief_during_steps);
-                (next_state, pseudo_dist as u64)
-            })
-            .collect();
+                };
+                let missing_flow_rate =
+                    max_flow_rate - new_search_state.current_rate(&self);
 
-        if output.is_empty() {
-            let idle_state = SearchState {
-                time_remaining: 0,
-                location: node.location,
-                valves_to_open: node.valves_to_open.clone(),
-                open_valves: node.open_valves.clone(),
-            };
-            let pseudo_dist =
-                ideal - current_rate * (node.time_remaining as i64);
-            vec![(idle_state, pseudo_dist as u64)]
-        } else {
-            output
-        }
+                (new_search_state, missing_flow_rate)
+            })
+            .collect()
     }
 
     fn heuristic_between(
@@ -195,15 +259,105 @@ impl DynamicGraph<SearchState> for ValveSystem {
     }
 }
 
-impl PartialEq for Valve {
-    fn eq(&self, rhs: &Valve) -> bool {
-        self.index == rhs.index
+impl ActorState {
+    fn next_state_options(
+        &self,
+        valves_available: &BitSet,
+        cached_path_lengths: &HashMap<(usize, usize), u64>,
+        time_remaining: u64,
+    ) -> impl Iterator<Item = (Self, ActorChoiceResult)> {
+        match self.clone() {
+            ActorState::Idle => Either::Left(std::iter::once((
+                ActorState::Idle,
+                ActorChoiceResult::default(),
+            ))),
+            ActorState::MoveTo {
+                dest,
+                time_to_finish: 0,
+            } => Either::Right(Either::Right(
+                Self::choose_next_destination(
+                    dest,
+                    valves_available,
+                    cached_path_lengths,
+                    time_remaining,
+                )
+                .map(move |(actor, res)| {
+                    let newly_opened: BitSet = std::iter::once(dest).collect();
+                    (
+                        actor,
+                        ActorChoiceResult {
+                            valves_claimed: res.valves_claimed,
+                            valves_opened: res
+                                .valves_opened
+                                .union(&newly_opened)
+                                .collect(),
+                        },
+                    )
+                }),
+            )),
+            ActorState::MoveTo {
+                dest,
+                time_to_finish,
+            } => Either::Left(std::iter::once((
+                ActorState::MoveTo {
+                    dest,
+                    time_to_finish: time_to_finish - 1,
+                },
+                ActorChoiceResult::default(),
+            ))),
+            ActorState::Start { location } => {
+                Either::Right(Either::Left(Self::choose_next_destination(
+                    location,
+                    valves_available,
+                    cached_path_lengths,
+                    time_remaining,
+                )))
+            }
+        }
     }
-}
-impl Eq for Valve {}
-impl Hash for Valve {
-    fn hash<H: Hasher>(&self, hasher: &mut H) {
-        self.index.hash(hasher);
+
+    fn choose_next_destination(
+        current_location: usize,
+        valves_available: &BitSet,
+        cached_path_lengths: &HashMap<(usize, usize), u64>,
+        time_remaining: u64,
+    ) -> impl Iterator<Item = (Self, ActorChoiceResult)> {
+        let options: Vec<(Self, ActorChoiceResult)> = valves_available
+            .iter()
+            .map(|next_location| {
+                let distance = cached_path_lengths
+                    .get(&(current_location, next_location))
+                    .unwrap();
+                // let time = distance + 1;
+                let time = *distance;
+                (next_location, time)
+            })
+            .filter(|(_next_location, time)| *time < time_remaining)
+            .map(|(next_location, time)| {
+                let actor_state = ActorState::MoveTo {
+                    dest: next_location,
+                    time_to_finish: time,
+                };
+                let valves_claimed: BitSet =
+                    std::iter::once(next_location).collect();
+                (
+                    actor_state,
+                    ActorChoiceResult {
+                        valves_claimed,
+                        ..Default::default()
+                    },
+                )
+            })
+            .collect();
+
+        if options.is_empty() {
+            Either::Left(std::iter::once((
+                ActorState::Idle,
+                ActorChoiceResult::default(),
+            )))
+        } else {
+            Either::Right(options.into_iter())
+        }
     }
 }
 
@@ -218,12 +372,12 @@ impl std::str::FromStr for ValveSpec {
             .ok_or(Error::InvalidString(orig_line.clone()))?
             .to_string();
         let mut words = words.skip(2); // "has flow"
-        let flow_rate: i64 = words
+        let flow_rate: u64 = words
             .next()
             .ok_or(Error::InvalidString(orig_line.clone()))?
             .strip_prefix("rate=")
             .and_then(|s| s.strip_suffix(';'))
-            .map(|r| r.parse::<i64>())
+            .map(|r| r.parse::<u64>())
             .ok_or(Error::InvalidString(orig_line.clone()))??;
         let mut words = words.skip(4); // "tunnels lead to"
         let tunnels: Vec<_> = words
@@ -303,50 +457,23 @@ impl Puzzle for ThisDay {
         Ok(system)
     }
 
-    type Part1Result = i64;
+    type Part1Result = u64;
     fn part_1(system: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
-        println!("Valve system: {system:?}");
+        let initial_state = system.initial_state_part_1()?;
+        println!("Initial state: {:?}", initial_state);
 
-        // let start_location: usize = system.start_location().unwrap();
-
-        // let useful_valves = system.useful_valves();
-
-        // let path_lengths: HashMap<(usize, usize), u64> = useful_valves
-        //     .iter()
-        //     .chain(std::iter::once(start_location))
-        //     .flat_map(|from_index| {
-        //         system
-        //             .dijkstra_paths(from_index)
-        //             .into_iter()
-        //             .filter(|res| useful_valves.contains(res.node))
-        //             .map(move |res| ((from_index, res.node), res.distance))
-        //     })
-        //     .collect();
-
-        // println!("Path lengths: {path_lengths:?}");
-
-        println!("Initial state: {:?}", system.initial_state()?);
-
-        let idealized =
-            system.initial_state()?.pressure_relief_upper_bound(&system);
-        let orderings = system.dijkstra_paths(system.initial_state()?);
-        println!("Num. Orderings: {}", orderings.len());
-        println!(
-            "Num. Terminal Orderings: {}",
-            orderings
-                .iter()
-                .filter(|node| node.num_out_edges == 0)
-                .count()
-        );
+        let idealized = initial_state.time_remaining * system.max_flow_rate();
+        let orderings: Vec<_> = system
+            .dijkstra_search(initial_state)
+            .take_while_inclusive(|node| node.node.time_remaining > 0)
+            .collect();
         let best = orderings
             .iter()
             .filter(|node| node.num_out_edges == 0)
-            .max_by_key(|node| idealized - (node.distance as i64))
+            .min_by_key(|node| node.distance)
             .unwrap();
 
-        println!("Best: {best:?}");
-
-        let path: Vec<_> = std::iter::successors(Some(best), |node| {
+        let path_str = std::iter::successors(Some(best), |node| {
             node.backref
                 .as_ref()
                 .map(|edge| &orderings[edge.initial_node])
@@ -354,27 +481,84 @@ impl Puzzle for ThisDay {
         .collect::<Vec<_>>()
         .into_iter()
         .rev()
-        .collect();
-
-        let path_str = path
-            .iter()
-            .map(|node| {
-                format!(
-                    "(valve={}, t={}, rate={})",
-                    system.valves[node.node.location as usize].name,
-                    node.node.time_remaining,
-                    node.node.current_rate(&system),
-                )
-            })
-            .join("\n\t=> ");
+        .map(|node| {
+            format!(
+                "(t={}, rate={}, opened=[{}], me={})",
+                node.node.time_remaining,
+                node.node.current_rate(&system),
+                node.node
+                    .open_valves
+                    .iter()
+                    .map(|index| &system.valves[index].name)
+                    .join(", "),
+                ActorDisplay {
+                    actor: &node.node.my_state,
+                    system: &system
+                },
+            )
+        })
+        .join("\n\t=> ");
 
         println!("Path for best: {path_str}");
 
-        Ok(idealized - (best.distance as i64))
+        Ok(idealized - (best.distance as u64))
     }
 
-    type Part2Result = ();
-    fn part_2(_valves: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
-        Err(Error::NotYetImplemented)
+    type Part2Result = u64;
+    fn part_2(system: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+        let initial_state = system.initial_state_part_2()?;
+        let idealized = initial_state.time_remaining * system.max_flow_rate();
+        println!("Initial state: {:?}", initial_state);
+
+        let orderings: Vec<_> = system
+            .dijkstra_search(initial_state)
+            .take_while_inclusive(|node| node.node.time_remaining > 0)
+            .enumerate()
+            .inspect(|(i, node)| {
+                if i % 100000 == 0 {
+                    println!("Examined {}, t={}", i, node.node.time_remaining)
+                }
+            })
+            .map(|(_i, node)| node)
+            .collect();
+        let best = orderings
+            .iter()
+            .filter(|node| node.num_out_edges == 0)
+            .min_by_key(|node| node.distance)
+            .unwrap();
+
+        let path_str = std::iter::successors(Some(best), |node| {
+            node.backref
+                .as_ref()
+                .map(|edge| &orderings[edge.initial_node])
+        })
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .map(|node| {
+            format!(
+                "(t={}, rate={}, opened=[{}], me={}, elephant={})",
+                node.node.time_remaining,
+                node.node.current_rate(&system),
+                node.node
+                    .open_valves
+                    .iter()
+                    .map(|index| &system.valves[index].name)
+                    .join(", "),
+                ActorDisplay {
+                    actor: &node.node.my_state,
+                    system: &system
+                },
+                ActorDisplay {
+                    actor: &node.node.elephant_state,
+                    system: &system
+                },
+            )
+        })
+        .join("\n\t=> ");
+
+        println!("Path for best: {path_str}");
+
+        Ok(idealized - (best.distance as u64))
     }
 }

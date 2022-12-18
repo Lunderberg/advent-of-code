@@ -1,5 +1,5 @@
 use std::cmp::Reverse;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
 use itertools::Itertools;
@@ -12,9 +12,9 @@ pub enum Error {
     CircularReversePath,
 }
 
-pub trait DynamicGraphNode: Eq + Hash + std::fmt::Debug {}
+pub trait DynamicGraphNode: Eq + Hash {}
 
-impl<T> DynamicGraphNode for T where T: Eq + Hash + std::fmt::Debug {}
+impl<T> DynamicGraphNode for T where T: Eq + Hash {}
 
 // Internal structure for path-finding.  Implements Ord based on the
 // sum of src_to_pos and heuristic_to_dest.
@@ -217,6 +217,28 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
         }
     }
 
+    fn dijkstra_search(&self, initial: T) -> DijkstraSearchIter<T, Self>
+    where
+        T: Clone,
+    {
+        let search_queue = std::iter::once((
+            initial,
+            SearchPointInfo {
+                node_index: None,
+                src_to_pos: 0,
+                heuristic_to_dest: 0,
+                previous_edge: None,
+                num_out_edges: None,
+            },
+        ))
+        .collect();
+        DijkstraSearchIter {
+            search_queue,
+            finished: HashSet::new(),
+            graph: &self,
+        }
+    }
+
     // Returns the short
     fn dijkstra_paths(&self, initial: T) -> Vec<DijkstraSearchNode<T>> {
         let mut results: HashMap<T, SearchPointInfo> = HashMap::new();
@@ -290,5 +312,67 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
                 num_out_edges: info.num_out_edges.unwrap(),
             })
             .collect()
+    }
+}
+
+pub struct DijkstraSearchIter<
+    'a,
+    T: Eq + Hash + Clone,
+    Graph: DynamicGraph<T> + ?Sized,
+> {
+    search_queue: PriorityQueue<T, SearchPointInfo>,
+    finished: HashSet<T>,
+    graph: &'a Graph,
+}
+
+impl<'a, T: Eq + Hash + Clone, Graph: DynamicGraph<T> + ?Sized> Iterator
+    for DijkstraSearchIter<'a, T, Graph>
+{
+    type Item = DijkstraSearchNode<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.search_queue.pop().map(|(node, mut info)| {
+            let out_connections = self.graph.connections_from(&node);
+
+            let node_index = self.finished.len();
+            info.node_index = Some(node_index);
+            info.num_out_edges = Some(out_connections.len());
+
+            let src_to_node: u64 = info.src_to_pos;
+
+            let finished = &mut self.finished;
+            finished.insert(node.clone());
+
+            let search_queue = &mut self.search_queue;
+
+            out_connections
+                .into_iter()
+                .filter(|(new_node, _edge_weight)| !finished.contains(new_node))
+                .map(|(new_node, edge_weight)| {
+                    (
+                        new_node,
+                        SearchPointInfo {
+                            node_index: None,
+                            src_to_pos: src_to_node + edge_weight,
+                            heuristic_to_dest: 0,
+                            previous_edge: Some(GraphEdge {
+                                initial_node: node_index,
+                                edge_weight,
+                            }),
+                            num_out_edges: None,
+                        },
+                    )
+                })
+                .for_each(|(new_node, info)| {
+                    search_queue.push_increase(new_node, info);
+                });
+
+            DijkstraSearchNode {
+                node,
+                distance: info.src_to_pos,
+                backref: info.previous_edge,
+                num_out_edges: info.num_out_edges.unwrap(),
+            }
+        })
     }
 }
