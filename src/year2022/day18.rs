@@ -21,12 +21,12 @@ impl Lava {
         let min = voxels
             .iter()
             .cloned()
-            .reduce(|a, b| a.zip_map(&b, |ai, bi| ai.min(bi)))
+            .reduce(|a, b| a.zip_map(b, |&ai, &bi| ai.min(bi)))
             .unwrap();
         let max = voxels
             .iter()
             .cloned()
-            .reduce(|a, b| a.zip_map(&b, |ai, bi| ai.max(bi)))
+            .reduce(|a, b| a.zip_map(b, |&ai, &bi| ai.max(bi)))
             .unwrap();
         let bounds = min
             .iter()

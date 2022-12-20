@@ -1,25 +1,28 @@
 use crate::Error;
 
+use std::cmp;
 use std::fmt::{Display, Formatter};
 use std::ops;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
-pub struct Vector<const N: usize>([i64; N]);
+pub struct Vector<const N: usize, T = i64>([T; N]);
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub struct Matrix<const N: usize, const M: usize>([[i64; M]; N]);
+pub struct Matrix<const N: usize, const M: usize, T = i64>([[T; M]; N]);
 
 macro_rules! elementwise_unary_op {
     ($trait:ident, $method:ident, $op:tt) => {
-        impl<const N: usize, const M: usize> ops::$trait for Matrix<N, M> {
+        impl<const N: usize, const M: usize, T> ops::$trait for Matrix<N, M, T>
+        where T: ops::$trait<Output=T> {
             type Output = Self;
             fn $method(self) -> Self {
                 Self(self.0.map(|row| row.map(|val| $op val)))
             }
         }
 
-        impl<const N: usize> ops::$trait for Vector<N> {
+        impl<const N: usize, T> ops::$trait for Vector<N, T>
+        where T: ops::$trait<Output=T> {
             type Output = Self;
             fn $method(self) -> Self {
                 Self(self.0.map(|val| $op val))
@@ -30,17 +33,57 @@ macro_rules! elementwise_unary_op {
 
 macro_rules! elementwise_scalar_op {
     ($trait:ident, $method:ident, $op:tt) => {
-        impl<const N: usize, const M: usize> ops::$trait<i64> for Matrix<N, M> {
+        impl<const N: usize, const M: usize, T> ops::$trait<T> for Matrix<N, M, T>
+        where T: ops::$trait<Output = T> + Copy {
             type Output = Self;
-            fn $method(self, rhs: i64) -> Self {
+            fn $method(self, rhs: T) -> Self {
                 Self(self.0.map(|row| row.map(|val| val $op rhs)))
             }
         }
 
-        impl<const N: usize> ops::$trait<i64> for Vector<N> {
+        impl<const N: usize, T> ops::$trait<T> for Vector<N, T>
+        where T: ops::$trait<Output = T> + Copy {
             type Output = Self;
-            fn $method(self, rhs: i64) -> Self {
+            fn $method(self, rhs: T) -> Self {
                 Self(self.0.map(|val| val $op rhs))
+            }
+        }
+
+        // Would prefer to make a generic trait over the primitive
+        // type.
+        //
+        //   impl<const N: usize, T> ops::$trait<Vector<N,T>> for T
+        //   where T: ops::$trait<Output = T> + Copy {
+        //       type Output = Vector<N, T>;
+        //       fn $method(self, rhs: Vector<N,T>) -> Self::Output {
+        //           rhs.0.map(|val| self $op val).into()
+        //       }
+        //   }
+        //
+        // However, that runs into E0210, since the implementation
+        // over the generic type T isn't covered by any local type.
+        // Therefore, implementing for several common types, and
+        // crossing fingers that it doesn't become an issue later.
+        elementwise_scalar_op_lhs!($trait, $method, $op, i8);
+        elementwise_scalar_op_lhs!($trait, $method, $op, i16);
+        elementwise_scalar_op_lhs!($trait, $method, $op, i32);
+        elementwise_scalar_op_lhs!($trait, $method, $op, i64);
+        elementwise_scalar_op_lhs!($trait, $method, $op, u8);
+        elementwise_scalar_op_lhs!($trait, $method, $op, u16);
+        elementwise_scalar_op_lhs!($trait, $method, $op, u32);
+        elementwise_scalar_op_lhs!($trait, $method, $op, u64);
+        elementwise_scalar_op_lhs!($trait, $method, $op, f32);
+        elementwise_scalar_op_lhs!($trait, $method, $op, f64);
+        elementwise_scalar_op_lhs!($trait, $method, $op, usize);
+    };
+}
+
+macro_rules! elementwise_scalar_op_lhs {
+    ($trait:ident, $method:ident, $op:tt, $prim:ident) => {
+        impl<const N: usize> ops::$trait<Vector<N, $prim>> for $prim {
+            type Output = Vector<N, $prim>;
+            fn $method(self, rhs: Vector<N, $prim>) -> Self::Output {
+                rhs.0.map(|val| self $op val).into()
             }
         }
     };
@@ -48,13 +91,14 @@ macro_rules! elementwise_scalar_op {
 
 macro_rules! elementwise_binary_op {
     ($trait:ident, $method:ident, $op:tt) => {
-        impl<const N: usize, const M: usize> ops::$trait for Matrix<N, M> {
+        impl<const N: usize, const M: usize, T> ops::$trait for Matrix<N, M, T>
+        where T: ops::$trait<Output = T> + num::Zero + Copy {
             type Output = Self;
             fn $method(self, rhs: Self) -> Self {
                 let mut result = Self::zero();
                 self.iter_flat()
                     .zip(rhs.iter_flat())
-                    .map(|(a, b)| a $op b)
+                    .map(|(a, b)| *a $op *b)
                     .zip(result.iter_flat_mut())
                     .for_each(|(val, out)| {
                         *out = val;
@@ -64,13 +108,14 @@ macro_rules! elementwise_binary_op {
             }
         }
 
-        impl<const N: usize> ops::$trait for Vector<N> {
+        impl<const N: usize, T> ops::$trait for Vector<N, T>
+        where T: ops::$trait<Output = T> + num::Zero + Copy {
             type Output = Self;
             fn $method(self, rhs: Self) -> Self {
                 let mut result = Self::zero();
                 self.iter()
                     .zip(rhs.iter())
-                    .map(|(a, b)| a $op b)
+                    .map(|(a, b)| *a $op *b)
                     .zip(result.iter_mut())
                     .for_each(|(val, out)| {
                         *out = val;
@@ -88,14 +133,17 @@ elementwise_binary_op!(Sub, sub, -);
 elementwise_scalar_op!(Mul, mul, *);
 elementwise_scalar_op!(Div, div, /);
 
-impl<const N: usize> ops::Index<usize> for Vector<N> {
-    type Output = i64;
-    fn index(&self, index: usize) -> &i64 {
+impl<const N: usize, T> ops::Index<usize> for Vector<N, T> {
+    type Output = T;
+    fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
     }
 }
 
-impl<const N: usize> Display for Vector<N> {
+impl<const N: usize, T> Display for Vector<N, T>
+where
+    T: Display,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "(")?;
         self.iter().enumerate().try_for_each(|(i, val)| {
@@ -109,11 +157,11 @@ impl<const N: usize> Display for Vector<N> {
     }
 }
 
-impl<const N: usize, const M: usize> ops::Index<(usize, usize)>
-    for Matrix<N, M>
+impl<const N: usize, const M: usize, T> ops::Index<(usize, usize)>
+    for Matrix<N, M, T>
 {
-    type Output = i64;
-    fn index(&self, index: (usize, usize)) -> &i64 {
+    type Output = T;
+    fn index(&self, index: (usize, usize)) -> &Self::Output {
         &self.0[index.0][index.1]
     }
 }
@@ -133,58 +181,76 @@ impl<const N: usize, const R: usize, const M: usize> ops::Mul<Matrix<R, M>>
     }
 }
 
-impl<const N: usize, const M: usize> ops::Mul<Vector<M>> for Matrix<N, M> {
-    type Output = Vector<N>;
-    fn mul(self, rhs: Vector<M>) -> Vector<N> {
-        let mut values = [0; N];
+impl<const N: usize, const M: usize, T> ops::Mul<Vector<M, T>>
+    for Matrix<N, M, T>
+where
+    T: Default + Copy + std::iter::Sum,
+    T: ops::Mul<Output = T>,
+{
+    type Output = Vector<N, T>;
+    fn mul(self, rhs: Vector<M, T>) -> Vector<N, T> {
+        let mut values = [(); N].map(|_| T::default());
         values.iter_mut().enumerate().for_each(|(i, out)| {
             *out = (0..M).map(|j| self[(i, j)] * rhs[j]).sum();
         });
-        Vector::<N>(values)
+        values.into()
     }
 }
 
-impl<const N: usize> Vector<N> {
-    pub fn new(arr: [i64; N]) -> Self {
+impl<const N: usize, T> Vector<N, T> {
+    pub fn new(arr: [T; N]) -> Self {
         Self(arr)
     }
 
-    pub fn zero() -> Self {
-        Self([0; N])
+    pub fn zero() -> Self
+    where
+        T: num::Zero,
+    {
+        Self([(); N].map(|_| T::zero()))
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = i64> + '_ {
-        self.0.iter().copied()
+    pub fn iter(&self) -> impl Iterator<Item = &T> + '_ {
+        self.0.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut i64> + '_ {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> + '_ {
         self.0.iter_mut()
     }
 
-    pub fn dist2(&self, other: &Self) -> i64 {
-        self.iter()
-            .zip(other.iter())
-            .map(|(a, b)| (a - b).pow(2))
-            .sum()
-    }
-
-    pub fn manhattan_dist(&self, other: &Self) -> i64 {
-        self.iter()
-            .zip(other.iter())
-            .map(|(a, b)| (a - b).abs())
-            .sum()
-    }
-
-    pub fn map<F>(&self, func: F) -> Self
+    pub fn dist2(&self, other: &Self) -> T
     where
-        F: FnMut(i64) -> i64,
+        T: ops::Sub<Output = T> + ops::Mul<Output = T>,
+        T: std::iter::Sum + Copy,
+    {
+        self.iter()
+            .zip(other.iter())
+            .map(|(a, b)| *a - *b)
+            .map(|diff| diff * diff)
+            .sum()
+    }
+
+    pub fn manhattan_dist(&self, other: &Self) -> T
+    where
+        T: cmp::PartialOrd + ops::Sub<Output = T>,
+        T: Copy + std::iter::Sum,
+    {
+        self.iter()
+            .zip(other.iter())
+            .map(|(a, b)| if a < b { *b - *a } else { *a - *b })
+            .sum()
+    }
+
+    pub fn map<F>(self, func: F) -> Self
+    where
+        F: FnMut(T) -> T,
     {
         Self(self.0.map(func))
     }
 
-    pub fn zip_map<F>(&self, other: &Self, mut func: F) -> Self
+    pub fn zip_map<F>(self, other: Self, mut func: F) -> Self
     where
-        F: FnMut(i64, i64) -> i64,
+        F: FnMut(&T, &T) -> T,
+        T: num::Zero,
     {
         let mut result = Self::zero();
         self.iter()
@@ -202,58 +268,96 @@ impl<const N: usize> Vector<N> {
     pub fn cardinal_points_to(
         &self,
         other: &Self,
-    ) -> impl Iterator<Item = Vector<N>> + '_ {
-        let delta = *other - *self;
-        let step = delta.map(|val| val.signum());
-        let len = delta.manhattan_dist(&Vector::zero());
-        (0..=len).map(move |i| *self + step * i)
+    ) -> impl Iterator<Item = Vector<N, T>> + '_
+    where
+        T: Copy + std::iter::Sum,
+        T: ops::Add<Output = T> + ops::Sub<Output = T> + ops::Mul<Output = T>,
+        T: num::Integer + num::Signed + num::Zero + num::One,
+        T: num::ToPrimitive,
+    {
+        let delta: Self = *other - *self;
+        let step: Self = delta.map(|val| num::signum(val));
+        let len: T = delta.manhattan_dist(&Vector::zero());
+        num::range_inclusive(T::zero(), len).map(move |i: T| -> Vector<N, T> {
+            let offset: Vector<N, T> = step * i;
+            *self + offset
+        })
+        // std::iter::successors(Some(*self), move |&prev| Some(prev + step))
+        //     .take((len + T::one()).into())
     }
 }
 
-impl Vector<2> {
-    pub fn x(&self) -> i64 {
+impl<const N: usize, T> Default for Vector<N, T>
+where
+    T: Default,
+{
+    fn default() -> Self {
+        [(); N].map(|_| T::default()).into()
+    }
+}
+
+impl<T> Vector<2, T> {
+    pub fn x(&self) -> T
+    where
+        T: Copy,
+    {
         self.0[0]
     }
 
-    pub fn y(&self) -> i64 {
+    pub fn y(&self) -> T
+    where
+        T: Copy,
+    {
         self.0[1]
     }
 }
 
-impl Vector<3> {
-    pub fn x(&self) -> i64 {
+impl<T> Vector<3, T> {
+    pub fn x(&self) -> T
+    where
+        T: Copy,
+    {
         self.0[0]
     }
 
-    pub fn y(&self) -> i64 {
+    pub fn y(&self) -> T
+    where
+        T: Copy,
+    {
         self.0[1]
     }
 
-    pub fn z(&self) -> i64 {
+    pub fn z(&self) -> T
+    where
+        T: Copy,
+    {
         self.0[2]
     }
 }
 
-impl<const N: usize> From<[i64; N]> for Vector<N> {
-    fn from(values: [i64; N]) -> Self {
+impl<const N: usize, T> From<[T; N]> for Vector<N, T> {
+    fn from(values: [T; N]) -> Self {
         Self::new(values)
     }
 }
 
-impl<const N: usize, const M: usize> Matrix<N, M> {
-    pub fn new(values: [[i64; M]; N]) -> Self {
+impl<const N: usize, const M: usize, T> Matrix<N, M, T> {
+    pub fn new(values: [[T; M]; N]) -> Self {
         Self(values)
     }
 
-    pub fn zero() -> Self {
-        Self([[0; M]; N])
+    pub fn zero() -> Self
+    where
+        T: num::Zero,
+    {
+        Self([(); N].map(|_| [(); M].map(|_| T::zero())))
     }
 
-    pub fn iter_flat(&self) -> impl Iterator<Item = i64> + '_ {
-        self.0.iter().flat_map(|row| row.iter()).copied()
+    pub fn iter_flat(&self) -> impl Iterator<Item = &T> + '_ {
+        self.0.iter().flat_map(|row| row.iter())
     }
 
-    pub fn iter_flat_mut(&mut self) -> impl Iterator<Item = &mut i64> + '_ {
+    pub fn iter_flat_mut(&mut self) -> impl Iterator<Item = &mut T> + '_ {
         self.0.iter_mut().flat_map(|row| row.iter_mut())
     }
 }
@@ -325,12 +429,17 @@ impl Matrix<3, 3> {
     }
 }
 
-impl<const N: usize> FromStr for Vector<N> {
+impl<const N: usize, T> FromStr for Vector<N, T>
+where
+    T: Default,
+    T: FromStr,
+    Error: From<T::Err>,
+{
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Error> {
-        let mut parsed_values = s.split(',').map(|s| s.parse::<i64>());
+        let mut parsed_values = s.split(',').map(|s| s.parse::<T>());
 
-        let mut values = [0; N];
+        let mut values = [(); N].map(|_| T::default());
         let mut value_iter = values.iter_mut();
 
         value_iter

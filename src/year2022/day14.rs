@@ -143,8 +143,8 @@ impl Display for SandSimulation {
             .fold(None, |acc: Option<(Vector<2>, Vector<2>)>, point| {
                 if let Some((min, max)) = acc {
                     Some((
-                        min.zip_map(point, |a, b| a.min(b)),
-                        max.zip_map(point, |a, b| a.max(b)),
+                        min.zip_map(*point, |&a, &b| a.min(b)),
+                        max.zip_map(*point, |&a, &b| a.max(b)),
                     ))
                 } else {
                     Some((*point, *point))

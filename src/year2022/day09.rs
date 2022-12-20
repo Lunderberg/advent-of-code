@@ -75,8 +75,12 @@ impl Rope {
             |prev_offset, window| {
                 let head = window[0] + *prev_offset;
                 let prev_tail = window[1];
-                let tail_dist =
-                    (prev_tail - head).map(|x| x.abs()).iter().max().unwrap();
+                let tail_dist = (prev_tail - head)
+                    .map(|x| x.abs())
+                    .iter()
+                    .copied()
+                    .max()
+                    .unwrap();
                 let tail_delta = if tail_dist < 2 {
                     Vector::zero()
                 } else {
