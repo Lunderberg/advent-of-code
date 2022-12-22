@@ -57,6 +57,9 @@ pub enum Error {
     AlreadyAtRootDir,
     ParentNotADirectory,
     NameNotFoundInDirectory,
+
+    // 2022-12-21
+    NotFullySimplified(String),
 }
 
 #[derive(Debug)]
