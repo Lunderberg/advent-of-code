@@ -5,6 +5,8 @@ use std::fmt::{Display, Formatter};
 use std::ops;
 use std::str::FromStr;
 
+use itertools::Itertools;
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub struct Vector<const N: usize, T = i64>([T; N]);
 
@@ -338,6 +340,25 @@ impl<T> Vector<3, T> {
 impl<const N: usize, T> From<[T; N]> for Vector<N, T> {
     fn from(values: [T; N]) -> Self {
         Self::new(values)
+    }
+}
+
+impl<const N: usize, T> From<Vector<N, T>> for [T; N] {
+    fn from(value: Vector<N, T>) -> Self {
+        value.0
+    }
+}
+
+// TODO: Macro for generating these converters for more tuple sizes.
+impl<T> From<Vector<2, T>> for (T, T) {
+    fn from(value: Vector<2, T>) -> Self {
+        IntoIterator::into_iter(value.0).collect_tuple().unwrap()
+    }
+}
+
+impl<T> From<(T, T)> for Vector<2, T> {
+    fn from(value: (T, T)) -> Self {
+        [value.0, value.1].into()
     }
 }
 

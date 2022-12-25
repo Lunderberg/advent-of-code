@@ -1,3 +1,5 @@
+use crate::utils::geometry::Vector;
+
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::FromIterator;
 use std::ops::{Index, IndexMut};
@@ -53,6 +55,13 @@ impl From<(i64, i64)> for InputGridPos {
     }
 }
 
+impl From<Vector<2, i64>> for InputGridPos {
+    fn from(value: Vector<2, i64>) -> Self {
+        let (x, y) = value.into();
+        InputGridPos::XY(x, y)
+    }
+}
+
 impl GridPos {
     pub fn as_flat(&self) -> usize {
         self.index
@@ -63,6 +72,10 @@ impl GridPos {
             (self.index % map.x_size) as i64,
             (self.index / map.x_size) as i64,
         )
+    }
+
+    pub fn as_vec<T>(&self, map: &GridMap<T>) -> Vector<2, i64> {
+        self.as_xy(map).into()
     }
 }
 
@@ -225,6 +238,38 @@ where
 }
 
 impl<T> GridMap<T> {
+    pub fn is_valid<Arg: Into<InputGridPos>>(&self, index: Arg) -> bool {
+        index.into().normalize(&self).is_some()
+    }
+
+    pub fn get<Arg: Into<InputGridPos>>(&self, index: Arg) -> Option<&T> {
+        index
+            .into()
+            .normalize(&self)
+            .map(|grid_pos| &self.values[grid_pos.index])
+    }
+
+    pub fn get_mut<Arg: Into<InputGridPos>>(
+        &mut self,
+        index: Arg,
+    ) -> Option<&mut T> {
+        index
+            .into()
+            .normalize(&self)
+            .map(move |grid_pos| &mut self.values[grid_pos.index])
+    }
+
+    pub fn shape(&self) -> (usize, usize) {
+        (self.x_size, self.y_size)
+    }
+
+    pub fn grid_pos<Arg: Into<InputGridPos>>(
+        &self,
+        arg: Arg,
+    ) -> Option<GridPos> {
+        arg.into().normalize(&self)
+    }
+
     fn adjacent_points_internal<P>(
         &self,
         pos: P,
@@ -317,12 +362,29 @@ impl<T> GridMap<T> {
     pub fn iter_ray(
         &self,
         start: GridPos,
-        step: (i64, i64),
+        step: impl Into<(i64, i64)>,
     ) -> impl Iterator<Item = (GridPos, &T)> + '_ {
+        let step = step.into();
         std::iter::successors(Some((start, &self[start])), move |(prev, _)| {
             let (prev_x, prev_y) = prev.as_xy(self);
             let x = prev_x + step.0;
             let y = prev_y + step.1;
+            InputGridPos::XY(x, y)
+                .normalize(self)
+                .map(|gridpos| (gridpos, &self[gridpos]))
+        })
+    }
+
+    pub fn iter_ray_wrapping(
+        &self,
+        start: GridPos,
+        step: impl Into<(i64, i64)>,
+    ) -> impl Iterator<Item = (GridPos, &T)> + '_ {
+        let step = step.into();
+        std::iter::successors(Some((start, &self[start])), move |(prev, _)| {
+            let (prev_x, prev_y) = prev.as_xy(self);
+            let x = (prev_x + step.0).rem_euclid(self.x_size as i64);
+            let y = (prev_y + step.1).rem_euclid(self.y_size as i64);
             InputGridPos::XY(x, y)
                 .normalize(self)
                 .map(|gridpos| (gridpos, &self[gridpos]))
@@ -355,15 +417,19 @@ impl<T> IntoIterator for GridMap<T> {
     }
 }
 
-impl<T> Index<GridPos> for GridMap<T> {
+impl<T, Arg: Into<InputGridPos>> Index<Arg> for GridMap<T> {
     type Output = T;
-    fn index(&self, pos: GridPos) -> &T {
-        &self.values[pos.index]
+    fn index(&self, pos: Arg) -> &T {
+        let input: InputGridPos = pos.into();
+        let grid_pos: GridPos = input.normalize(&self).unwrap();
+        &self.values[grid_pos.index]
     }
 }
 
-impl<T> IndexMut<GridPos> for GridMap<T> {
-    fn index_mut(&mut self, pos: GridPos) -> &mut T {
-        &mut self.values[pos.index]
+impl<T, Arg: Into<InputGridPos>> IndexMut<Arg> for GridMap<T> {
+    fn index_mut(&mut self, pos: Arg) -> &mut T {
+        let input: InputGridPos = pos.into();
+        let grid_pos: GridPos = input.normalize(&self).unwrap();
+        &mut self.values[grid_pos.index]
     }
 }
