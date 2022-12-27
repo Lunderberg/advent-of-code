@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GridMap<T> {
     pub x_size: usize,
     pub y_size: usize,
@@ -147,16 +147,13 @@ impl<T> FromIterator<(usize, usize, T)> for GridMap<T> {
     where
         I: IntoIterator<Item = (usize, usize, T)>,
     {
-        let (xvals, yvals, values): (Vec<_>, Vec<_>, Vec<_>) =
-            iter.into_iter().multiunzip();
-        let x_size = xvals.iter().max().unwrap() + 1;
-        let y_size = yvals.iter().max().unwrap() + 1;
+        let tuples: Vec<(usize, usize, T)> = iter.into_iter().collect();
+        let x_size = tuples.iter().map(|(x, _, _)| x).max().unwrap() + 1;
+        let y_size = tuples.iter().map(|(_, y, _)| y).max().unwrap() + 1;
 
-        let values = xvals
+        let values = tuples
             .into_iter()
-            .zip(yvals.into_iter())
-            .zip(values.into_iter())
-            .map(|((x, y), val)| (y * x_size + x, val))
+            .map(|(x, y, val)| (y * x_size + x, val))
             .sorted_by_key(|(pos, _val)| *pos)
             .enumerate()
             .map(|(i, (pos, val))| {
@@ -328,6 +325,11 @@ impl<T> GridMap<T> {
             .map(move |(index, val)| (GridPos { index }, val))
     }
 
+    // TODO: Maybe this would be more convenient to have as the default?
+    pub fn iter_vec(&self) -> impl Iterator<Item = (Vector<2, i64>, &T)> {
+        self.iter().map(move |(pos, val)| (pos.as_vec(&self), val))
+    }
+
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (GridPos, &mut T)> {
         self.values
             .iter_mut()
@@ -389,6 +391,80 @@ impl<T> GridMap<T> {
                 .normalize(self)
                 .map(|gridpos| (gridpos, &self[gridpos]))
         })
+    }
+}
+
+pub trait CollectResizedGridMap<T> {
+    fn collect_resized_grid_map(self, default: T) -> GridMap<T>;
+}
+
+impl<T, Iter: Iterator<Item = (Vector<2, i64>, T)>> CollectResizedGridMap<T>
+    for Iter
+where
+    T: Clone,
+{
+    fn collect_resized_grid_map(self, default: T) -> GridMap<T> {
+        let tuples: Vec<(Vector<2, i64>, T)> = self.collect();
+        let (xmin, xmax) = tuples
+            .iter()
+            .map(|(p, _)| p.x())
+            .minmax()
+            .into_option()
+            .unwrap();
+        let (ymin, ymax) = tuples
+            .iter()
+            .map(|(p, _)| p.y())
+            .minmax()
+            .into_option()
+            .unwrap();
+        let x_size = (xmax - xmin) + 1;
+        let y_size = (ymax - ymin) + 1;
+
+        let values = tuples
+            .into_iter()
+            .map(|(pos, val)| {
+                let index = (pos.y() - ymin) * x_size + (pos.x() - xmin);
+                let index = index as usize;
+                (index, val)
+            })
+            .sorted_by_key(|(pos, _val)| *pos)
+            .with_position()
+            .scan(0, |expected_pos, iter_order| {
+                let is_last =
+                    matches!(iter_order, itertools::Position::Last(_));
+                let (pos, val) = iter_order.into_inner();
+
+                let num_before = pos - *expected_pos;
+                *expected_pos = pos + 1;
+                let num_after = if is_last {
+                    let total = (x_size * y_size) as usize;
+                    total - (pos + 1)
+                } else {
+                    0
+                };
+
+                Some(
+                    std::iter::empty()
+                        .chain(
+                            std::iter::repeat(default.clone()).take(num_before),
+                        )
+                        .chain(std::iter::once(val))
+                        .chain(
+                            std::iter::repeat(default.clone()).take(num_after),
+                        ),
+                )
+            })
+            .flatten()
+            .collect();
+
+        let x_size = x_size as usize;
+        let y_size = y_size as usize;
+
+        GridMap {
+            x_size,
+            y_size,
+            values,
+        }
     }
 }
 
