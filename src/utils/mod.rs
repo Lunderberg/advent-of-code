@@ -15,3 +15,6 @@ pub use display_string::*;
 
 mod pause;
 pub use pause::*;
+
+mod colors;
+pub use colors::*;

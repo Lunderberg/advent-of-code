@@ -105,8 +105,10 @@ impl ValveSystem {
             .flat_map(|from_index| {
                 self.dijkstra_paths(from_index)
                     .into_iter()
-                    .filter(|res| useful_valves.contains(res.node))
-                    .map(move |res| ((from_index, res.node), res.distance))
+                    .filter(|(node, _)| useful_valves.contains(*node))
+                    .map(move |(node, info)| {
+                        ((from_index, node), info.initial_to_node)
+                    })
             })
             .collect()
     }
@@ -465,34 +467,33 @@ impl Puzzle for ThisDay {
         let idealized = initial_state.time_remaining * system.max_flow_rate();
         let orderings: Vec<_> = system
             .dijkstra_search(initial_state)
-            .take_while_inclusive(|node| node.node.time_remaining > 0)
+            .take_while_inclusive(|(node, _)| node.time_remaining > 0)
             .collect();
         let best = orderings
             .iter()
-            .filter(|node| node.num_out_edges == 0)
-            .min_by_key(|node| node.distance)
+            .filter(|(_, info)| info.num_out_edges == 0)
+            .min_by_key(|(_, info)| info.initial_to_node)
             .unwrap();
 
-        let path_str = std::iter::successors(Some(best), |node| {
-            node.backref
+        let path_str = std::iter::successors(Some(best), |(_, info)| {
+            info.backref
                 .as_ref()
                 .map(|edge| &orderings[edge.initial_node])
         })
         .collect::<Vec<_>>()
         .into_iter()
         .rev()
-        .map(|node| {
+        .map(|(node, _)| {
             format!(
                 "(t={}, rate={}, opened=[{}], me={})",
-                node.node.time_remaining,
-                node.node.current_rate(&system),
-                node.node
-                    .open_valves
+                node.time_remaining,
+                node.current_rate(&system),
+                node.open_valves
                     .iter()
                     .map(|index| &system.valves[index].name)
                     .join(", "),
                 ActorDisplay {
-                    actor: &node.node.my_state,
+                    actor: &node.my_state,
                     system: &system
                 },
             )
@@ -501,7 +502,7 @@ impl Puzzle for ThisDay {
 
         println!("Path for best: {path_str}");
 
-        Ok(idealized - (best.distance as u64))
+        Ok(idealized - (best.1.initial_to_node as u64))
     }
 
     type Part2Result = u64;
@@ -512,45 +513,44 @@ impl Puzzle for ThisDay {
 
         let orderings: Vec<_> = system
             .dijkstra_search(initial_state)
-            .take_while_inclusive(|node| node.node.time_remaining > 0)
+            .take_while_inclusive(|(node, _)| node.time_remaining > 0)
             .enumerate()
-            .inspect(|(i, node)| {
+            .inspect(|(i, (node, _))| {
                 if i % 100000 == 0 {
-                    println!("Examined {}, t={}", i, node.node.time_remaining)
+                    println!("Examined {}, t={}", i, node.time_remaining)
                 }
             })
             .map(|(_i, node)| node)
             .collect();
         let best = orderings
             .iter()
-            .filter(|node| node.num_out_edges == 0)
-            .min_by_key(|node| node.distance)
+            .filter(|(_, info)| info.num_out_edges == 0)
+            .min_by_key(|(_, info)| info.initial_to_node)
             .unwrap();
 
-        let path_str = std::iter::successors(Some(best), |node| {
-            node.backref
+        let path_str = std::iter::successors(Some(best), |(_, info)| {
+            info.backref
                 .as_ref()
                 .map(|edge| &orderings[edge.initial_node])
         })
         .collect::<Vec<_>>()
         .into_iter()
         .rev()
-        .map(|node| {
+        .map(|(node, _info)| {
             format!(
                 "(t={}, rate={}, opened=[{}], me={}, elephant={})",
-                node.node.time_remaining,
-                node.node.current_rate(&system),
-                node.node
-                    .open_valves
+                node.time_remaining,
+                node.current_rate(&system),
+                node.open_valves
                     .iter()
                     .map(|index| &system.valves[index].name)
                     .join(", "),
                 ActorDisplay {
-                    actor: &node.node.my_state,
+                    actor: &node.my_state,
                     system: &system
                 },
                 ActorDisplay {
-                    actor: &node.node.elephant_state,
+                    actor: &node.elephant_state,
                     system: &system
                 },
             )
@@ -559,6 +559,6 @@ impl Puzzle for ThisDay {
 
         println!("Path for best: {path_str}");
 
-        Ok(idealized - (best.distance as u64))
+        Ok(idealized - (best.1.initial_to_node as u64))
     }
 }

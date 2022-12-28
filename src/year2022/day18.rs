@@ -111,7 +111,7 @@ impl Puzzle for ThisDay {
         let externally_reachable: HashSet<Point> = lava
             .dijkstra_paths(lava.min())
             .into_iter()
-            .map(|node| node.node)
+            .map(|(node, _info)| node)
             .collect();
 
         let external_faces = lava

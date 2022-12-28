@@ -114,13 +114,12 @@ impl Blueprint {
         self.dijkstra_search(State::initial_state(time_remaining))
             .scan(Vec::new(), |prev_nodes, search_node| {
                 let order: Vec<Resource> =
-                    std::iter::successors(Some(&search_node), |search_node| {
-                        search_node
-                            .backref
+                    std::iter::successors(Some(&search_node), |(_, info)| {
+                        info.backref
                             .as_ref()
                             .map(|edge| &prev_nodes[edge.initial_node])
                     })
-                    .map(|search_node| &search_node.node)
+                    .map(|(state, _)| state)
                     .tuple_windows()
                     .filter_map(|(after, before): (&State, &State)| {
                         (after.robots - before.robots)
@@ -140,9 +139,9 @@ impl Blueprint {
                     .rev()
                     .collect();
 
-                let state = search_node.node.clone();
-                prev_nodes.push(search_node);
+                prev_nodes.push(search_node.clone());
 
+                let (state, _info) = search_node;
                 Some(BuildOrder { order, state })
             })
     }

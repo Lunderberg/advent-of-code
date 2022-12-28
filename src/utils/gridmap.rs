@@ -175,6 +175,20 @@ impl<T> FromIterator<(usize, usize, T)> for GridMap<T> {
     }
 }
 
+impl<T> FromIterator<(Vector<2, i64>, T)> for GridMap<T> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (Vector<2, i64>, T)>,
+    {
+        iter.into_iter()
+            .map(|(pos, tile)| {
+                let (x, y) = pos.into();
+                (x as usize, y as usize, tile)
+            })
+            .collect()
+    }
+}
+
 impl<'a, T> FromIterator<&'a str> for GridMap<T>
 where
     T: FromStr,
@@ -391,6 +405,17 @@ impl<T> GridMap<T> {
                 .normalize(self)
                 .map(|gridpos| (gridpos, &self[gridpos]))
         })
+    }
+
+    pub fn map<'a, F, U>(&'a self, mut func: F) -> GridMap<U>
+    where
+        F: FnMut(Vector<2, i64>, &'a T) -> U,
+        T: 'a,
+        U: 'a,
+    {
+        self.iter_vec()
+            .map(|(pos, tile)| (pos, func(pos, tile)))
+            .collect()
     }
 }
 
