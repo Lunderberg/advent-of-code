@@ -134,6 +134,73 @@ impl StormSystem {
             .chain(special.into_iter())
             .collect_resized_grid_map(DisplayTile::Tile(Tile::Ground))
     }
+
+    fn search(&self, initial_phase: u8) -> Result<u64, Error> {
+        let initial = self.initial();
+        let goal = self.goal();
+        let min_traversal = initial.manhattan_dist(&goal) as u64;
+
+        let heuristic = |state: &State| -> Option<u64> {
+            match state.phase {
+                0 => Some(state.pos.manhattan_dist(&goal) as u64),
+                1 => Some(
+                    state.pos.manhattan_dist(&initial) as u64 + min_traversal,
+                ),
+                2 => Some(
+                    state.pos.manhattan_dist(&goal) as u64 + 2 * min_traversal,
+                ),
+                _ => panic!("Unknown phase {}", state.phase),
+            }
+        };
+
+        let (node, info, path) = self
+            .a_star_search(
+                State {
+                    pos: self.initial(),
+                    time: 0,
+                    phase: initial_phase,
+                },
+                heuristic,
+            )
+            .scan(Vec::new(), |nodes, node_info| {
+                nodes.push(node_info.clone());
+                let path: Vec<_> = std::iter::successors(
+                    Some(node_info.clone()),
+                    |(_, info)| {
+                        info.backref
+                            .as_ref()
+                            .map(|edge| nodes[edge.initial_node].clone())
+                    },
+                )
+                .map(|(state, _)| state.pos)
+                .collect::<Vec<_>>()
+                .into_iter()
+                .rev()
+                .collect();
+
+                let (node, info) = node_info;
+                Some((node, info, path))
+            })
+            .find(|(node, _, _)| node.pos == goal && node.phase == 0)
+            .ok_or(Error::NoPathToDest)?;
+
+        println!(
+            "Reached {node:?} after {} minutes, \
+             minimum {} minutes remaining\n{}\n\n",
+            info.initial_to_node,
+            info.heuristic,
+            self.at_time(&node).map(|pos, tile| {
+                let style = if path.contains(&pos) {
+                    Style::new().green().bright().bold()
+                } else {
+                    Style::new().red()
+                };
+                style.apply_to(tile)
+            }),
+        );
+
+        Ok(info.initial_to_node)
+    }
 }
 
 impl DynamicGraph<State> for StormSystem {
@@ -247,126 +314,11 @@ impl Puzzle for ThisDay {
 
     type Part1Result = u64;
     fn part_1(storms: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
-        let goal = storms.goal();
-
-        let (_node, info, _path) = storms
-            .a_star_search(
-                State {
-                    pos: storms.initial(),
-                    time: 0,
-                    phase: 0,
-                },
-                |state| {
-                    Some(state.pos.manhattan_dist(&goal).try_into().unwrap())
-                },
-            )
-            .scan(Vec::new(), |nodes, node_info| {
-                nodes.push(node_info.clone());
-                let path: Vec<_> = std::iter::successors(
-                    Some(node_info.clone()),
-                    |(_, info)| {
-                        info.backref
-                            .as_ref()
-                            .map(|edge| nodes[edge.initial_node].clone())
-                    },
-                )
-                .map(|(state, _)| state.pos)
-                .collect::<Vec<_>>()
-                .into_iter()
-                .rev()
-                .collect();
-
-                let (node, info) = node_info;
-                Some((node, info, path))
-            })
-            .filter(|(node, _, _)| node.pos == goal)
-            .inspect(|(node, info, path)| {
-                println!(
-                    "Reached {node:?} after {} minutes, \
-                     minimum {} minutes remaining\n{}\n\n",
-                    info.initial_to_node,
-                    info.heuristic,
-                    storms.at_time(node).map(|pos, tile| {
-                        let style = if path.contains(&pos) {
-                            Style::new().green().bright().bold()
-                        } else {
-                            Style::new().red()
-                        };
-                        style.apply_to(tile)
-                    }),
-                );
-            })
-            .next()
-            .unwrap();
-        Ok(info.initial_to_node)
+        storms.search(0)
     }
 
     type Part2Result = u64;
     fn part_2(storms: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
-        let initial = storms.initial();
-        let goal = storms.goal();
-        let min_traversal = initial.manhattan_dist(&goal) as u64;
-
-        let heuristic = |state: &State| -> Option<u64> {
-            match state.phase {
-                0 => Some(state.pos.manhattan_dist(&goal) as u64),
-                1 => Some(
-                    state.pos.manhattan_dist(&initial) as u64 + min_traversal,
-                ),
-                2 => Some(
-                    state.pos.manhattan_dist(&goal) as u64 + 2 * min_traversal,
-                ),
-                _ => panic!("Unknown phase {}", state.phase),
-            }
-        };
-
-        let (_node, info, _path) = storms
-            .a_star_search(
-                State {
-                    pos: storms.initial(),
-                    time: 0,
-                    phase: 2,
-                },
-                heuristic,
-            )
-            .scan(Vec::new(), |nodes, node_info| {
-                nodes.push(node_info.clone());
-                let path: Vec<_> = std::iter::successors(
-                    Some(node_info.clone()),
-                    |(_, info)| {
-                        info.backref
-                            .as_ref()
-                            .map(|edge| nodes[edge.initial_node].clone())
-                    },
-                )
-                .map(|(state, _)| state.pos)
-                .collect::<Vec<_>>()
-                .into_iter()
-                .rev()
-                .collect();
-
-                let (node, info) = node_info;
-                Some((node, info, path))
-            })
-            .filter(|(node, _, _)| node.pos == goal && node.phase == 0)
-            .inspect(|(node, info, path)| {
-                println!(
-                    "Reached {node:?} after {} minutes, \
-                     minimum {} minutes remaining\n{}\n\n",
-                    info.initial_to_node,
-                    info.heuristic,
-                    storms.at_time(node).map(|pos, tile| {
-                        let style = if path.contains(&pos) {
-                            Style::new().green().bright().bold()
-                        } else {
-                            Style::new().red()
-                        };
-                        style.apply_to(tile)
-                    }),
-                );
-            })
-            .next()
-            .unwrap();
-        Ok(info.initial_to_node)
+        storms.search(2)
     }
 }
