@@ -77,7 +77,7 @@ impl<I: Iterator<Item = Result<Token, Error>>> Parser<I> {
     }
 
     fn expect_next(&mut self) -> Result<Token, Error> {
-        Ok(self.iter.next().ok_or(Error::UnexpectedEndOfStream)??)
+        self.iter.next().ok_or(Error::UnexpectedEndOfStream)?
     }
 
     fn expect_peek(&mut self) -> Result<&Token, Error> {
@@ -211,7 +211,7 @@ impl PartialOrd for Packet {
         match (self, rhs) {
             (Packet::Int(a), Packet::Int(b)) => a.partial_cmp(b),
             (Packet::Int(_), Packet::List(b)) => {
-                if b.len() == 0 {
+                if b.is_empty() {
                     Some(Ordering::Greater)
                 } else if b.len() == 1 {
                     self.partial_cmp(&b[0])
@@ -269,7 +269,7 @@ impl Puzzle for ThisDay {
             .iter()
             .tuples()
             .enumerate()
-            .filter_map(|(i, (a, b))| (a < b).then(|| i + 1))
+            .filter_map(|(i, (a, b))| (a < b).then_some(i + 1))
             .sum())
     }
 
@@ -283,7 +283,7 @@ impl Puzzle for ThisDay {
             .sorted()
             .enumerate()
             .filter_map(|(i, packet)| {
-                (packet == &divider_a || packet == &divider_b).then(|| i + 1)
+                (packet == &divider_a || packet == &divider_b).then_some(i + 1)
             })
             .tuples()
             .exactly_one()?;

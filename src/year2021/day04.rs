@@ -103,7 +103,7 @@ impl std::fmt::Display for BingoBoard {
                 } else {
                     "  "
                 };
-                write!(f, "{}{}", tile, end_char)
+                write!(f, "{tile}{end_char}")
             })
             .collect::<Result<Vec<_>, _>>()?;
         Ok(())
@@ -122,7 +122,7 @@ impl std::fmt::Display for BingoGame {
                 } else {
                     "\n\n"
                 };
-                write!(f, "{}{}", board, ending)
+                write!(f, "{board}{ending}")
             })
             .collect::<Result<Vec<_>, _>>()?;
         Ok(())

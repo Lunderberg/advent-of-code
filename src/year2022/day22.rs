@@ -165,7 +165,7 @@ impl MonkeyMap {
             .map
             .iter()
             .filter_map(|(pos, tile)| {
-                (!matches!(tile, Tile::Wrap)).then(|| pos)
+                (!matches!(tile, Tile::Wrap)).then_some(pos)
             })
             .flat_map(|loc| {
                 Facing::iter().map(move |facing| State { loc, facing })
@@ -231,7 +231,7 @@ impl MonkeyMap {
                 .chain((0..4).map(|x| ((11, 4 + x, Right), (15 - x, 8, Down))))
                 .chain((0..4).map(|x| ((12 + x, 11, Down), (0, 7 - x, Right))))
                 .chain((0..4).map(|x| ((15, 8 + x, Right), (0, 3 - x, Left))))
-                .chain((0..4).map(|x| ((0 + x, 7, Down), (11 - x, 11, Up))))
+                .chain((0..4).map(|x| ((x, 7, Down), (11 - x, 11, Up))))
                 .flat_map(|(a, b)| {
                     vec![
                         (a, b),
@@ -256,19 +256,19 @@ impl MonkeyMap {
             use Facing::*;
             std::iter::empty::<((i64, i64, Facing), (i64, i64, Facing))>()
                 .chain(
-                    (0..50).map(|x| ((149, 0 + x, Right), (99, 149 - x, Left))),
+                    (0..50).map(|x| ((149, x, Right), (99, 149 - x, Left))),
                 )
                 .chain(
                     (0..50).map(|x| ((50 + x, 149, Down), (49, 150 + x, Left))),
                 )
                 .chain(
-                    (0..50).map(|x| ((0 + x, 199, Down), (100 + x, 0, Down))),
+                    (0..50).map(|x| ((x, 199, Down), (100 + x, 0, Down))),
                 )
                 .chain(
-                    (0..50).map(|x| ((50, 50 + x, Left), (0 + x, 100, Down))),
+                    (0..50).map(|x| ((50, 50 + x, Left), (x, 100, Down))),
                 )
                 .chain(
-                    (0..50).map(|x| ((50, 0 + x, Left), (0, 149 - x, Right))),
+                    (0..50).map(|x| ((50, x, Left), (0, 149 - x, Right))),
                 )
                 .chain((0..50).map(|x| ((50 + x, 0, Up), (0, 150 + x, Right))))
                 .chain(

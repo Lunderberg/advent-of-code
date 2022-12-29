@@ -15,9 +15,9 @@ enum Direction {
     Right,
 }
 
-impl Into<Vector<2>> for Direction {
-    fn into(self) -> Vector<2> {
-        match self {
+impl From<Direction> for Vector<2> {
+    fn from(val: Direction) -> Self {
+        match val {
             Direction::Up => Vector::new([0, 1]),
             Direction::Down => Vector::new([0, -1]),
             Direction::Left => Vector::new([-1, 0]),

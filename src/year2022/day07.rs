@@ -312,7 +312,7 @@ impl Puzzle for ThisDay {
     fn parse_input<'a>(
         lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error> {
-        let state = lines.map(|s| Ok(s.parse::<TerminalLine>()?)).try_fold(
+        let state = lines.map(|s| s.parse::<TerminalLine>()).try_fold(
             SystemState::default(),
             |state: SystemState,
              line: Result<TerminalLine, Error>|

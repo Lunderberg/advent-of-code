@@ -51,8 +51,7 @@ impl std::str::FromStr for MonkeySpec {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let words: Vec<_> = s.split_ascii_whitespace().collect();
-        let name = words
-            .get(0)
+        let name = words.first()
             .and_then(|word| word.strip_suffix(':'))
             .ok_or_else(|| Error::InvalidString(s.to_string()))?
             .to_string();
@@ -100,7 +99,7 @@ impl MonkeySystem {
         self.monkeys
             .iter()
             .enumerate()
-            .find_map(|(i, monkey)| (monkey.name == name).then(|| i))
+            .find_map(|(i, monkey)| (monkey.name == name).then_some(i))
     }
 
     fn eval(&self, monkey: usize) -> i64 {
@@ -374,7 +373,7 @@ impl<'a> Display for MonkeyNode<'a> {
         };
 
         let lhs = MonkeyNode {
-            system: &self.system,
+            system: self.system,
             index: lhs,
         };
         if lhs.precedence() <= self.precedence() {
@@ -386,7 +385,7 @@ impl<'a> Display for MonkeyNode<'a> {
         write!(f, "{op}")?;
 
         let rhs = MonkeyNode {
-            system: &self.system,
+            system: self.system,
             index: rhs,
         };
         if rhs.precedence() < self.precedence() {

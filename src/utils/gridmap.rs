@@ -89,7 +89,7 @@ impl InputGridPos {
                     && *y >= 0
                     && *x < (map.x_size as i64)
                     && *y < (map.y_size as i64);
-                coordinates_valid.then(|| GridPos {
+                coordinates_valid.then_some(GridPos {
                     index: (*y as usize) * map.x_size + (*x as usize),
                 })
             }
@@ -240,7 +240,7 @@ where
             .chunks(self.x_size)
             .into_iter()
             .try_for_each(|mut chunk| -> Result<_, std::fmt::Error> {
-                chunk.try_for_each(|val| write!(f, "{}", val))?;
+                chunk.try_for_each(|val| write!(f, "{val}"))?;
                 writeln!(f)?;
                 Ok(())
             })?;
@@ -250,13 +250,13 @@ where
 
 impl<T> GridMap<T> {
     pub fn is_valid<Arg: Into<InputGridPos>>(&self, index: Arg) -> bool {
-        index.into().normalize(&self).is_some()
+        index.into().normalize(self).is_some()
     }
 
     pub fn get<Arg: Into<InputGridPos>>(&self, index: Arg) -> Option<&T> {
         index
             .into()
-            .normalize(&self)
+            .normalize(self)
             .map(|grid_pos| &self.values[grid_pos.index])
     }
 
@@ -266,7 +266,7 @@ impl<T> GridMap<T> {
     ) -> Option<&mut T> {
         index
             .into()
-            .normalize(&self)
+            .normalize(self)
             .map(move |grid_pos| &mut self.values[grid_pos.index])
     }
 
@@ -278,7 +278,7 @@ impl<T> GridMap<T> {
         &self,
         arg: Arg,
     ) -> Option<GridPos> {
-        arg.into().normalize(&self)
+        arg.into().normalize(self)
     }
 
     fn adjacent_points_internal<P>(
@@ -341,7 +341,7 @@ impl<T> GridMap<T> {
 
     // TODO: Maybe this would be more convenient to have as the default?
     pub fn iter_vec(&self) -> impl Iterator<Item = (Vector<2, i64>, &T)> {
-        self.iter().map(move |(pos, val)| (pos.as_vec(&self), val))
+        self.iter().map(move |(pos, val)| (pos.as_vec(self), val))
     }
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (GridPos, &mut T)> {
@@ -522,7 +522,7 @@ impl<T, Arg: Into<InputGridPos>> Index<Arg> for GridMap<T> {
     type Output = T;
     fn index(&self, pos: Arg) -> &T {
         let input: InputGridPos = pos.into();
-        let grid_pos: GridPos = input.normalize(&self).unwrap();
+        let grid_pos: GridPos = input.normalize(self).unwrap();
         &self.values[grid_pos.index]
     }
 }
@@ -530,7 +530,7 @@ impl<T, Arg: Into<InputGridPos>> Index<Arg> for GridMap<T> {
 impl<T, Arg: Into<InputGridPos>> IndexMut<Arg> for GridMap<T> {
     fn index_mut(&mut self, pos: Arg) -> &mut T {
         let input: InputGridPos = pos.into();
-        let grid_pos: GridPos = input.normalize(&self).unwrap();
+        let grid_pos: GridPos = input.normalize(self).unwrap();
         &mut self.values[grid_pos.index]
     }
 }

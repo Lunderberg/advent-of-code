@@ -80,8 +80,7 @@ impl<'a> TokenStream<'a> {
                 Ok(())
             } else {
                 Err(Error::UnexpectedToken(format!(
-                    "Expected {:?} but found {:?}",
-                    expected, next
+                    "Expected {expected:?} but found {next:?}"
                 )))
             }
         } else {
@@ -101,9 +100,9 @@ impl FromStr for Snailfish {
 impl Debug for Snailfish {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            Snailfish::Value(val) => write!(f, "{}", val),
+            Snailfish::Value(val) => write!(f, "{val}"),
             Snailfish::Pair(left, right) => {
-                write!(f, "[{:?}, {:?}]", left, right)
+                write!(f, "[{left:?}, {right:?}]")
             }
         }
     }
@@ -140,7 +139,7 @@ impl Snailfish {
                 token_iter.check_next_token(Token::CloseBracket)?;
                 Ok((left, right).into())
             }
-            _ => Err(Error::UnexpectedToken(format!("{:?}", token))),
+            _ => Err(Error::UnexpectedToken(format!("{token:?}"))),
         }
     }
 

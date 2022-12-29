@@ -93,9 +93,9 @@ impl HeightMap {
                     x as usize,
                     y as usize,
                     if highlight.contains(&grid_pos) {
-                        format!("\x1b[92m{}\x1b[0m", value)
+                        format!("\x1b[92m{value}\x1b[0m")
                     } else {
-                        format!("\x1b[91m{}\x1b[0m", value)
+                        format!("\x1b[91m{value}\x1b[0m")
                     },
                 )
             })

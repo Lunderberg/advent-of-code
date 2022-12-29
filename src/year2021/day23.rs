@@ -85,7 +85,7 @@ impl From<&Amphipod> for char {
 impl Display for Amphipod {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         let c: char = self.into();
-        write!(f, "{}", c)
+        write!(f, "{c}")
     }
 }
 
@@ -123,7 +123,7 @@ impl Display for AmphipodDiagram {
             })
             .join("\n");
 
-        write!(f, "{}", as_text)
+        write!(f, "{as_text}")
     }
 }
 
@@ -175,7 +175,7 @@ impl AmphipodDiagram {
     fn extend_part_2(&self) -> Self {
         let inserted_lines = "  #D#C#B#A#\n  #D#B#A#C#".lines();
 
-        let orig = format!("{}", self);
+        let orig = format!("{self}");
         let mut lines = orig.lines();
 
         lines

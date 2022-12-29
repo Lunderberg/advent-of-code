@@ -62,8 +62,8 @@ impl Display for Cave {
         match self {
             Start => write!(f, "start"),
             End => write!(f, "end"),
-            Big(s) => write!(f, "{}", s),
-            Small(s) => write!(f, "{}", s),
+            Big(s) => write!(f, "{s}"),
+            Small(s) => write!(f, "{s}"),
         }
     }
 }
@@ -358,7 +358,7 @@ impl CaveSystem {
                     .map(|&i| format!("{}", self.caves[states[i].pos]))
                     .join(",")
             })
-            .for_each(|line| println!("{}", line));
+            .for_each(|line| println!("{line}"));
 
         Ok(())
     }

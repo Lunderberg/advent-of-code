@@ -82,7 +82,7 @@ impl Downloader {
         day: u32,
     ) -> Result<String, Error> {
         let url =
-            format!("https://adventofcode.com/{}/day/{}/input", year, day);
+            format!("https://adventofcode.com/{year}/day/{day}/input");
         let filename = self.cache_file_loc(url)?;
         Ok(std::fs::read_to_string(filename)?)
     }
@@ -93,7 +93,7 @@ impl Downloader {
         day: u32,
         example_num: usize,
     ) -> Result<String, Error> {
-        let url = format!("https://adventofcode.com/{}/day/{}", year, day);
+        let url = format!("https://adventofcode.com/{year}/day/{day}");
         let cache_file = self.cache_file_loc(url)?;
         self.find_example_blocks(cache_file)?
             .nth(example_num)

@@ -33,7 +33,7 @@ impl Debug for ProgramLine {
         write!(f, "\"")?;
         self.tokens
             .iter()
-            .try_for_each(|token| write!(f, "{:?}", token))?;
+            .try_for_each(|token| write!(f, "{token:?}"))?;
         write!(f, "\"")?;
 
         Ok(())

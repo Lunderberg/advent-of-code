@@ -45,13 +45,11 @@ impl CraneYard {
     fn apply_part1(&mut self, inst: &Instruction) -> Result<(), Error> {
         let (stack_to, stack_from) = self.stacks_affected(inst)?;
 
-        Ok(
-            (0..inst.num_to_move).try_for_each(|_| -> Result<(), Error> {
+        (0..inst.num_to_move).try_for_each(|_| -> Result<(), Error> {
                 let value = stack_from.pop().ok_or(Error::NoneError)?;
                 stack_to.push(value);
                 Ok(())
-            })?,
-        )
+            })
     }
 
     fn apply_part2(&mut self, inst: &Instruction) -> Result<(), Error> {
@@ -97,7 +95,7 @@ impl Puzzle for ThisDay {
                     move |(col, c)| -> (usize, usize, char) { (i, col, c) },
                 )
             })
-            .filter(|(_i, _col, c)| matches!(c, 'A'..='Z'))
+            .filter(|(_i, _col, c)| c.is_ascii_uppercase())
             .sorted_by_key(|(i, _col, _c)| Reverse(*i))
             .map(|(_i, col, c)| (col, c))
             .into_group_map()
@@ -138,7 +136,7 @@ impl Puzzle for ThisDay {
             .iter()
             .try_for_each(|inst| craneyard.apply_part1(inst))?;
 
-        Ok(craneyard.top()?)
+        craneyard.top()
     }
 
     type Part2Result = String;
@@ -150,6 +148,6 @@ impl Puzzle for ThisDay {
             .iter()
             .try_for_each(|inst| craneyard.apply_part2(inst))?;
 
-        Ok(craneyard.top()?)
+        craneyard.top()
     }
 }

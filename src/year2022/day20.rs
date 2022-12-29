@@ -35,7 +35,7 @@ impl Data {
                 .iter()
                 .enumerate()
                 .find_map(|(new_index, number)| {
-                    (old_index == number.original_index).then(|| new_index)
+                    (old_index == number.original_index).then_some(new_index)
                 })
                 .unwrap();
 
@@ -53,13 +53,13 @@ impl Data {
             .numbers
             .iter()
             .enumerate()
-            .find_map(|(i, number)| (number.value == 0).then(|| i))
+            .find_map(|(i, number)| (number.value == 0).then_some(i))
             .unwrap();
 
         [1000, 2000, 3000]
             .iter()
             .map(|i| *i as usize)
-            .map(|index| (zero_index + index).rem_euclid(n as usize))
+            .map(|index| (zero_index + index).rem_euclid(n))
             .map(|index| self.numbers[index].value)
             .inspect(|val| println!("Value: {val}"))
             .sum()

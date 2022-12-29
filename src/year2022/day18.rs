@@ -62,7 +62,7 @@ impl DynamicGraph<Point> for Lava {
             .filter(|loc| {
                 loc.iter()
                     .zip(self.bounds.iter())
-                    .all(|(val, bound)| bound.contains(&val))
+                    .all(|(val, bound)| bound.contains(val))
             })
             .filter(|loc| !self.voxels.contains(loc))
             .map(|loc| (loc, 1))

@@ -120,7 +120,7 @@ impl Puzzle for ThisDay {
                     let line =
                         chunk.next().ok_or(Error::UnexpectedEndOfStream)?;
                     line.strip_prefix("Monkey ")
-                        .and_then(|s| s.strip_suffix(":"))
+                        .and_then(|s| s.strip_suffix(':'))
                         .ok_or_else(|| Error::InvalidString(line.to_string()))?
                         .parse()?
                 };
@@ -147,7 +147,7 @@ impl Puzzle for ThisDay {
                         .ok_or_else(|| Error::InvalidString(line.to_string()))
                         .and_then(|op_str| {
                             let (op, arg) =
-                                op_str.split_once(" ").ok_or_else(|| {
+                                op_str.split_once(' ').ok_or_else(|| {
                                     Error::InvalidString(line.to_string())
                                 })?;
                             match (op, arg) {

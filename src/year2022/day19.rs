@@ -280,7 +280,7 @@ impl DynamicGraph<State> for Blueprint {
             .chain(idle_until_end)
             .enumerate()
             .filter_map(|(i, (state, must_be_first))| {
-                (i == 0 || !must_be_first).then(|| state)
+                (i == 0 || !must_be_first).then_some(state)
             })
             .inspect(|new_state| {
                 assert_ne!(old_state.time_remaining, new_state.time_remaining)

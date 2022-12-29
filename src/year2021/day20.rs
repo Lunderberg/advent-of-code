@@ -29,14 +29,14 @@ impl Display for Pixel {
             Pixel::Light => '#',
             Pixel::Dark => '.',
         };
-        write!(f, "{}", c)
+        write!(f, "{c}")
     }
 }
 
 impl Display for Image {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         let enhancement =
-            self.enhancement.iter().map(|p| format!("{}", p)).join("");
+            self.enhancement.iter().map(|p| format!("{p}")).join("");
         write!(
             f,
             "{}\n\nInfinite: {:?}\n{}",

@@ -27,7 +27,7 @@ impl std::str::FromStr for RockPath {
             .split(" -> ")
             .map(|pair| -> Result<_, Error> {
                 let (a, b) = pair
-                    .split(",")
+                    .split(',')
                     .map(|val| val.parse::<i64>())
                     .tuples()
                     .exactly_one()?;
@@ -93,7 +93,7 @@ impl SandSimulation {
 
     fn sand_path(&self) -> impl Iterator<Item = SimulatedSand> + '_ {
         let initial = (!self.sand.contains(&self.sand_source))
-            .then(|| SimulatedSand::InMotion(self.sand_source));
+            .then_some(SimulatedSand::InMotion(self.sand_source));
         std::iter::successors(initial, move |prev| match prev {
             SimulatedSand::Stopped(_) => None,
             SimulatedSand::InMotion(loc) => {

@@ -49,7 +49,7 @@ impl Display for Transparency {
                 } else {
                     '.'
                 };
-                write!(f, "{}", c)?;
+                write!(f, "{c}")?;
                 if x == x_max {
                     writeln!(f)?;
                 }
@@ -133,6 +133,6 @@ impl Puzzle for ThisDay {
             Ok(())
         })?;
 
-        Ok(format!("{}", paper))
+        Ok(format!("{paper}"))
     }
 }

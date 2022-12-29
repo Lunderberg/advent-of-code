@@ -370,15 +370,15 @@ impl Display for MemoryLocation {
             MemoryLocation::Y => 'y',
             MemoryLocation::Z => 'z',
         };
-        write!(f, "{}", c)
+        write!(f, "{c}")
     }
 }
 
 impl Display for Argument {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            Argument::MemLoc(var) => write!(f, "{}", var),
-            Argument::Int(num) => write!(f, "{}", num),
+            Argument::MemLoc(var) => write!(f, "{var}"),
+            Argument::Int(num) => write!(f, "{num}"),
         }
     }
 }
@@ -387,12 +387,12 @@ impl Display for Instruction {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         use Instruction::*;
         match self {
-            Input(var) => write!(f, "inp {}", var),
-            Add(var, arg) => write!(f, "add {} {}", var, arg),
-            Mul(var, arg) => write!(f, "mul {} {}", var, arg),
-            Div(var, arg) => write!(f, "div {} {}", var, arg),
-            Mod(var, arg) => write!(f, "mod {} {}", var, arg),
-            Equal(var, arg) => write!(f, "eql {} {}", var, arg),
+            Input(var) => write!(f, "inp {var}"),
+            Add(var, arg) => write!(f, "add {var} {arg}"),
+            Mul(var, arg) => write!(f, "mul {var} {arg}"),
+            Div(var, arg) => write!(f, "div {var} {arg}"),
+            Mod(var, arg) => write!(f, "mod {var} {arg}"),
+            Equal(var, arg) => write!(f, "eql {var} {arg}"),
         }
     }
 }
@@ -408,7 +408,7 @@ impl Display for Program {
                 } else {
                     "\n"
                 };
-                write!(f, "{}{}", inst, end)
+                write!(f, "{inst}{end}")
             })
     }
 }

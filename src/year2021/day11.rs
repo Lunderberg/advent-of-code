@@ -26,7 +26,7 @@ impl Display for Octopus {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         use Octopus::*;
         match self {
-            Charging(val) => write!(f, "{}", val),
+            Charging(val) => write!(f, "{val}"),
             Flashing => write!(f, "F"),
             Flashed => write!(f, "."),
         }

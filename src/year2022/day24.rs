@@ -285,7 +285,7 @@ impl Puzzle for ThisDay {
                      minimum {} minutes remaining\n{}\n\n",
                     info.initial_to_node,
                     info.heuristic,
-                    storms.at_time(&node).map(|pos, tile| {
+                    storms.at_time(node).map(|pos, tile| {
                         let color = if path.contains(&pos) {
                             Color::BrightGreen
                         } else {
@@ -354,7 +354,7 @@ impl Puzzle for ThisDay {
                      minimum {} minutes remaining\n{}\n\n",
                     info.initial_to_node,
                     info.heuristic,
-                    storms.at_time(&node).map(|pos, tile| {
+                    storms.at_time(node).map(|pos, tile| {
                         let color = if path.contains(&pos) {
                             Color::BrightGreen
                         } else {

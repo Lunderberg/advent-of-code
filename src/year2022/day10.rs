@@ -15,7 +15,7 @@ impl std::str::FromStr for OpCode {
     fn from_str(line: &str) -> Result<Self, Self::Err> {
         let (name, arg) = line
             .split_whitespace()
-            .map(|s| Some(s))
+            .map(Some)
             .chain(std::iter::repeat(None))
             .take(2)
             .tuples()

@@ -85,7 +85,7 @@ impl ValveSystem {
         self.valves
             .iter()
             .enumerate()
-            .filter_map(|(i, valve)| (valve.flow_rate > 0).then(|| i))
+            .filter_map(|(i, valve)| (valve.flow_rate > 0).then_some(i))
             .collect()
     }
 
@@ -219,7 +219,7 @@ impl DynamicGraph<SearchState> for ValveSystem {
                             .union(&elephant_results.valves_opened)
                             .collect();
                         (
-                            my_state.clone(),
+                            my_state,
                             elephant_state,
                             ActorChoiceResult {
                                 valves_claimed,
@@ -245,7 +245,7 @@ impl DynamicGraph<SearchState> for ValveSystem {
                     open_valves,
                 };
                 let missing_flow_rate =
-                    max_flow_rate - new_search_state.current_rate(&self);
+                    max_flow_rate - new_search_state.current_rate(self);
 
                 (new_search_state, missing_flow_rate)
             })
@@ -268,7 +268,7 @@ impl ActorState {
         cached_path_lengths: &HashMap<(usize, usize), u64>,
         time_remaining: u64,
     ) -> impl Iterator<Item = (Self, ActorChoiceResult)> {
-        match self.clone() {
+        match *self {
             ActorState::Idle => Either::Left(std::iter::once((
                 ActorState::Idle,
                 ActorChoiceResult::default(),
@@ -384,7 +384,7 @@ impl std::str::FromStr for ValveSpec {
         let mut words = words.skip(4); // "tunnels lead to"
         let tunnels: Vec<_> = words
             .next()
-            .ok_or(Error::InvalidString(orig_line.clone()))?
+            .ok_or(Error::InvalidString(orig_line))?
             .split(", ")
             .map(|s| s.to_string())
             .collect();
@@ -462,7 +462,7 @@ impl Puzzle for ThisDay {
     type Part1Result = u64;
     fn part_1(system: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
         let initial_state = system.initial_state_part_1()?;
-        println!("Initial state: {:?}", initial_state);
+        println!("Initial state: {initial_state:?}");
 
         let idealized = initial_state.time_remaining * system.max_flow_rate();
         let orderings: Vec<_> = system
@@ -487,14 +487,14 @@ impl Puzzle for ThisDay {
             format!(
                 "(t={}, rate={}, opened=[{}], me={})",
                 node.time_remaining,
-                node.current_rate(&system),
+                node.current_rate(system),
                 node.open_valves
                     .iter()
                     .map(|index| &system.valves[index].name)
                     .join(", "),
                 ActorDisplay {
                     actor: &node.my_state,
-                    system: &system
+                    system
                 },
             )
         })
@@ -502,14 +502,14 @@ impl Puzzle for ThisDay {
 
         println!("Path for best: {path_str}");
 
-        Ok(idealized - (best.1.initial_to_node as u64))
+        Ok(idealized - best.1.initial_to_node)
     }
 
     type Part2Result = u64;
     fn part_2(system: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
         let initial_state = system.initial_state_part_2()?;
         let idealized = initial_state.time_remaining * system.max_flow_rate();
-        println!("Initial state: {:?}", initial_state);
+        println!("Initial state: {initial_state:?}");
 
         let orderings: Vec<_> = system
             .dijkstra_search(initial_state)
@@ -540,18 +540,18 @@ impl Puzzle for ThisDay {
             format!(
                 "(t={}, rate={}, opened=[{}], me={}, elephant={})",
                 node.time_remaining,
-                node.current_rate(&system),
+                node.current_rate(system),
                 node.open_valves
                     .iter()
                     .map(|index| &system.valves[index].name)
                     .join(", "),
                 ActorDisplay {
                     actor: &node.my_state,
-                    system: &system
+                    system
                 },
                 ActorDisplay {
                     actor: &node.elephant_state,
-                    system: &system
+                    system
                 },
             )
         })
@@ -559,6 +559,6 @@ impl Puzzle for ThisDay {
 
         println!("Path for best: {path_str}");
 
-        Ok(idealized - (best.1.initial_to_node as u64))
+        Ok(idealized - best.1.initial_to_node)
     }
 }

@@ -64,8 +64,8 @@ fn main() -> Result<(), Error> {
         .inspect(|(part, res)| {
             println!("{:04}-12-{:02}, {}", runner.year(), runner.day(), part);
             match res {
-                Ok(val) => println!("{}", val),
-                Err(error) => println!("Error: {:?}", error),
+                Ok(val) => println!("{val}"),
+                Err(error) => println!("Error: {error:?}"),
             }
         })
         .map(|(_part, res)| res)

@@ -165,7 +165,7 @@ impl Board {
                 .filter(|loc| {
                     let seen_before = seen.contains(loc);
                     if !seen_before {
-                        seen.insert(loc.clone());
+                        seen.insert(*loc);
                     }
                     !seen_before
                 })
@@ -330,7 +330,7 @@ impl Display for Board {
                 "".to_string()
             };
 
-            write!(f, "{line} {info}\n")
+            writeln!(f, "{line} {info}")
         })
     }
 }

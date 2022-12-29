@@ -40,7 +40,7 @@ impl Display for GameState {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         use GameState::*;
         match self {
-            InProgress(in_progress) => write!(f, "{}", in_progress),
+            InProgress(in_progress) => write!(f, "{in_progress}"),
             Player1Victory => write!(f, "Player1Victory"),
             Player2Victory => write!(f, "Player2Victory"),
         }

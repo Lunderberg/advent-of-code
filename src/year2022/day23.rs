@@ -85,8 +85,7 @@ impl ElfSystem {
         let has_neighbor = self
             .map
             .adjacent_values_default(elf, Adjacency::Queen, Tile::Ground)
-            .find(|tile| matches!(tile, Tile::Elf))
-            .is_some();
+            .any(|tile| matches!(&tile, Tile::Elf));
 
         has_neighbor
             .then(|| {

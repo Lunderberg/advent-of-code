@@ -149,7 +149,7 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
         SearchIter {
             search_queue,
             finished: HashSet::new(),
-            graph: &self,
+            graph: self,
             heuristic,
             node_index: 0,
         }
@@ -283,7 +283,7 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
         DijkstraSearchIter {
             search_queue,
             finished: HashSet::new(),
-            graph: &self,
+            graph: self,
         }
     }
 

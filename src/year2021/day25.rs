@@ -75,7 +75,7 @@ impl Display for CucumberMap {
                 (i as usize, j as usize, tile)
             })
             .collect();
-        write!(f, "{}", grid_map)
+        write!(f, "{grid_map}")
     }
 }
 
@@ -140,7 +140,7 @@ impl Display for Tile {
             None => '.',
         };
 
-        write!(f, "{}", c)
+        write!(f, "{c}")
     }
 }
 
