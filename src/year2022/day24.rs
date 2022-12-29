@@ -2,7 +2,7 @@
 use crate::utils::extensions::TakeWhileInclusive;
 use crate::utils::geometry::Vector;
 use crate::utils::graph::DynamicGraph;
-use crate::utils::Color;
+//use crate::utils::Color;
 use crate::utils::{Adjacency, CollectResizedGridMap, GridMap};
 use crate::{Error, Puzzle};
 
@@ -10,6 +10,7 @@ use std::collections::HashSet;
 use std::convert::TryInto;
 use std::fmt::{Display, Formatter};
 
+use console::{Color, Style};
 use itertools::Itertools;
 
 type Point = Vector<2, i64>;
@@ -286,12 +287,12 @@ impl Puzzle for ThisDay {
                     info.initial_to_node,
                     info.heuristic,
                     storms.at_time(node).map(|pos, tile| {
-                        let color = if path.contains(&pos) {
-                            Color::BrightGreen
+                        let style = if path.contains(&pos) {
+                            Style::new().green().bright().bold()
                         } else {
-                            Color::BrightRed
+                            Style::new().red()
                         };
-                        color.highlight(tile)
+                        style.apply_to(tile)
                     }),
                 );
             })
@@ -355,12 +356,12 @@ impl Puzzle for ThisDay {
                     info.initial_to_node,
                     info.heuristic,
                     storms.at_time(node).map(|pos, tile| {
-                        let color = if path.contains(&pos) {
-                            Color::BrightGreen
+                        let style = if path.contains(&pos) {
+                            Style::new().green().bright().bold()
                         } else {
-                            Color::BrightRed
+                            Style::new().red()
                         };
-                        color.highlight(tile)
+                        style.apply_to(tile)
                     }),
                 );
             })
