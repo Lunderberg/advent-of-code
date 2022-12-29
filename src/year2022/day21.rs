@@ -51,7 +51,8 @@ impl std::str::FromStr for MonkeySpec {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let words: Vec<_> = s.split_ascii_whitespace().collect();
-        let name = words.first()
+        let name = words
+            .first()
             .and_then(|word| word.strip_suffix(':'))
             .ok_or_else(|| Error::InvalidString(s.to_string()))?
             .to_string();
@@ -114,7 +115,7 @@ impl MonkeySystem {
         }
     }
 
-    fn as_part_2(mut self) -> Result<Self, Error> {
+    fn update_for_part_2(mut self) -> Result<Self, Error> {
         let root = self.find_name("root").unwrap();
         self.monkeys[root].op = match self.monkeys[root].op {
             Operation::Add(a, b) => Operation::Equal(a, b),
@@ -459,7 +460,7 @@ impl Puzzle for ThisDay {
 
     type Part2Result = i64;
     fn part_2(system: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
-        let system = system.clone().as_part_2()?;
+        let system = system.clone().update_for_part_2()?;
         let system = system.topological_sort().simplify();
         let root: &Monkey = &system.monkeys[system.root().unwrap()];
 

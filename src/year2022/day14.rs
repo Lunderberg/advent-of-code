@@ -106,13 +106,12 @@ impl SandSimulation {
                     Some(
                         [downward, left, right]
                             .iter()
-                            .filter(|loc| {
+                            .find(|loc| {
                                 !self.sand.contains(loc)
                                     && !self.rock.contains(loc)
                                     && (!self.has_floor
                                         || loc.y() < self.lowest_rock + 2)
                             })
-                            .next()
                             .map(|new_loc| SimulatedSand::InMotion(*new_loc))
                             .unwrap_or_else(|| SimulatedSand::Stopped(*loc)),
                     )

@@ -377,23 +377,30 @@ impl Puzzle for ThisDay {
 
         let mut iter_jet = jets.iter().cloned().enumerate().cycle().peekable();
 
-        let cycle = RockShape::iter_falling().enumerate().cycle()
-            .scan(Board::default(), |board, (rock_i,rock_shape)| {
+        let cycle = RockShape::iter_falling()
+            .enumerate()
+            .cycle()
+            .scan(Board::default(), |board, (rock_i, rock_shape)| {
                 let jet_i: usize = iter_jet.peek().unwrap().0;
-                board.run_single_rock(rock_shape, &mut iter_jet.by_ref().map(|(_i,jet)| jet));
+                board.run_single_rock(
+                    rock_shape,
+                    &mut iter_jet.by_ref().map(|(_i, jet)| jet),
+                );
                 let (top_shape, height) = board.top_shape();
-                Some(((rock_i,jet_i,top_shape), height))
+                Some(((rock_i, jet_i, top_shape), height))
             })
             .enumerate()
             .scan(
                 HashMap::new(),
-                |state: &mut HashMap<(usize,usize, TopShape), (usize,i64)>,
-                 (i, (key,height))|
-                  -> Option<((usize,i64), Option<(usize,i64)>)> {
-                     let prev = state.get(&key).cloned();
-                     let memo = (i,height);
-                     state.insert(key, memo);
-                     Some((memo,prev))
+                |state: &mut HashMap<
+                    (usize, usize, TopShape),
+                    (usize, i64),
+                >,
+                 (i, (key, height))| {
+                    let prev = state.get(&key).cloned();
+                    let memo = (i, height);
+                    state.insert(key, memo);
+                    Some((memo, prev))
                 },
             )
             .find_map(|((current_iter, current_height), opt_prev)| {

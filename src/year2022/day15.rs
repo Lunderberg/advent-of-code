@@ -14,7 +14,7 @@ pub struct Sensor {
 
 #[derive(Debug, Clone)]
 struct Region1D {
-    ranges: Vec<RangeInclusive<i64>>,
+    ranges: Vec<Option<RangeInclusive<i64>>>,
 }
 
 impl std::str::FromStr for Sensor {
@@ -61,7 +61,7 @@ impl Sensor {
 impl From<RangeInclusive<i64>> for Region1D {
     fn from(range: RangeInclusive<i64>) -> Self {
         Self {
-            ranges: vec![range],
+            ranges: vec![Some(range)],
         }
     }
 }
@@ -70,7 +70,7 @@ impl Region1D {
     fn total_elements(&self) -> i64 {
         self.ranges
             .iter()
-            .filter(|range| !range.is_empty())
+            .filter_map(|range| range.as_ref())
             .map(|range| range.end() - range.start() + 1)
             .sum()
     }
@@ -92,13 +92,13 @@ impl Region1D {
             ranges: self
                 .ranges
                 .iter()
-                .cloned()
+                .flatten()
                 .map(|range| {
                     let start: i64 =
                         *range.start().clamp(window.start(), window.end());
                     let end: i64 =
                         *range.end().clamp(window.start(), window.end());
-                    start..=end
+                    Some(start..=end)
                 })
                 .collect(),
         }
@@ -109,7 +109,9 @@ impl Region1D {
         self.ranges
             .iter()
             .enumerate()
-            .filter(|(_, range)| !range.is_empty())
+            .filter_map(|(i, opt_range)| {
+                opt_range.as_ref().map(|range| (i, range))
+            })
             .tuple_combinations()
             .find(|((_, a), (_, b))| {
                 a.contains(b.start()) || b.contains(a.start())
@@ -123,13 +125,13 @@ impl Region1D {
 
     fn simplify(mut self) -> Self {
         while let Some((i, j, merged)) = self.combinable() {
-            self.ranges[i] = merged;
-            self.ranges[j] = 1..=0;
+            self.ranges[i] = Some(merged);
+            self.ranges[j] = None;
         }
         let ranges = self
             .ranges
             .into_iter()
-            .filter(|range| !range.is_empty())
+            .filter(|range| range.is_none())
             .collect();
         Self { ranges }
     }
@@ -214,7 +216,9 @@ impl Puzzle for ThisDay {
                     region
                         .ranges
                         .iter()
-                        .map(|range| range.end() + 1)
+                        .filter_map(|opt_range| {
+                            opt_range.as_ref().map(|range| range.end() + 1)
+                        })
                         .min()
                         .unwrap(),
                     y,

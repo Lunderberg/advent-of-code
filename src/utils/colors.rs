@@ -58,7 +58,7 @@ impl Color {
         }
     }
 
-    pub fn highlight<'a, T>(self, inner: &'a T) -> Highlighted<'a, T> {
+    pub fn highlight<T>(self, inner: &T) -> Highlighted<'_, T> {
         Highlighted { color: self, inner }
     }
 }
