@@ -9,10 +9,11 @@ use crate::Error;
 
 use html5ever::tendril::TendrilSink;
 use markup5ever_rcdom::{Handle, NodeData};
+use ratelimit::Ratelimiter;
 
 pub struct Downloader {
     aoc_session_id: String,
-    rate_limiter: ratelimit::Limiter,
+    rate_limiter: Ratelimiter,
     cache: HashMap<DownloadTarget, String>,
 }
 
@@ -32,11 +33,10 @@ struct DownloadTarget {
 impl Downloader {
     pub fn new() -> Result<Downloader, Error> {
         // No more than one interaction every 5 seconds.
-        let rate_limiter = ratelimit::Builder::new()
-            .capacity(1)
-            .quantum(1)
-            .interval(std::time::Duration::new(5, 0))
-            .build();
+        let rate_limiter =
+            Ratelimiter::builder(1, std::time::Duration::new(5, 0))
+                .build()
+                .unwrap();
         let aoc_session_id = std::env::var("AOC_SESSION_ID")
             .map_err(|_| Error::MissingAdventOfCodeSessionId)?;
         Ok(Downloader {
@@ -81,8 +81,7 @@ impl Downloader {
         year: u32,
         day: u32,
     ) -> Result<String, Error> {
-        let url =
-            format!("https://adventofcode.com/{year}/day/{day}/input");
+        let url = format!("https://adventofcode.com/{year}/day/{day}/input");
         let filename = self.cache_file_loc(url)?;
         Ok(std::fs::read_to_string(filename)?)
     }
@@ -144,6 +143,12 @@ impl Downloader {
             }))
     }
 
+    fn wait_for_rate_limit(&mut self) {
+        while let Err(sleep) = self.rate_limiter.try_wait() {
+            std::thread::sleep(sleep);
+        }
+    }
+
     fn cache_file_loc<U: reqwest::IntoUrl>(
         &mut self,
         url: U,
@@ -158,7 +163,7 @@ impl Downloader {
         .collect();
 
         if !path.exists() {
-            self.rate_limiter.wait();
+            self.wait_for_rate_limit();
             let client = reqwest::blocking::Client::new();
             let mut response = client
                 .get(url)
