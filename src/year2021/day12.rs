@@ -7,6 +7,7 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug)]
@@ -484,8 +485,6 @@ impl TraversalState {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 12;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = CaveSystem;

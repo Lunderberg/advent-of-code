@@ -5,6 +5,7 @@ use std::fmt::{Debug, Formatter};
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 pub struct ProgramLine {
@@ -153,8 +154,6 @@ impl ProgramLine {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 10;
     const EXAMPLE_NUM: u8 = 1;
 
     type ParsedInput = Vec<ProgramLine>;

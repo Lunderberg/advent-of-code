@@ -8,6 +8,7 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Clone)]
@@ -282,8 +283,6 @@ impl Snailfish {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 18;
     const EXAMPLE_NUM: u8 = 7;
 
     type ParsedInput = Vec<Snailfish>;

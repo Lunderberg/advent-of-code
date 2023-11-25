@@ -415,12 +415,11 @@ impl DynamicGraph<usize> for ValveSystem {
     }
 }
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 impl Puzzle for ThisDay {
     const EXAMPLE_NUM: u8 = 0;
-    const YEAR: u32 = 2022;
-    const DAY: u8 = 16;
 
     type ParsedInput = ValveSystem;
     fn parse_input<'a>(

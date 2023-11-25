@@ -46,10 +46,10 @@ impl CraneYard {
         let (stack_to, stack_from) = self.stacks_affected(inst)?;
 
         (0..inst.num_to_move).try_for_each(|_| -> Result<(), Error> {
-                let value = stack_from.pop().ok_or(Error::NoneError)?;
-                stack_to.push(value);
-                Ok(())
-            })
+            let value = stack_from.pop().ok_or(Error::NoneError)?;
+            stack_to.push(value);
+            Ok(())
+        })
     }
 
     fn apply_part2(&mut self, inst: &Instruction) -> Result<(), Error> {
@@ -75,12 +75,11 @@ impl CraneYard {
     }
 }
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 impl Puzzle for ThisDay {
     const EXAMPLE_NUM: u8 = 0;
-    const YEAR: u32 = 2022;
-    const DAY: u8 = 5;
 
     type ParsedInput = (CraneYard, Vec<Instruction>);
     fn parse_input<'a>(

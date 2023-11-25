@@ -255,21 +255,13 @@ impl MonkeyMap {
         } else if square_size == 50 {
             use Facing::*;
             std::iter::empty::<((i64, i64, Facing), (i64, i64, Facing))>()
-                .chain(
-                    (0..50).map(|x| ((149, x, Right), (99, 149 - x, Left))),
-                )
+                .chain((0..50).map(|x| ((149, x, Right), (99, 149 - x, Left))))
                 .chain(
                     (0..50).map(|x| ((50 + x, 149, Down), (49, 150 + x, Left))),
                 )
-                .chain(
-                    (0..50).map(|x| ((x, 199, Down), (100 + x, 0, Down))),
-                )
-                .chain(
-                    (0..50).map(|x| ((50, 50 + x, Left), (x, 100, Down))),
-                )
-                .chain(
-                    (0..50).map(|x| ((50, x, Left), (0, 149 - x, Right))),
-                )
+                .chain((0..50).map(|x| ((x, 199, Down), (100 + x, 0, Down))))
+                .chain((0..50).map(|x| ((50, 50 + x, Left), (x, 100, Down))))
+                .chain((0..50).map(|x| ((50, x, Left), (0, 149 - x, Right))))
                 .chain((0..50).map(|x| ((50 + x, 0, Up), (0, 150 + x, Right))))
                 .chain(
                     (0..50).map(|x| ((99, 50 + x, Right), (100 + x, 49, Up))),
@@ -329,12 +321,11 @@ impl FromStr for Tile {
     }
 }
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 impl Puzzle for ThisDay {
     const EXAMPLE_NUM: u8 = 0;
-    const YEAR: u32 = 2022;
-    const DAY: u8 = 22;
 
     type ParsedInput = (MonkeyMap, Vec<Command>);
     fn parse_input<'a>(

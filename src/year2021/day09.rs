@@ -6,6 +6,7 @@ use itertools::Itertools;
 
 use std::collections::HashSet;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug)]
@@ -65,8 +66,6 @@ impl std::str::FromStr for HeightMap {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 9;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = HeightMap;

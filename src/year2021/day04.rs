@@ -6,6 +6,7 @@ use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug, Clone)]
@@ -153,8 +154,6 @@ impl BingoGame {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 4;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = BingoGame;

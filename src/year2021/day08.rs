@@ -8,6 +8,7 @@ use std::fmt::{Debug, Formatter};
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
@@ -321,8 +322,6 @@ fn active_segments(digit: u8) -> Result<impl Iterator<Item = Segment>, Error> {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 8;
     const EXAMPLE_NUM: u8 = 1;
 
     type ParsedInput = Vec<LightSequence>;

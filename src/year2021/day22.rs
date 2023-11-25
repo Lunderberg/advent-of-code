@@ -9,6 +9,7 @@ use std::str::FromStr;
 use itertools::Itertools;
 use regex::Regex;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug)]
@@ -214,8 +215,6 @@ impl FromStr for Command {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 22;
     const EXAMPLE_NUM: u8 = 2;
 
     type ParsedInput = Vec<Command>;

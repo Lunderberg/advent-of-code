@@ -3,13 +3,12 @@ use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 impl ThisDay {}
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 7;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = Vec<i64>;

@@ -8,6 +8,7 @@ use std::str::FromStr;
 use itertools::Itertools;
 use regex::Regex;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug)]
@@ -157,8 +158,6 @@ impl FromStr for Target {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 17;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = Target;

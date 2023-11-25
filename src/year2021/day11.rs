@@ -7,6 +7,7 @@ use std::fmt::{Display, Formatter};
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug, Clone)]
@@ -186,8 +187,6 @@ impl std::str::FromStr for Octopus {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 11;
     const EXAMPLE_NUM: u8 = 1;
 
     type ParsedInput = OctopusMap;

@@ -167,12 +167,11 @@ impl DynamicGraph<ReverseSearchPos> for HeightMap {
     }
 }
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 impl Puzzle for ThisDay {
     const EXAMPLE_NUM: u8 = 0;
-    const YEAR: u32 = 2022;
-    const DAY: u8 = 12;
 
     type ParsedInput = HeightMap;
     fn parse_input<'a>(

@@ -7,6 +7,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug, Clone)]
@@ -228,8 +229,6 @@ impl ScannerSet {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 19;
     const EXAMPLE_NUM: u8 = 5;
 
     type ParsedInput = Vec<Scanner>;

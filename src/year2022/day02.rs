@@ -3,6 +3,7 @@ use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 pub struct StrategyGuide {
@@ -52,8 +53,6 @@ impl std::str::FromStr for StrategyGuide {
 
 impl Puzzle for ThisDay {
     const EXAMPLE_NUM: u8 = 0;
-    const YEAR: u32 = 2022;
-    const DAY: u8 = 2;
 
     type ParsedInput = Vec<StrategyGuide>;
     fn parse_input<'a>(

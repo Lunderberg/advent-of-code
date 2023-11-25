@@ -10,6 +10,7 @@ use std::iter::FromIterator;
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug, Clone)]
@@ -649,8 +650,6 @@ impl From<AmphipodLayout> for AmphipodDiagram {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 23;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = AmphipodDiagram;

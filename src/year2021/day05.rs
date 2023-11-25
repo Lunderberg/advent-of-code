@@ -5,6 +5,7 @@ use crate::{Error, Puzzle};
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -42,8 +43,6 @@ impl VentLine {
 impl ThisDay {}
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 5;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = Vec<VentLine>;

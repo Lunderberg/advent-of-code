@@ -80,11 +80,11 @@ where
     T: Puzzle,
 {
     fn year(&self) -> u32 {
-        T::YEAR
+        T::year()
     }
 
     fn day(&self) -> u8 {
-        T::DAY
+        T::day()
     }
 
     fn parse_inputs(
@@ -99,8 +99,11 @@ where
                 DownloadSource::Example(T::EXAMPLE_NUM as usize)
             }
         };
-        let line_iter =
-            downloader.puzzle_input(T::YEAR, T::DAY as u32, download_source)?;
+        let line_iter = downloader.puzzle_input(
+            T::year(),
+            T::day() as u32,
+            download_source,
+        )?;
         let parsed_input = if verbose {
             T::parse_input(
                 line_iter.inspect(|line| println!("Parsing line {line}")),
@@ -131,9 +134,12 @@ where
     }
 }
 
-pub trait Puzzle {
-    const YEAR: u32;
-    const DAY: u8;
+pub trait YearDay {
+    fn year() -> u32;
+    fn day() -> u8;
+}
+
+pub trait Puzzle: YearDay {
     const EXAMPLE_NUM: u8;
 
     type ParsedInput;

@@ -5,6 +5,7 @@ use crate::{Error, Puzzle};
 use itertools::Itertools;
 use std::collections::HashSet;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug, Clone, Copy)]
@@ -105,8 +106,6 @@ impl Rope {
 
 impl Puzzle for ThisDay {
     const EXAMPLE_NUM: u8 = 3;
-    const YEAR: u32 = 2022;
-    const DAY: u8 = 9;
 
     type ParsedInput = Vec<Command>;
     fn parse_input<'a>(

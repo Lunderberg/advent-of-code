@@ -8,6 +8,7 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug, Clone)]
@@ -112,8 +113,6 @@ impl Image {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 20;
     const EXAMPLE_NUM: u8 = 5;
 
     type ParsedInput = Image;

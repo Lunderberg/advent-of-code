@@ -68,11 +68,10 @@ fn final_position_part2(commands: &[Command]) -> SubmarineState {
     pos
 }
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 2;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = Vec<Command>;

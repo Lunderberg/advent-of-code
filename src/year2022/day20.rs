@@ -66,12 +66,11 @@ impl Data {
     }
 }
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 impl Puzzle for ThisDay {
     const EXAMPLE_NUM: u8 = 0;
-    const YEAR: u32 = 2022;
-    const DAY: u8 = 20;
 
     type ParsedInput = Vec<i64>;
     fn parse_input<'a>(

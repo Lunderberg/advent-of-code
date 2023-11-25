@@ -48,12 +48,11 @@ fn register_x_during_cycle(
     )
 }
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 impl Puzzle for ThisDay {
     const EXAMPLE_NUM: u8 = 1;
-    const YEAR: u32 = 2022;
-    const DAY: u8 = 10;
 
     type ParsedInput = Vec<OpCode>;
     fn parse_input<'a>(

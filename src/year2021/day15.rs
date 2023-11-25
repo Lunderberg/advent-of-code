@@ -7,6 +7,7 @@ use priority_queue::PriorityQueue;
 use std::cmp::Reverse;
 use std::collections::HashMap;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug)]
@@ -77,8 +78,6 @@ impl DynamicGraph<GridPos> for RiskMap {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 15;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = RiskMap;

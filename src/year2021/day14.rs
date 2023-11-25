@@ -5,6 +5,7 @@ use itertools::Itertools;
 
 use std::collections::HashMap;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug, Clone)]
@@ -78,8 +79,6 @@ impl Polymer {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 14;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = (Polymer, InsertionRules);

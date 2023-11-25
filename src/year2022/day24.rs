@@ -297,12 +297,11 @@ impl Display for DisplayTile {
     }
 }
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 impl Puzzle for ThisDay {
     const EXAMPLE_NUM: u8 = 6;
-    const YEAR: u32 = 2022;
-    const DAY: u8 = 24;
 
     type ParsedInput = StormSystem;
     fn parse_input<'a>(

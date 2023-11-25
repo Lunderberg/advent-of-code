@@ -209,12 +209,11 @@ impl std::str::FromStr for Tile {
     }
 }
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 impl Puzzle for ThisDay {
     const EXAMPLE_NUM: u8 = 0;
-    const YEAR: u32 = 2022;
-    const DAY: u8 = 23;
 
     type ParsedInput = ElfSystem;
     fn parse_input<'a>(

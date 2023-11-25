@@ -8,6 +8,7 @@ use std::fmt::{Display, Formatter};
 use itertools::Itertools;
 use priority_queue::PriorityQueue;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
@@ -160,8 +161,6 @@ impl PlayerState {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 21;
     const EXAMPLE_NUM: u8 = 0;
 
     type ParsedInput = InProgressGameState;

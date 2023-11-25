@@ -6,6 +6,7 @@ use std::fmt::{Display, Formatter};
 
 use itertools::Itertools;
 
+#[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
 
 #[derive(Debug, Clone)]
@@ -86,8 +87,6 @@ impl Transparency {
 }
 
 impl Puzzle for ThisDay {
-    const YEAR: u32 = 2021;
-    const DAY: u8 = 13;
     const EXAMPLE_NUM: u8 = 1;
 
     type ParsedInput = (Transparency, Vec<FoldInstruction>);
