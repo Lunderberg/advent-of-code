@@ -23,13 +23,15 @@ impl Puzzle for ThisDay {
         Ok(lines.exactly_one()?.chars().collect())
     }
 
-    type Part1Result = usize;
-    fn part_1(signal: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        signal: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         after_n_unique(signal, 4).ok_or(Error::ParseError)
     }
 
-    type Part2Result = usize;
-    fn part_2(signal: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        signal: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         after_n_unique(signal, 14).ok_or(Error::ParseError)
     }
 }

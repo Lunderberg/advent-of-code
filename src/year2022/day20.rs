@@ -79,15 +79,13 @@ impl Puzzle for ThisDay {
         Ok(lines.map(|line| line.parse()).collect::<Result<_, _>>()?)
     }
 
-    type Part1Result = i64;
-    fn part_1(data: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(data: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
         let mut mixed = Data::new(data, 1);
         mixed.mix();
         Ok(mixed.coordinates())
     }
 
-    type Part2Result = i64;
-    fn part_2(data: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(data: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
         let decryption_key = 811589153;
         let mut mixed = Data::new(data, decryption_key);
         (0..10).for_each(|_| mixed.mix());

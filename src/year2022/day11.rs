@@ -203,10 +203,9 @@ impl Puzzle for ThisDay {
         Ok(KeepAway { monkeys, items })
     }
 
-    type Part1Result = usize;
     fn part_1(
         keepaway: &Self::ParsedInput,
-    ) -> Result<Self::Part1Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(keepaway
             .items
             .iter()
@@ -223,10 +222,9 @@ impl Puzzle for ThisDay {
             .product::<usize>())
     }
 
-    type Part2Result = usize;
     fn part_2(
         keepaway: &Self::ParsedInput,
-    ) -> Result<Self::Part2Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(keepaway
             .items
             .iter()

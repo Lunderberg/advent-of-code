@@ -449,16 +449,18 @@ impl Puzzle for ThisDay {
         Ok(MonkeySystem { monkeys })
     }
 
-    type Part1Result = i64;
-    fn part_1(system: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        system: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let system = system.topological_sort();
         let root = system.root().unwrap();
         let value = system.eval(root);
         Ok(value)
     }
 
-    type Part2Result = i64;
-    fn part_2(system: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        system: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let system = system.clone().update_for_part_2()?;
         let system = system.topological_sort().simplify();
         let root: &Monkey = &system.monkeys[system.root().unwrap()];

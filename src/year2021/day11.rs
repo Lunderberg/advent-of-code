@@ -199,16 +199,18 @@ impl Puzzle for ThisDay {
         })
     }
 
-    type Part1Result = usize;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let mut map = parsed.clone();
 
         (0..100).for_each(|_i| map.iterate());
         Ok(map.total_flashes)
     }
 
-    type Part2Result = usize;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(std::iter::repeat(())
             .scan(parsed.clone(), |map, _| {
                 map.iterate();

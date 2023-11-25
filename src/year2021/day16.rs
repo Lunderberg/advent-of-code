@@ -235,13 +235,15 @@ impl Puzzle for ThisDay {
             .collect())
     }
 
-    type Part1Result = u64;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(Packet::parse(&mut parsed.iter().copied())?.sum_version_nums())
     }
 
-    type Part2Result = u64;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Packet::parse(&mut parsed.iter().copied())?.eval()
     }
 }

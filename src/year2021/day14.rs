@@ -112,8 +112,9 @@ impl Puzzle for ThisDay {
         Ok((polymer, rules))
     }
 
-    type Part1Result = usize;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let (polymer, rules) = parsed;
 
         (0..10)
@@ -123,8 +124,9 @@ impl Puzzle for ThisDay {
             .minmax_diff()
     }
 
-    type Part2Result = usize;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let (polymer, rules) = parsed;
 
         (0..40)

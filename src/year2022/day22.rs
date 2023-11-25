@@ -384,10 +384,9 @@ impl Puzzle for ThisDay {
         Ok((map, commands))
     }
 
-    type Part1Result = u64;
     fn part_1(
         (map, commands): &Self::ParsedInput,
-    ) -> Result<Self::Part1Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         let map = map.with_wrapping_teleports();
 
         let final_state: State = commands
@@ -403,10 +402,9 @@ impl Puzzle for ThisDay {
         Ok(final_state.value(&map.map))
     }
 
-    type Part2Result = u64;
     fn part_2(
         (map, commands): &Self::ParsedInput,
-    ) -> Result<Self::Part2Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         let map = map.with_cube_teleports();
 
         let final_state: State = commands

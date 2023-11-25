@@ -167,8 +167,9 @@ impl Puzzle for ThisDay {
         lines.exactly_one()?.parse()
     }
 
-    type Part1Result = i64;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(parsed
             .initial_probes()
             .map(|probe| probe.ymax())
@@ -176,8 +177,9 @@ impl Puzzle for ThisDay {
             .unwrap())
     }
 
-    type Part2Result = usize;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(parsed.initial_probes().count())
     }
 }

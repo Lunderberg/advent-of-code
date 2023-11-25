@@ -311,13 +311,15 @@ impl Puzzle for ThisDay {
         Ok(StormSystem { map })
     }
 
-    type Part1Result = u64;
-    fn part_1(storms: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        storms: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         storms.search(0)
     }
 
-    type Part2Result = u64;
-    fn part_2(storms: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        storms: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         storms.search(2)
     }
 }

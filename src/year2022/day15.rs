@@ -150,8 +150,9 @@ impl Puzzle for ThisDay {
         lines.map(|line| line.parse()).collect()
     }
 
-    type Part1Result = usize;
-    fn part_1(sensors: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        sensors: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         // The target row is different for the example and the actual input.
         let row_y = if sensors.len() == 14 { 10 } else { 2000000 };
 
@@ -184,8 +185,9 @@ impl Puzzle for ThisDay {
         Ok(tiles_observed - beacons_on_row)
     }
 
-    type Part2Result = i64;
-    fn part_2(sensors: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        sensors: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         // The target row is different for the example and the actual input.
         let search_range = if sensors.len() == 14 {
             0..=20

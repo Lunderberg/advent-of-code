@@ -482,13 +482,15 @@ impl Puzzle for ThisDay {
         Ok(Program { instructions })
     }
 
-    type Part1Result = i64;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         parsed.to_checksum_graph(false)?.find_serial()
     }
 
-    type Part2Result = i64;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         parsed.to_checksum_graph(true)?.find_serial()
     }
 }

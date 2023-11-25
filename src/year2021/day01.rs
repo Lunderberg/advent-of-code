@@ -18,13 +18,11 @@ impl Puzzle for ThisDay {
             .collect()
     }
 
-    type Part1Result = usize;
-    fn part_1(values: &Vec<i32>) -> Result<Self::Part1Result, Error> {
+    fn part_1(values: &Vec<i32>) -> Result<impl std::fmt::Debug, Error> {
         Ok(values.iter().tuple_windows().filter(|(a, b)| a < b).count())
     }
 
-    type Part2Result = usize;
-    fn part_2(values: &Vec<i32>) -> Result<Self::Part2Result, Error> {
+    fn part_2(values: &Vec<i32>) -> Result<impl std::fmt::Debug, Error> {
         Ok(values
             .iter()
             .tuple_windows()

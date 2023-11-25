@@ -84,8 +84,9 @@ impl Puzzle for ThisDay {
             .collect::<Result<Vec<_>, _>>()
     }
 
-    type Part1Result = usize;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let bit_mask = Self::get_bit_mask(parsed)?;
         let gamma = parsed
             .iter()
@@ -103,8 +104,9 @@ impl Puzzle for ThisDay {
         Ok(gamma * epsilon)
     }
 
-    type Part2Result = usize;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let oxy = Self::filter_most_frequent(parsed, false)?;
         let carbon_dioxide = Self::filter_most_frequent(parsed, true)?;
         Ok(oxy * carbon_dioxide)

@@ -187,8 +187,9 @@ impl Puzzle for ThisDay {
         })
     }
 
-    type Part1Result = u64;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let mut state = *parsed;
         state.winning_score = 1000;
 
@@ -200,8 +201,9 @@ impl Puzzle for ThisDay {
         Ok(state.lowest_score() * die.num_times_rolled)
     }
 
-    type Part2Result = usize;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let mut state = *parsed;
         state.winning_score = 21;
         let state = state.as_full_state();

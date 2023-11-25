@@ -262,18 +262,20 @@ impl Puzzle for ThisDay {
             .collect()
     }
 
-    type Part1Result = usize;
-    fn part_1(values: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(values
             .iter()
             .tuples()
             .enumerate()
             .filter_map(|(i, (a, b))| (a < b).then_some(i + 1))
-            .sum())
+            .sum::<usize>())
     }
 
-    type Part2Result = usize;
-    fn part_2(values: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let divider_a: Packet = "[[2]]".parse()?;
         let divider_b: Packet = "[[6]]".parse()?;
         let (loc_a, loc_b) = values

@@ -23,10 +23,9 @@ impl Puzzle for ThisDay {
             .collect::<Result<Vec<_>, _>>()?)
     }
 
-    type Part1Result = i64;
     fn part_1(
         crab_pos: &Self::ParsedInput,
-    ) -> Result<Self::Part1Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         let (low, high) = match crab_pos.iter().copied().minmax() {
             itertools::MinMaxResult::NoElements => Err(Error::CannotFindMinMax),
             itertools::MinMaxResult::OneElement(_) => {
@@ -43,10 +42,9 @@ impl Puzzle for ThisDay {
         Ok(lowest_fuel)
     }
 
-    type Part2Result = i64;
     fn part_2(
         crab_pos: &Self::ParsedInput,
-    ) -> Result<Self::Part1Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         let (low, high) = match crab_pos.iter().copied().minmax() {
             itertools::MinMaxResult::NoElements => Err(Error::CannotFindMinMax),
             itertools::MinMaxResult::OneElement(_) => {

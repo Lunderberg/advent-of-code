@@ -458,8 +458,9 @@ impl Puzzle for ThisDay {
         Ok(system)
     }
 
-    type Part1Result = u64;
-    fn part_1(system: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        system: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let initial_state = system.initial_state_part_1()?;
         println!("Initial state: {initial_state:?}");
 
@@ -504,8 +505,9 @@ impl Puzzle for ThisDay {
         Ok(idealized - best.1.initial_to_node)
     }
 
-    type Part2Result = u64;
-    fn part_2(system: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        system: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let initial_state = system.initial_state_part_2()?;
         let idealized = initial_state.time_remaining * system.max_flow_rate();
         println!("Initial state: {initial_state:?}");

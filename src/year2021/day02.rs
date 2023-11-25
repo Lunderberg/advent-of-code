@@ -81,14 +81,16 @@ impl Puzzle for ThisDay {
         lines.map(|line| line.parse::<Command>()).collect()
     }
 
-    type Part1Result = i64;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let pos = final_position_part1(parsed);
         Ok(pos.depth * pos.forward_pos)
     }
 
-    type Part2Result = i64;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let pos = final_position_part2(parsed);
         Ok(pos.depth * pos.forward_pos)
     }

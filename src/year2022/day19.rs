@@ -341,10 +341,9 @@ impl Puzzle for ThisDay {
             .collect()
     }
 
-    type Part1Result = u64;
     fn part_1(
         blueprints: &Self::ParsedInput,
-    ) -> Result<Self::Part1Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(blueprints
             .iter()
             .map(|blueprint| {
@@ -352,17 +351,16 @@ impl Puzzle for ThisDay {
                 let quality_level = blueprint.id * max_geodes;
                 quality_level as u64
             })
-            .sum())
+            .sum::<u64>())
     }
 
-    type Part2Result = u64;
     fn part_2(
         blueprints: &Self::ParsedInput,
-    ) -> Result<Self::Part2Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(blueprints
             .iter()
             .take(3)
             .map(|blueprint| blueprint.maximum_geodes(32, false) as u64)
-            .product())
+            .product::<u64>())
     }
 }

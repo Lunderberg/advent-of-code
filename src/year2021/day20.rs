@@ -137,15 +137,17 @@ impl Puzzle for ThisDay {
         })
     }
 
-    type Part1Result = usize;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok((0..2)
             .fold(parsed.clone(), |acc, _i| acc.enhance())
             .num_pixels())
     }
 
-    type Part2Result = usize;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok((0..50)
             .fold(parsed.clone(), |acc, _i| acc.enhance())
             .num_pixels())

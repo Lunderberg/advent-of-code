@@ -82,8 +82,9 @@ impl Puzzle for ThisDay {
             .collect::<Result<Vec<_>, _>>()
     }
 
-    type Part1Result = usize;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(parsed
             .iter()
             .filter(|vent_line| !vent_line.is_diagonal())
@@ -94,8 +95,9 @@ impl Puzzle for ThisDay {
             .count())
     }
 
-    type Part2Result = usize;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(parsed
             .iter()
             .flat_map(|vent_line| vent_line.vent_locations())

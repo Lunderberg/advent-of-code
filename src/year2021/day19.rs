@@ -246,14 +246,16 @@ impl Puzzle for ThisDay {
         Ok(scanners)
     }
 
-    type Part1Result = usize;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let merged = ScannerSet::merge_all(parsed.iter())?;
         Ok(merged.beacons.len())
     }
 
-    type Part2Result = i64;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let merged = ScannerSet::merge_all(parsed.iter())?;
 
         Ok(merged

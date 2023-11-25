@@ -195,14 +195,16 @@ impl Puzzle for ThisDay {
         })
     }
 
-    type Part1Result = u32;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let (last_num, board) = parsed.find_winning_board(WhichBoard::First)?;
         Ok(board.score(last_num))
     }
 
-    type Part2Result = u32;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let (last_num, board) = parsed.find_winning_board(WhichBoard::Last)?;
         Ok(board.score(last_num))
     }

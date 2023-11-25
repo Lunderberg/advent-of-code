@@ -28,8 +28,9 @@ impl Puzzle for ThisDay {
         .collect()
     }
 
-    type Part1Result = i32;
-    fn part_1(values: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(values
             .iter()
             .map(|elf| elf.iter().sum::<i32>())
@@ -37,8 +38,9 @@ impl Puzzle for ThisDay {
             .unwrap())
     }
 
-    type Part2Result = i32;
-    fn part_2(values: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(values
             .iter()
             .map(|elf| -elf.iter().sum::<i32>())

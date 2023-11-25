@@ -50,16 +50,18 @@ impl Puzzle for ThisDay {
         lines.map(|line| line.parse()).collect()
     }
 
-    type Part1Result = u32;
-    fn part_1(values: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(values
             .iter()
             .flat_map(|rucksack| rucksack.in_both_compartments())
             .sum::<u32>())
     }
 
-    type Part2Result = u32;
-    fn part_2(values: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         values
             .chunks(3)
             .map(|group| -> Result<u32, Error> {

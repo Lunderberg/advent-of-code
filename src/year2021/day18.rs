@@ -292,8 +292,9 @@ impl Puzzle for ThisDay {
         lines.map(|line| line.parse()).collect()
     }
 
-    type Part1Result = i64;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(parsed
             .iter()
             .cloned()
@@ -302,8 +303,9 @@ impl Puzzle for ThisDay {
             .magnitude())
     }
 
-    type Part2Result = i64;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(parsed
             .iter()
             .cloned()

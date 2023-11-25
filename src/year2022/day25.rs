@@ -67,16 +67,18 @@ impl Puzzle for ThisDay {
         lines.map(|line| line.parse()).collect()
     }
 
-    type Part1Result = String;
-    fn part_1(values: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let sum = values.iter().map(|value| value.inner).sum::<i64>();
         let snafu = SnafuNumber { inner: sum };
         let as_str = format!("{snafu}");
         Ok(as_str)
     }
 
-    type Part2Result = ();
-    fn part_2(_values: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        _values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(())
     }
 }

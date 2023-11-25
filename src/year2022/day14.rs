@@ -197,8 +197,9 @@ impl Puzzle for ThisDay {
         lines.map(|line| line.parse()).collect()
     }
 
-    type Part1Result = usize;
-    fn part_1(paths: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        paths: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let mut sim = SandSimulation::new(paths, [500, 0].into(), false);
         // println!("Before:\n{sim}");
         sim.fill();
@@ -206,8 +207,9 @@ impl Puzzle for ThisDay {
         Ok(sim.sand.len())
     }
 
-    type Part2Result = usize;
-    fn part_2(paths: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        paths: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let mut sim = SandSimulation::new(paths, [500, 0].into(), true);
         //println!("Before:\n{sim}");
         sim.fill();

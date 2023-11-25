@@ -147,9 +147,11 @@ pub trait Puzzle: YearDay {
         lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error>;
 
-    type Part1Result: std::fmt::Debug;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error>;
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error>;
 
-    type Part2Result: std::fmt::Debug;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error>;
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error>;
 }

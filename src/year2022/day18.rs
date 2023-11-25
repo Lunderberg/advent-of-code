@@ -93,8 +93,7 @@ impl Puzzle for ThisDay {
         Ok(Lava::new(voxels))
     }
 
-    type Part1Result = usize;
-    fn part_1(lava: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(lava: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
         let adjacent = lava
             .voxels
             .iter()
@@ -105,8 +104,7 @@ impl Puzzle for ThisDay {
         Ok(6 * lava.voxels.len() - 2 * adjacent)
     }
 
-    type Part2Result = usize;
-    fn part_2(lava: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(lava: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
         let externally_reachable: HashSet<Point> = lava
             .dijkstra_paths(lava.min())
             .into_iter()

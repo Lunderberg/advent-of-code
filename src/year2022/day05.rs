@@ -126,8 +126,9 @@ impl Puzzle for ThisDay {
         Ok((craneyard, instructions))
     }
 
-    type Part1Result = String;
-    fn part_1(values: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let (craneyard, instructions) = values;
         let mut craneyard = craneyard.clone();
 
@@ -138,8 +139,9 @@ impl Puzzle for ThisDay {
         craneyard.top()
     }
 
-    type Part2Result = String;
-    fn part_2(values: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let (craneyard, instructions) = values;
         let mut craneyard = craneyard.clone();
 

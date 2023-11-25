@@ -17,8 +17,9 @@ impl Puzzle for ThisDay {
         Ok(lines.collect())
     }
 
-    type Part1Result = usize;
-    fn part_1(gridmap: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        gridmap: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(gridmap
             .iter()
             .filter(|(pos, height)| {
@@ -31,8 +32,9 @@ impl Puzzle for ThisDay {
             .count())
     }
 
-    type Part2Result = usize;
-    fn part_2(gridmap: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        gridmap: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(gridmap
             .iter()
             .map(|(pos, height)| {

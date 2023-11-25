@@ -114,8 +114,9 @@ impl Puzzle for ThisDay {
         lines.map(|line| line.parse()).collect()
     }
 
-    type Part1Result = usize;
-    fn part_1(values: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(values
             .iter()
             .flat_map(|command| {
@@ -130,8 +131,9 @@ impl Puzzle for ThisDay {
             .len())
     }
 
-    type Part2Result = usize;
-    fn part_2(values: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(values
             .iter()
             .flat_map(|command| {

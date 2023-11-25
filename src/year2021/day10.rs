@@ -163,8 +163,9 @@ impl Puzzle for ThisDay {
         lines.map(|s| s.parse()).collect::<Result<Vec<_>, _>>()
     }
 
-    type Part1Result = u64;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(parsed
             .iter()
             .filter_map(|line| {
@@ -180,8 +181,9 @@ impl Puzzle for ThisDay {
             .sum::<u64>())
     }
 
-    type Part2Result = u64;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let points = parsed
             .iter()
             .filter_map(|line| {

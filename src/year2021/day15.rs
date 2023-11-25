@@ -89,13 +89,15 @@ impl Puzzle for ThisDay {
         })
     }
 
-    type Part1Result = u64;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         parsed.path_cost()
     }
 
-    type Part2Result = u64;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         parsed.enlarge_by(5).path_cost()
     }
 }

@@ -356,8 +356,7 @@ impl Puzzle for ThisDay {
             .collect()
     }
 
-    type Part1Result = i64;
-    fn part_1(jets: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(jets: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
         let mut board = Board::default();
         println!("Initial Board:\n{board}");
 
@@ -370,8 +369,7 @@ impl Puzzle for ThisDay {
         Ok(board.max_height())
     }
 
-    type Part2Result = i64;
-    fn part_2(jets: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(jets: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
         let iterations = 1000000000000usize;
 
         let mut iter_jet = jets.iter().cloned().enumerate().cycle().peekable();

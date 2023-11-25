@@ -224,8 +224,9 @@ impl Puzzle for ThisDay {
         lines.map(|line| line.parse()).collect()
     }
 
-    type Part1Result = u64;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let initialization_region = Cuboid {
             ranges: [-50..51, -50..51, -50..51],
         };
@@ -242,8 +243,9 @@ impl Puzzle for ThisDay {
             .sum::<u64>())
     }
 
-    type Part2Result = u64;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let final_state =
             parsed.iter().fold(WorldState::new(), |state, command| {
                 state.after_command(command)

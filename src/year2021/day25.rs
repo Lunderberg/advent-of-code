@@ -171,8 +171,9 @@ impl Puzzle for ThisDay {
         })
     }
 
-    type Part1Result = usize;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(std::iter::successors(Some(parsed.clone()), |map| {
             Some(map.after_advance())
         })
@@ -182,8 +183,9 @@ impl Puzzle for ThisDay {
         .unwrap())
     }
 
-    type Part2Result = ();
-    fn part_2(_parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        _parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(())
     }
 }

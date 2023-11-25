@@ -112,8 +112,9 @@ impl Puzzle for ThisDay {
         Ok((Transparency { dots }, instructions))
     }
 
-    type Part1Result = usize;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let (paper, folds) = parsed;
         let fold = folds.iter().cloned().next().ok_or(Error::NoneError)?;
 
@@ -122,8 +123,9 @@ impl Puzzle for ThisDay {
         Ok(folded.dots.len())
     }
 
-    type Part2Result = String;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let (paper, folds) = parsed;
         let mut paper = paper.clone();
 

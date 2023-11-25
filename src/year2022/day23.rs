@@ -227,8 +227,9 @@ impl Puzzle for ThisDay {
         })
     }
 
-    type Part1Result = usize;
-    fn part_1(elves: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        elves: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(std::iter::successors(Some(elves.clone()), |elves| {
             Some(elves.next())
         })
@@ -237,8 +238,9 @@ impl Puzzle for ThisDay {
         .empty_ground_in_bounding_box())
     }
 
-    type Part2Result = usize;
-    fn part_2(elves: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        elves: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(std::iter::successors(Some(elves.clone()), |elves| {
             Some(elves.next())
         })

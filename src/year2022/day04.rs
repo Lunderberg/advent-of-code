@@ -33,8 +33,9 @@ impl Puzzle for ThisDay {
             .collect()
     }
 
-    type Part1Result = usize;
-    fn part_1(values: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(values
             .iter()
             .filter(|(a, b)| {
@@ -44,8 +45,9 @@ impl Puzzle for ThisDay {
             .count())
     }
 
-    type Part2Result = usize;
-    fn part_2(values: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(values
             .iter()
             .filter(|(a, b)| a.start() <= b.end() && b.start() <= a.end())

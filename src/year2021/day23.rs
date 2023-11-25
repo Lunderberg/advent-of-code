@@ -659,8 +659,9 @@ impl Puzzle for ThisDay {
         Ok(lines.collect())
     }
 
-    type Part1Result = u64;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let initial: AmphipodLayout = parsed.into();
         let target = initial.target_arrangement()?;
 
@@ -669,8 +670,9 @@ impl Puzzle for ThisDay {
         Ok(path.into_iter().map(|(_state, cost)| cost).sum::<u64>())
     }
 
-    type Part2Result = u64;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let diagram = parsed.extend_part_2();
 
         let initial: AmphipodLayout = diagram.into();

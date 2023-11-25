@@ -67,15 +67,17 @@ impl Puzzle for ThisDay {
         Ok(output)
     }
 
-    type Part1Result = u64;
-    fn part_1(parsed: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let mut population = parsed.clone();
         Self::advance_fish_population(80, &mut population);
         Ok(population.iter().sum::<u64>())
     }
 
-    type Part2Result = u64;
-    fn part_2(parsed: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(
+        parsed: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
         let mut population = parsed.clone();
         Self::advance_fish_population(256, &mut population);
         Ok(population.iter().sum::<u64>())

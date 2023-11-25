@@ -181,8 +181,7 @@ impl Puzzle for ThisDay {
         Ok(HeightMap { map })
     }
 
-    type Part1Result = usize;
-    fn part_1(map: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
+    fn part_1(map: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
         let start = map.start()?;
         let end = map.end()?;
 
@@ -226,8 +225,7 @@ impl Puzzle for ThisDay {
         //Ok(path.len())
     }
 
-    type Part2Result = usize;
-    fn part_2(map: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
+    fn part_2(map: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
         let peak = map.end()?;
 
         let res = map.shortest_path_search_result(

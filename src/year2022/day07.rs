@@ -323,10 +323,9 @@ impl Puzzle for ThisDay {
         Ok(state.file_system)
     }
 
-    type Part1Result = usize;
     fn part_1(
         file_system: &Self::ParsedInput,
-    ) -> Result<Self::Part1Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(file_system
             .size_recursive(file_system.root())?
             .into_values()
@@ -334,10 +333,9 @@ impl Puzzle for ThisDay {
             .sum::<usize>())
     }
 
-    type Part2Result = usize;
     fn part_2(
         file_system: &Self::ParsedInput,
-    ) -> Result<Self::Part2Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         let total_space = 70000000;
         let required_space = 30000000;
 

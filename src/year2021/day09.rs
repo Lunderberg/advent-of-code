@@ -77,20 +77,18 @@ impl Puzzle for ThisDay {
         })
     }
 
-    type Part1Result = u64;
     fn part_1(
         height_map: &Self::ParsedInput,
-    ) -> Result<Self::Part1Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(height_map
             .low_points()
             .map(|(_pos, height)| (height + 1) as u64)
             .sum::<u64>())
     }
 
-    type Part2Result = usize;
     fn part_2(
         height_map: &Self::ParsedInput,
-    ) -> Result<Self::Part2Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(height_map
             .low_points()
             .map(|(pos, _height)| height_map.basin_points(pos).len())

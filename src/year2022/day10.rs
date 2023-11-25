@@ -61,10 +61,9 @@ impl Puzzle for ThisDay {
         lines.map(|line| line.parse()).collect()
     }
 
-    type Part1Result = i32;
     fn part_1(
         op_codes: &Self::ParsedInput,
-    ) -> Result<Self::Part1Result, Error> {
+    ) -> Result<impl std::fmt::Debug, Error> {
         Ok(register_x_during_cycle(op_codes.iter().copied())
             .enumerate()
             .map(|(i, val)| (i + 1, val))
@@ -76,21 +75,22 @@ impl Puzzle for ThisDay {
             .sum::<i32>())
     }
 
-    type Part2Result = DisplayString;
     fn part_2(
         op_codes: &Self::ParsedInput,
-    ) -> Result<Self::Part2Result, Error> {
-        Ok(register_x_during_cycle(op_codes.iter().copied())
-            .chunks(40)
-            .into_iter()
-            .map(|chunk| {
-                chunk
-                    .enumerate()
-                    .map(|(i, value)| ((i as i32) - value).abs() <= 1)
-                    .map(|is_lit| if is_lit { '#' } else { '.' })
-                    .collect::<String>()
-            })
-            .join("\n")
-            .into())
+    ) -> Result<impl std::fmt::Debug, Error> {
+        let res: DisplayString =
+            register_x_during_cycle(op_codes.iter().copied())
+                .chunks(40)
+                .into_iter()
+                .map(|chunk| {
+                    chunk
+                        .enumerate()
+                        .map(|(i, value)| ((i as i32) - value).abs() <= 1)
+                        .map(|is_lit| if is_lit { '#' } else { '.' })
+                        .collect::<String>()
+                })
+                .join("\n")
+                .into();
+        Ok(res)
     }
 }

@@ -61,13 +61,15 @@ impl Puzzle for ThisDay {
         lines.map(|line| line.parse()).collect()
     }
 
-    type Part1Result = i32;
-    fn part_1(values: &Self::ParsedInput) -> Result<Self::Part1Result, Error> {
-        Ok(values.iter().map(|guide| guide.part1_score()).sum())
+    fn part_1(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
+        Ok(values.iter().map(|guide| guide.part1_score()).sum::<i32>())
     }
 
-    type Part2Result = i32;
-    fn part_2(values: &Self::ParsedInput) -> Result<Self::Part2Result, Error> {
-        Ok(values.iter().map(|guide| guide.part2_score()).sum())
+    fn part_2(
+        values: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
+        Ok(values.iter().map(|guide| guide.part2_score()).sum::<i32>())
     }
 }
