@@ -5,7 +5,7 @@ pub use framework::{Puzzle, YearDay};
 
 pub mod utils;
 
-aoc_macros::collect_all_solutions! {}
+include!(concat!(env!("OUT_DIR"), "/collected_solutions.rs"));
 
 mod errors;
 pub use errors::Error;

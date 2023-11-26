@@ -17,7 +17,7 @@ name = "aoc"
 [dependencies]
 aoc_macros = { path = "./aoc_macros" }
 
-itertools = "0.10.3"
+itertools = "*"
 itertools-num = "*"
 regex = "1"
 indicatif = "*"
@@ -34,7 +34,4 @@ html5ever = "*"
 markup5ever_rcdom = "*"
 
 [build-dependencies]
-proc-macro2 = "*"
-quote = "*"
-prettyplease = "*"
-syn = {version = "*", features = ["full","extra-traits", "fold", "visit"]}
+itertools = "*"
