@@ -22,6 +22,7 @@ struct Options {
 
 fn main() -> Result<(), Error> {
     let runners: Vec<Box<dyn PuzzleRunner>> = std::iter::empty()
+        .chain(aoc_year2015::solutions())
         .chain(aoc_year2021::solutions())
         .chain(aoc_year2022::solutions())
         .chain(aoc_year2023::solutions())

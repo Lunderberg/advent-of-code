@@ -12,6 +12,7 @@ path = "src/bin.rs"
 
 [dependencies]
 aoc_framework = { path = "../aoc_framework" }
+aoc_year2015 = { path = "../puzzles/year2015" }
 aoc_year2021 = { path = "../puzzles/year2021" }
 aoc_year2022 = { path = "../puzzles/year2022" }
 aoc_year2023 = { path = "../puzzles/year2023" }
