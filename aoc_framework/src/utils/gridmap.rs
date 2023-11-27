@@ -249,6 +249,19 @@ where
 }
 
 impl<T> GridMap<T> {
+    pub fn new_uniform(x_size: usize, y_size: usize, value: T) -> Self
+    where
+        T: Clone,
+    {
+        let mut values = Vec::new();
+        values.resize(x_size * y_size, value);
+        Self {
+            x_size,
+            y_size,
+            values,
+        }
+    }
+
     pub fn is_valid<Arg: Into<InputGridPos>>(&self, index: Arg) -> bool {
         index.into().normalize(self).is_some()
     }
