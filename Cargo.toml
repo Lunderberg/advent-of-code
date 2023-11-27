@@ -3,6 +3,7 @@ members = [
     "aoc_macros",
     "aoc_framework",
     "puzzles/year2021",
+    "puzzles/year2022",
     "aoc_runner",
 ]
 resolver = "2"
