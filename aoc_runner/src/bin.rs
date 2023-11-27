@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 
-use aoc::{
+use aoc_framework::{
     framework::{Downloader, PuzzleInputSource, PuzzlePart, PuzzleRunner},
     Error,
 };
@@ -21,7 +21,10 @@ struct Options {
 }
 
 fn main() -> Result<(), Error> {
-    let runners: Vec<Box<dyn PuzzleRunner>> = aoc::solutions().collect();
+    let runners: Vec<Box<dyn PuzzleRunner>> = std::iter::empty()
+        .chain(aoc_year2021::solutions())
+        .chain(aoc_framework::solutions())
+        .collect();
 
     let opt = Options::from_args();
 

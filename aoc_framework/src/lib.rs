@@ -1,4 +1,4 @@
-extern crate self as aoc;
+extern crate self as aoc_framework;
 
 pub mod framework;
 pub use framework::{Puzzle, YearDay};

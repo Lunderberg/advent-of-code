@@ -1,0 +1,17 @@
+[package]
+name = "aoc_runner"
+version = "0.1.0"
+authors = ["Eldritch Cheese <eldritch.cheese@gmail.com>"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "aoc"
+path = "src/bin.rs"
+
+[dependencies]
+aoc_framework = { path = "../aoc_framework" }
+aoc_year2021 = { path = "../puzzles/year2021" }
+
+structopt = "0.3.21"

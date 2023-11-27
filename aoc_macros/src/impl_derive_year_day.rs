@@ -32,15 +32,16 @@ pub fn derive_year_day(
 
     let stream = quote! {
         impl< #(#generic_params),* >
-            ::aoc::YearDay for #ident < #(#generic_args),* >
+            ::aoc_framework::YearDay for #ident < #(#generic_args),* >
         where
             #(#predicates,)*
         {
             fn year() -> u32 {
                 let dirname = std::path::Path::new(std::file!())
-                    .parent()
-                    .and_then(|parent| parent.file_name())
-                    .and_then(|dirname| dirname.to_str())
+                    .iter()
+                    .rev()
+                    .map(|segment| segment.to_str().expect("Path isn't valid UTF-8"))
+                    .find(|segment| segment.starts_with("year"))
                     .expect("Couldn't find year#### directory");
                 assert!(dirname.starts_with("year"));
                 u32::from_str_radix(&dirname[4..], 10)

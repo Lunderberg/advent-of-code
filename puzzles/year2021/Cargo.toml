@@ -1,5 +1,5 @@
 [package]
-name = "aoc_framework"
+name = "aoc_year2021"
 version = "0.1.0"
 authors = ["Eldritch Cheese <eldritch.cheese@gmail.com>"]
 edition = "2021"
@@ -7,27 +7,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "aoc_framework"
+name = "aoc_year2021"
 
 [dependencies]
-aoc_macros = { path = "../aoc_macros" }
-# aoc_2021 = { path = "../aoc_2021" }
+aoc_macros = { path = "../../aoc_macros" }
+aoc_framework = { path = "../../aoc_framework" }
 
 itertools = "*"
 itertools-num = "*"
 regex = "1"
 indicatif = "*"
 console = "*"
-
-clap = "*"
-reqwest = {version = "0.11.7", features=["blocking"]}
-ratelimit = "*"
+structopt = "0.3.21"
 priority-queue = "*"
 num = "*"
 bit-set = "0.5.3"
-
-html5ever = "*"
-markup5ever_rcdom = "*"
-
-[build-dependencies]
-itertools = "*"
