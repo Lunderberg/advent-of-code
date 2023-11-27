@@ -20,18 +20,18 @@ impl Puzzle for ThisDay {
     }
 
     fn part_1(
-        values: &Self::ParsedInput,
+        _values: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
         todo!("Part 1 not yet implemented");
-        let value = 0;
-        Ok(value)
+        #[allow(unreachable_code)]
+        Ok(0)
     }
 
     fn part_2(
-        values: &Self::ParsedInput,
+        _values: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
         todo!("Part 2 not yet implemented");
-        let value = 0;
-        Ok(value)
+        #[allow(unreachable_code)]
+        Ok(0)
     }
 }
