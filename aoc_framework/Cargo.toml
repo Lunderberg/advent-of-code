@@ -11,23 +11,20 @@ name = "aoc_framework"
 
 [dependencies]
 aoc_macros = { path = "../aoc_macros" }
-# aoc_2021 = { path = "../aoc_2021" }
 
 itertools = "*"
 itertools-num = "*"
-regex = "1"
-indicatif = "*"
-console = "*"
 
-clap = "*"
-reqwest = {version = "0.11.7", features=["blocking"]}
+reqwest = {version = "*", features=["blocking"]}
 ratelimit = "*"
-priority-queue = "*"
-num = "*"
-bit-set = "0.5.3"
-
 html5ever = "*"
 markup5ever_rcdom = "*"
+
+
+priority-queue = "*"
+num = "*"
+bit-set = "*"
+
 
 [build-dependencies]
 itertools = "*"

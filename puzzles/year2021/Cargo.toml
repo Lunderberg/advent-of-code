@@ -15,10 +15,7 @@ aoc_framework = { path = "../../aoc_framework" }
 
 itertools = "*"
 itertools-num = "*"
-regex = "1"
+regex = "*"
 indicatif = "*"
-console = "*"
-structopt = "0.3.21"
 priority-queue = "*"
 num = "*"
-bit-set = "0.5.3"

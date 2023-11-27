@@ -17,4 +17,4 @@ aoc_year2021 = { path = "../puzzles/year2021" }
 aoc_year2022 = { path = "../puzzles/year2022" }
 aoc_year2023 = { path = "../puzzles/year2023" }
 
-structopt = "0.3.21"
+structopt = "*"

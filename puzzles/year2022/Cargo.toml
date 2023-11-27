@@ -14,11 +14,6 @@ aoc_macros = { path = "../../aoc_macros" }
 aoc_framework = { path = "../../aoc_framework" }
 
 itertools = "*"
-itertools-num = "*"
-regex = "1"
-indicatif = "*"
 console = "*"
-structopt = "0.3.21"
-priority-queue = "*"
 num = "*"
-bit-set = "0.5.3"
+bit-set = "*"
