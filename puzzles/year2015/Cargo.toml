@@ -22,3 +22,5 @@ structopt = "0.3.21"
 priority-queue = "*"
 num = "*"
 bit-set = "0.5.3"
+
+md5 = "*"
