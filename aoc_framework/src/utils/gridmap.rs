@@ -454,18 +454,15 @@ where
             })
             .sorted_by_key(|(pos, _val)| *pos)
             .with_position()
-            .scan(0, |expected_pos, iter_order| {
-                let is_last =
-                    matches!(iter_order, itertools::Position::Last(_));
-                let (pos, val) = iter_order.into_inner();
-
+            .scan(0, |expected_pos, (iter_order, (pos, val))| {
                 let num_before = pos - *expected_pos;
                 *expected_pos = pos + 1;
-                let num_after = if is_last {
-                    let total = (x_size * y_size) as usize;
-                    total - (pos + 1)
-                } else {
-                    0
+                let num_after = match iter_order {
+                    itertools::Position::Last => {
+                        let total = (x_size * y_size) as usize;
+                        total - (pos + 1)
+                    }
+                    _ => 0,
                 };
 
                 Some(
