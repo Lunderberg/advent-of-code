@@ -51,6 +51,10 @@ pub enum Error {
     GraphError(graph::Error),
     InsufficientInputValues,
 
+    // 2015-12-07
+    CycleDetected,
+    MissingValue(String),
+
     // 2022-12-07
     NoSuchINode(usize),
     NotADirectory(usize),
