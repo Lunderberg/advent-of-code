@@ -1,12 +1,9 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use crate::utils::{Adjacency, GridMap};
+use crate::utils::Adjacency;
 
 use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
-
-use itertools::Itertools;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
@@ -49,7 +46,7 @@ impl Display for Image {
 impl FromStr for Pixel {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Error> {
-        let c = s.chars().exactly_one()?;
+        let c = s.chars().exactly_one_or_err()?;
         match c {
             '.' => Ok(Pixel::Dark),
             '#' => Ok(Pixel::Light),

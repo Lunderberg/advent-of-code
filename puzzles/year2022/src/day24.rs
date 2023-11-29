@@ -1,17 +1,9 @@
-#![allow(unused_imports)]
-use crate::utils::extensions::TakeWhileInclusive;
-use crate::utils::geometry::Vector;
-use crate::utils::graph::DynamicGraph;
-//use crate::utils::Color;
-use crate::utils::{Adjacency, CollectResizedGridMap, GridMap};
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use std::collections::HashSet;
-use std::convert::TryInto;
+use crate::utils::Adjacency;
+
+use console::Style;
 use std::fmt::{Display, Formatter};
-
-use console::{Color, Style};
-use itertools::Itertools;
 
 type Point = Vector<2, i64>;
 
@@ -250,7 +242,7 @@ impl std::str::FromStr for Tile {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let c = s.chars().exactly_one()?;
+        let c = s.chars().exactly_one_or_err()?;
         match c {
             '#' => Ok(Tile::Wall),
             '.' => Ok(Tile::Ground),

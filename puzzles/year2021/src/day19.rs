@@ -1,11 +1,6 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
-
-use crate::utils::geometry::{Matrix, Vector};
+use aoc_utils::prelude::*;
 
 use std::collections::{HashMap, HashSet, VecDeque};
-
-use itertools::Itertools;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
@@ -113,7 +108,7 @@ impl ScannerSet {
                     .unwrap()
                     .into_iter()
                     .map(|other_index| (self_index, other_index))
-                    .exactly_one()
+                    .exactly_one_or_err()
                     .ok()
             })
             .collect();
@@ -156,7 +151,7 @@ impl ScannerSet {
                     *self_offset == *mat * *other_offset
                 })
             })
-            .exactly_one()?;
+            .exactly_one_or_err()?;
 
         let location = observation_pairs
             .iter()
@@ -164,7 +159,7 @@ impl ScannerSet {
                 *self_observed - rotation_matrix * *other_observed
             })
             .unique()
-            .exactly_one()?;
+            .exactly_one_or_err()?;
 
         Ok((rotation_matrix, location))
     }

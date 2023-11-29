@@ -1,11 +1,10 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 use std::iter::Peekable;
 
-use itertools::{EitherOrBoth, Itertools};
+use itertools::EitherOrBoth;
 
 #[derive(Clone)]
 pub enum Packet {
@@ -287,7 +286,7 @@ impl Puzzle for ThisDay {
                 (packet == &divider_a || packet == &divider_b).then_some(i + 1)
             })
             .tuples()
-            .exactly_one()?;
+            .exactly_one_or_err()?;
 
         Ok(loc_a * loc_b)
     }

@@ -1,11 +1,9 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
 use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-use itertools::Itertools;
 use priority_queue::PriorityQueue;
 
 #[derive(aoc_macros::YearDay)]
@@ -176,7 +174,7 @@ impl Puzzle for ThisDay {
                     .map(|space| PlayerState { space, score: 0 })
             })
             .tuples()
-            .exactly_one()?;
+            .exactly_one_or_err()?;
 
         let players = [player1?, player2?];
 

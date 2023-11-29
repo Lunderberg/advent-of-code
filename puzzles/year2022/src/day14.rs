@@ -1,10 +1,6 @@
-#![allow(unused_imports)]
-use crate::utils::geometry::Vector;
-use crate::utils::GridMap;
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use itertools::Itertools;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
@@ -30,7 +26,7 @@ impl std::str::FromStr for RockPath {
                     .split(',')
                     .map(|val| val.parse::<i64>())
                     .tuples()
-                    .exactly_one()?;
+                    .exactly_one_or_err()?;
                 Ok(Vector::new([a?, b?]))
             })
             .collect::<Result<Vec<_>, _>>()?;

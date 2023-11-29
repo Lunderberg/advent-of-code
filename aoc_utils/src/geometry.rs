@@ -1,4 +1,4 @@
-use crate::Error;
+use aoc_framework::Error;
 
 use std::cmp;
 use std::fmt::{Display, Formatter};

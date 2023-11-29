@@ -4,11 +4,15 @@ use std::hash::Hash;
 
 use itertools::Itertools;
 use priority_queue::PriorityQueue;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum Error {
+    #[error("Target is not reachable")]
     NoPathToTarget,
+    #[error("Back-tracking along path found dangling index")]
     InvalidReverseIndex,
+    #[error("Back-tracking along path found loop")]
     CircularReversePath,
 }
 

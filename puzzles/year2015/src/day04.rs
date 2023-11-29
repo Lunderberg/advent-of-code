@@ -1,7 +1,4 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
+use aoc_utils::prelude::*;
 
 fn iter_hash(
     prefix: impl std::fmt::Display,
@@ -22,7 +19,7 @@ impl Puzzle for ThisDay {
     fn parse_input<'a>(
         lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error> {
-        Ok(lines.exactly_one()?.to_string())
+        Ok(lines.exactly_one_or_err()?.to_string())
     }
 
     fn part_1(

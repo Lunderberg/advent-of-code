@@ -1,5 +1,5 @@
 [package]
-name = "aoc_year2023"
+name = "aoc_utils"
 version = "0.1.0"
 authors = ["Eldritch Cheese <eldritch.cheese@gmail.com>"]
 edition = "2021"
@@ -7,11 +7,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "aoc_year2023"
+name = "aoc_utils"
+
 
 [dependencies]
-aoc_macros = { path = "../../aoc_macros" }
-aoc_framework = { path = "../../aoc_framework" }
-aoc_utils = { path = "../../aoc_utils" }
+aoc_framework = { path = "../aoc_framework" }
 
 itertools = "*"
+itertools-num = "*"
+priority-queue = "*"
+num = "*"
+bit-set = "*"
+thiserror = "*"

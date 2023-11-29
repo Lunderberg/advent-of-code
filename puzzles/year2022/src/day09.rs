@@ -1,8 +1,5 @@
-#![allow(unused_imports)]
-use crate::utils::geometry::Vector;
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use itertools::Itertools;
 use std::collections::HashSet;
 
 #[derive(aoc_macros::YearDay)]
@@ -37,7 +34,7 @@ impl std::str::FromStr for Command {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (dir, dist) = s.split_whitespace().tuples().exactly_one()?;
+        let (dir, dist) = s.split_whitespace().tuples().exactly_one_or_err()?;
         let dir = match dir {
             "U" => Ok(Direction::Up),
             "D" => Ok(Direction::Down),

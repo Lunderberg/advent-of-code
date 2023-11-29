@@ -1,7 +1,4 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
+use aoc_utils::prelude::*;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
@@ -23,11 +20,11 @@ impl Puzzle for ThisDay {
                             .split('-')
                             .map(|s| s.parse::<i32>())
                             .tuples()
-                            .exactly_one()?;
+                            .exactly_one_or_err()?;
                         Ok((min?)..=(max?))
                     })
                     .tuples()
-                    .exactly_one()?;
+                    .exactly_one_or_err()?;
                 Ok((a?, b?))
             })
             .collect()

@@ -1,9 +1,6 @@
-#![allow(unused_imports)]
-use crate::utils::geometry::Vector;
-use crate::utils::{GridMap, GridPos};
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use itertools::{Either, Itertools};
+use itertools::Either;
 use num::integer::gcd;
 
 use std::collections::HashMap;
@@ -311,7 +308,7 @@ impl FromStr for Tile {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let c = s.chars().exactly_one()?;
+        let c = s.chars().exactly_one_or_err()?;
         match c {
             '.' => Ok(Tile::Open),
             '#' => Ok(Tile::Solid),
@@ -356,7 +353,7 @@ impl Puzzle for ThisDay {
         };
 
         let commands = lines
-            .exactly_one()?
+            .exactly_one_or_err()?
             .chars()
             .group_by(|c| match c {
                 'L' => Some(1),

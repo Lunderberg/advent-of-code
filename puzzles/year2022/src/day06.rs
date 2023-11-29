@@ -1,7 +1,4 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
+use aoc_utils::prelude::*;
 
 fn after_n_unique(s: &[char], n: usize) -> Option<usize> {
     s.windows(n)
@@ -20,7 +17,7 @@ impl Puzzle for ThisDay {
     fn parse_input<'a>(
         lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error> {
-        Ok(lines.exactly_one()?.chars().collect())
+        Ok(lines.exactly_one_or_err()?.chars().collect())
     }
 
     fn part_1(

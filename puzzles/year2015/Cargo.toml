@@ -12,6 +12,7 @@ name = "aoc_year2015"
 [dependencies]
 aoc_macros = { path = "../../aoc_macros" }
 aoc_framework = { path = "../../aoc_framework" }
+aoc_utils = { path = "../../aoc_utils" }
 
 itertools = "*"
 md5 = "*"

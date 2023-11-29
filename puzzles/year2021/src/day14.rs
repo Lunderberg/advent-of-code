@@ -1,7 +1,4 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
+use aoc_utils::prelude::*;
 
 use std::collections::HashMap;
 
@@ -89,7 +86,7 @@ impl Puzzle for ThisDay {
             .by_ref()
             .take_while(|line| !line.is_empty())
             .map(|line| line.parse::<Polymer>())
-            .exactly_one()??;
+            .exactly_one_or_err()??;
 
         let rules = InsertionRules {
             rules: lines
@@ -100,11 +97,12 @@ impl Puzzle for ThisDay {
                             let initial = before
                                 .chars()
                                 .tuples::<(_, _)>()
-                                .exactly_one()?;
-                            let insertion = after.chars().exactly_one()?;
+                                .exactly_one_or_err()?;
+                            let insertion =
+                                after.chars().exactly_one_or_err()?;
                             Ok((initial, insertion))
                         })
-                        .exactly_one()?
+                        .exactly_one_or_err()?
                 })
                 .try_collect()?,
         };

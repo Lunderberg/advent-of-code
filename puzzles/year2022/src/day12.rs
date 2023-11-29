@@ -1,12 +1,10 @@
-#![allow(unused_imports)]
-use crate::utils::graph::{DynamicGraph, SearchResult};
-use crate::utils::{Adjacency, GridMap, GridPos};
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
+
+use crate::utils::graph::SearchResult;
+use crate::utils::Adjacency;
 
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
-
-use itertools::Itertools;
 
 pub struct HeightMap {
     map: GridMap<MapChar>,
@@ -28,7 +26,7 @@ enum ReverseSearchPos {
 impl std::str::FromStr for MapChar {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let c = s.chars().exactly_one()?;
+        let c = s.chars().exactly_one_or_err()?;
         match c {
             'a'..='z' => Ok(MapChar::Height(((c as u32) - ('a' as u32)) as i8)),
             'S' => Ok(MapChar::Start),

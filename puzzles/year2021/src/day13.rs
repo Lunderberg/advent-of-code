@@ -1,10 +1,7 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
-
-use itertools::Itertools;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
@@ -33,7 +30,7 @@ impl std::str::FromStr for FoldInstruction {
                     _ => Err(Error::InvalidString(s.to_string())),
                 }
             })
-            .exactly_one()?
+            .exactly_one_or_err()?
     }
 }
 
@@ -101,7 +98,7 @@ impl Puzzle for ThisDay {
                     .map(|s| s.parse::<i64>())
                     .tuples()
                     .map(|(a, b)| -> Result<_, Error> { Ok((a?, b?)) })
-                    .exactly_one()?
+                    .exactly_one_or_err()?
             })
             .collect::<Result<_, _>>()?;
 

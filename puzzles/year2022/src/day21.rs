@@ -1,7 +1,5 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use itertools::Itertools;
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{Display, Formatter};
 
@@ -59,7 +57,7 @@ impl std::str::FromStr for MonkeySpec {
         let op = if words.len() == 4 {
             let a = words[1].to_string();
             let b = words[3].to_string();
-            let c = words[2].chars().exactly_one()?;
+            let c = words[2].chars().exactly_one_or_err()?;
             match c {
                 '+' => Ok(OperationSpec::Add(a, b)),
                 '-' => Ok(OperationSpec::Sub(a, b)),

@@ -1,8 +1,5 @@
-#![allow(unused_imports)]
-use crate::utils::geometry::Vector;
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use itertools::Itertools;
 use std::fmt::{Display, Formatter};
 use std::ops::RangeInclusive;
 
@@ -33,7 +30,7 @@ impl std::str::FromStr for Sensor {
             .map(|(a, b)| Vector::new([a, b]))
             .tuples()
             .map(|(loc, beacon)| Sensor { loc, beacon })
-            .exactly_one()?)
+            .exactly_one_or_err()?)
     }
 }
 

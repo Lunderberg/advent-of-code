@@ -5,6 +5,7 @@ include!(concat!(
     ".rs",
 ));
 
-#[allow(unused_imports)]
-pub(crate) use aoc_framework::utils;
 pub(crate) use aoc_framework::{Error, Puzzle};
+
+#[allow(unused_imports)]
+pub(crate) use aoc_utils as utils;

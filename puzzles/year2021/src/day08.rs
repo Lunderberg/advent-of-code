@@ -1,12 +1,8 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::convert::{TryFrom, TryInto};
 use std::fmt::{Debug, Formatter};
-
-use itertools::Itertools;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
@@ -61,7 +57,7 @@ impl TryFrom<char> for Segment {
 impl std::str::FromStr for Segment {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Error> {
-        let char = s.chars().exactly_one()?;
+        let char = s.chars().exactly_one_or_err()?;
         Err(Error::UnknownChar(char))
     }
 }
@@ -70,7 +66,7 @@ impl std::str::FromStr for LightSequence {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.lines()
-            .exactly_one()?
+            .exactly_one_or_err()?
             .split('|')
             .tuples()
             .map(|(a, b)| -> Result<_, Error> {
@@ -91,7 +87,7 @@ impl std::str::FromStr for LightSequence {
                     outputs: unpack(b)?,
                 })
             })
-            .exactly_one()?
+            .exactly_one_or_err()?
     }
 }
 
@@ -109,7 +105,7 @@ impl LightSequence {
                         known_pattern == &output_pattern
                     })
                     .map(|(digit, _known_pattern)| digit)
-                    .exactly_one()?;
+                    .exactly_one_or_err()?;
                 Ok(val as u8)
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -182,7 +178,7 @@ impl LightSequence {
                     .map(|(_d, pat)| (*pat).clone())
                     .collect::<Vec<_>>()
             })
-            .exactly_one()?;
+            .exactly_one_or_err()?;
 
         Ok(digit_assignment)
     }
@@ -205,25 +201,25 @@ impl LightSequence {
             .all(|vals| vals.len() == 1)
     }
 
-    fn interpret_results(&self, _segment_map: &[Segment]) -> Vec<u8> {
-        let reference_digits: Vec<HashSet<Segment>> = (0..=9)
-            .map(|d| Ok(active_segments(d)?.collect()))
-            .collect::<Result<_, Error>>()
-            .unwrap();
+    // fn interpret_results(&self, _segment_map: &[Segment]) -> Vec<u8> {
+    //     let reference_digits: Vec<HashSet<Segment>> = (0..=9)
+    //         .map(|d| Ok(active_segments(d)?.collect()))
+    //         .collect::<Result<_, Error>>()
+    //         .unwrap();
 
-        self.outputs
-            .iter()
-            .map(|segments| {
-                reference_digits
-                    .iter()
-                    .enumerate()
-                    .filter(|(_i, reference)| *reference == segments)
-                    .map(|(i, _reference)| i as u8)
-                    .exactly_one()
-                    .unwrap()
-            })
-            .collect()
-    }
+    //     self.outputs
+    //         .iter()
+    //         .map(|segments| {
+    //             reference_digits
+    //                 .iter()
+    //                 .enumerate()
+    //                 .filter(|(_i, reference)| *reference == segments)
+    //                 .map(|(i, _reference)| i as u8)
+    //                 .exactly_one_or_err()
+    //                 .unwrap()
+    //         })
+    //         .collect()
+    // }
 }
 
 impl SegmentConstraints {
@@ -371,111 +367,111 @@ impl Puzzle for ThisDay {
     }
 }
 
-pub trait FilterPermutable: Iterator {
-    fn filter_permute<V>(self, k: usize, validity: V) -> FilterPermute<Self, V>
-    where
-        Self: Sized,
-        Self::Item: Clone,
-        V: FnMut(Vec<Self::Item>) -> bool,
-    {
-        FilterPermute::new(self, k, validity)
-    }
-}
+// pub trait FilterPermutable: Iterator {
+//     fn filter_permute<V>(self, k: usize, validity: V) -> FilterPermute<Self, V>
+//     where
+//         Self: Sized,
+//         Self::Item: Clone,
+//         V: FnMut(Vec<Self::Item>) -> bool,
+//     {
+//         FilterPermute::new(self, k, validity)
+//     }
+// }
 
-impl<T> FilterPermutable for T where T: Iterator {}
+// impl<T> FilterPermutable for T where T: Iterator {}
 
-pub struct FilterPermute<I, V>
-where
-    I: Iterator,
-    I::Item: Clone,
-    V: FnMut(Vec<I::Item>) -> bool,
-{
-    items: Vec<I::Item>,
-    permutation_iter: itertools::structs::Permutations<std::ops::Range<usize>>,
-    validity: V,
-    most_recent_success: Vec<usize>,
-    most_recent_failure: Option<Vec<usize>>,
-}
+// pub struct FilterPermute<I, V>
+// where
+//     I: Iterator,
+//     I::Item: Clone,
+//     V: FnMut(Vec<I::Item>) -> bool,
+// {
+//     items: Vec<I::Item>,
+//     permutation_iter: itertools::structs::Permutations<std::ops::Range<usize>>,
+//     validity: V,
+//     most_recent_success: Vec<usize>,
+//     most_recent_failure: Option<Vec<usize>>,
+// }
 
-impl<I, V> FilterPermute<I, V>
-where
-    I: Iterator,
-    I::Item: Clone,
-    V: FnMut(Vec<I::Item>) -> bool,
-{
-    fn new(iter: I, k: usize, validity: V) -> Self {
-        let items: Vec<_> = iter.collect();
-        let permutation_iter = (0..items.len()).permutations(k);
-        Self {
-            items,
-            permutation_iter,
-            validity,
-            most_recent_success: Vec::new(),
-            most_recent_failure: None,
-        }
-    }
-}
+// impl<I, V> FilterPermute<I, V>
+// where
+//     I: Iterator,
+//     I::Item: Clone,
+//     V: FnMut(Vec<I::Item>) -> bool,
+// {
+//     fn new(iter: I, k: usize, validity: V) -> Self {
+//         let items: Vec<_> = iter.collect();
+//         let permutation_iter = (0..items.len()).permutations(k);
+//         Self {
+//             items,
+//             permutation_iter,
+//             validity,
+//             most_recent_success: Vec::new(),
+//             most_recent_failure: None,
+//         }
+//     }
+// }
 
-impl<I, V> Iterator for FilterPermute<I, V>
-where
-    I: Iterator,
-    I::Item: Clone,
-    V: FnMut(Vec<I::Item>) -> bool,
-{
-    type Item = Vec<I::Item>;
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let permutation = self.permutation_iter.next()?;
+// impl<I, V> Iterator for FilterPermute<I, V>
+// where
+//     I: Iterator,
+//     I::Item: Clone,
+//     V: FnMut(Vec<I::Item>) -> bool,
+// {
+//     type Item = Vec<I::Item>;
+//     fn next(&mut self) -> Option<Self::Item> {
+//         loop {
+//             let permutation = self.permutation_iter.next()?;
 
-            let is_subset_of_failure = self
-                .most_recent_failure
-                .as_ref()
-                .map_or(false, |failed_indices| {
-                    failed_indices
-                        .iter()
-                        .enumerate()
-                        .all(|(pos, index)| *index == permutation[pos])
-                });
-            if is_subset_of_failure {
-                continue;
-            }
-            // Once we've moved past subsets of the most recent
-            // failure, we never revisit that region, so we don't need
-            // to check for it until the next failure.
-            self.most_recent_failure = None;
+//             let is_subset_of_failure = self
+//                 .most_recent_failure
+//                 .as_ref()
+//                 .map_or(false, |failed_indices| {
+//                     failed_indices
+//                         .iter()
+//                         .enumerate()
+//                         .all(|(pos, index)| *index == permutation[pos])
+//                 });
+//             if is_subset_of_failure {
+//                 continue;
+//             }
+//             // Once we've moved past subsets of the most recent
+//             // failure, we never revisit that region, so we don't need
+//             // to check for it until the next failure.
+//             self.most_recent_failure = None;
 
-            let first_test_required = self
-                .most_recent_success
-                .iter()
-                .enumerate()
-                .filter(|&(pos, index)| *index == permutation[pos])
-                .map(|(pos, _index)| pos + 1)
-                .next()
-                .unwrap_or(0);
+//             let first_test_required = self
+//                 .most_recent_success
+//                 .iter()
+//                 .enumerate()
+//                 .filter(|&(pos, index)| *index == permutation[pos])
+//                 .map(|(pos, _index)| pos + 1)
+//                 .next()
+//                 .unwrap_or(0);
 
-            let first_failing_pos = (first_test_required..permutation.len())
-                .find(|&pos| {
-                    let items = (0..=pos)
-                        .map(|i| self.items[permutation[i]].clone())
-                        .collect();
-                    !(self.validity)(items)
-                });
+//             let first_failing_pos = (first_test_required..permutation.len())
+//                 .find(|&pos| {
+//                     let items = (0..=pos)
+//                         .map(|i| self.items[permutation[i]].clone())
+//                         .collect();
+//                     !(self.validity)(items)
+//                 });
 
-            // If one of the tests failed, mark the location of the
-            // most recent success/failure, then move on.
-            if let Some(pos) = first_failing_pos {
-                self.most_recent_failure = Some(permutation[0..=pos].to_vec());
-                self.most_recent_success = permutation[0..pos].to_vec();
-                continue;
-            }
+//             // If one of the tests failed, mark the location of the
+//             // most recent success/failure, then move on.
+//             if let Some(pos) = first_failing_pos {
+//                 self.most_recent_failure = Some(permutation[0..=pos].to_vec());
+//                 self.most_recent_success = permutation[0..pos].to_vec();
+//                 continue;
+//             }
 
-            // All checks have passed, so we can return this.
-            return Some(
-                permutation
-                    .iter()
-                    .map(|&index| self.items[index].clone())
-                    .collect(),
-            );
-        }
-    }
-}
+//             // All checks have passed, so we can return this.
+//             return Some(
+//                 permutation
+//                     .iter()
+//                     .map(|&index| self.items[index].clone())
+//                     .collect(),
+//             );
+//         }
+//     }
+// }

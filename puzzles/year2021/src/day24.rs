@@ -1,14 +1,9 @@
-#![allow(unused_imports)]
-use crate::utils::graph::DynamicGraph;
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use std::collections::{HashMap, VecDeque};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::fmt::{Display, Formatter};
 use std::ops;
 use std::str::FromStr;
-
-use itertools::Itertools;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
@@ -309,7 +304,7 @@ impl Program {
             .tuple_windows()
             .map(|(a, b)| b - a)
             .unique()
-            .exactly_one()?;
+            .exactly_one_or_err()?;
         let rounds: Vec<_> = self
             .instructions
             .chunks(round_size)
@@ -324,7 +319,7 @@ impl Program {
                         _ => None,
                     })
                     .copied()
-                    .exactly_one()?;
+                    .exactly_one_or_err()?;
                 let y_add = slice
                     .iter()
                     .filter_map(|inst| match inst {
@@ -337,7 +332,7 @@ impl Program {
                     .tuples()
                     .map(|(_, _, dy)| dy)
                     .copied()
-                    .exactly_one()?;
+                    .exactly_one_or_err()?;
                 let z_div = slice
                     .iter()
                     .filter_map(|inst| match inst {
@@ -348,7 +343,7 @@ impl Program {
                         _ => None,
                     })
                     .copied()
-                    .exactly_one()?;
+                    .exactly_one_or_err()?;
                 Ok(ChecksumRound {
                     x_add,
                     y_add,
@@ -458,7 +453,7 @@ impl FromStr for MemoryLocation {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Error> {
         s.chars()
-            .exactly_one()
+            .exactly_one_or_err()
             .map_err(|_| Error::InvalidString(s.to_string()))
             .and_then(|c| match c {
                 'w' => Ok(MemoryLocation::W),

@@ -1,9 +1,5 @@
-#![allow(unused_imports)]
-use crate::utils::geometry::Vector;
-use crate::utils::graph::DynamicGraph;
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use itertools::Itertools;
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -131,7 +127,7 @@ impl Blueprint {
                                     "Error backtracking the build order",
                                 )
                             })
-                            .exactly_one()
+                            .exactly_one_or_err()
                             .ok()
                     })
                     .collect::<Vec<_>>()
@@ -160,7 +156,7 @@ impl Blueprint {
                 }
             })
             .map(|b| b.state.resources[Resource::Geode.into()])
-            .exactly_one()
+            .exactly_one_or_err()
             .unwrap()
     }
 }

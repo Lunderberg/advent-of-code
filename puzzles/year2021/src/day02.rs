@@ -1,7 +1,4 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
+use aoc_utils::prelude::*;
 
 #[derive(Debug)]
 pub enum Command {
@@ -24,7 +21,7 @@ impl std::str::FromStr for Command {
                     _ => Err(Error::InvalidArg(a.into())),
                 }
             })
-            .exactly_one()?
+            .exactly_one_or_err()?
     }
 }
 

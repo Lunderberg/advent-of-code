@@ -1,8 +1,4 @@
-#![allow(unused_imports)]
-use crate::utils::DisplayString;
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
+use aoc_utils::prelude::*;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum OpCode {
@@ -19,7 +15,7 @@ impl std::str::FromStr for OpCode {
             .chain(std::iter::repeat(None))
             .take(2)
             .tuples()
-            .exactly_one()?;
+            .exactly_one_or_err()?;
 
         let name = name.unwrap();
         match name {

@@ -1,9 +1,6 @@
-#![allow(unused_imports)]
+use aoc_utils::prelude::*;
+
 use std::cmp::Reverse;
-
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
 
 #[derive(Debug, Clone)]
 pub struct CraneYard {
@@ -39,7 +36,7 @@ impl CraneYard {
             .sorted_by_key(|(i, _)| *i == inst.move_from)
             .map(|(_i, stack)| &mut stack.contents)
             .tuples()
-            .exactly_one()?)
+            .exactly_one_or_err()?)
     }
 
     fn apply_part1(&mut self, inst: &Instruction) -> Result<(), Error> {
@@ -114,7 +111,7 @@ impl Puzzle for ThisDay {
                     .step_by(2)
                     .map(|s| s.parse::<usize>())
                     .tuples()
-                    .exactly_one()?;
+                    .exactly_one_or_err()?;
                 Ok(Instruction {
                     move_from: move_from? - 1,
                     move_to: move_to? - 1,

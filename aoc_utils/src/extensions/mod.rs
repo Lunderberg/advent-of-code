@@ -6,3 +6,6 @@ pub use collect_bits::*;
 
 mod range_intersects;
 pub use range_intersects::*;
+
+mod exactly_one;
+pub use exactly_one::*;

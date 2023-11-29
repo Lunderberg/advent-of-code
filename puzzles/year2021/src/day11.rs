@@ -1,11 +1,9 @@
-#![allow(unused_imports)]
-use crate::utils::{Adjacency, GridMap, GridPos};
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
+
+use crate::utils::Adjacency;
 
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
-
-use itertools::Itertools;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
@@ -176,7 +174,7 @@ impl std::str::FromStr for Octopus {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use Octopus::*;
-        let char = s.chars().exactly_one()?;
+        let char = s.chars().exactly_one_or_err()?;
         match char {
             '0'..='9' => Ok(Charging(s.parse::<u8>()?)),
             'F' => Ok(Flashing),

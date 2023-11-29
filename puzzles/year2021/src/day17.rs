@@ -1,11 +1,8 @@
-#![allow(unused_imports)]
-use crate::utils::extensions::*;
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
 use core::ops::RangeInclusive;
 use std::str::FromStr;
 
-use itertools::Itertools;
 use regex::Regex;
 
 #[derive(aoc_macros::YearDay)]
@@ -164,7 +161,7 @@ impl Puzzle for ThisDay {
     fn parse_input<'a>(
         lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error> {
-        lines.exactly_one()?.parse()
+        lines.exactly_one_or_err()?.parse()
     }
 
     fn part_1(

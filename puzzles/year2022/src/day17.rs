@@ -1,9 +1,6 @@
-#![allow(unused_imports)]
-use crate::utils::geometry::Vector;
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
 use bit_set::BitSet;
-use itertools::Itertools;
 
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
@@ -346,7 +343,7 @@ impl Puzzle for ThisDay {
         lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error> {
         lines
-            .exactly_one()?
+            .exactly_one_or_err()?
             .chars()
             .map(|c| match c {
                 '<' => Ok(Jet::Left),

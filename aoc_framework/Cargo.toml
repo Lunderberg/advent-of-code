@@ -13,18 +13,11 @@ name = "aoc_framework"
 aoc_macros = { path = "../aoc_macros" }
 
 itertools = "*"
-itertools-num = "*"
 
 reqwest = {version = "*", features=["blocking"]}
 ratelimit = "*"
 html5ever = "*"
 markup5ever_rcdom = "*"
-
-
-priority-queue = "*"
-num = "*"
-bit-set = "*"
-
 
 [build-dependencies]
 itertools = "*"

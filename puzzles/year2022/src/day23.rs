@@ -1,13 +1,8 @@
-#![allow(unused_imports)]
-use crate::utils::geometry::Vector;
-use crate::utils::{Adjacency, CollectResizedGridMap, GridMap, GridPos};
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use std::collections::HashSet;
+use crate::utils::Adjacency;
+
 use std::fmt::{Display, Formatter};
-use std::ops::RangeInclusive;
-
-use itertools::{Either, Itertools};
 
 type Point = Vector<2, i64>;
 
@@ -201,7 +196,7 @@ impl std::str::FromStr for Tile {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.chars().exactly_one()? {
+        match s.chars().exactly_one_or_err()? {
             '#' => Ok(Tile::Elf),
             '.' => Ok(Tile::Ground),
             c => Err(Error::UnknownChar(c)),

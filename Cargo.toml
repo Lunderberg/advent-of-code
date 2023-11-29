@@ -2,6 +2,7 @@
 members = [
     "aoc_macros",
     "aoc_framework",
+    "aoc_utils",
     "puzzles/year2015",
     "puzzles/year2021",
     "puzzles/year2022",

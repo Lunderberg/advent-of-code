@@ -1,8 +1,6 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use itertools::Itertools;
-
+#[derive(Debug)]
 pub struct BoxSize(i64, i64, i64);
 
 impl std::str::FromStr for BoxSize {
@@ -12,7 +10,7 @@ impl std::str::FromStr for BoxSize {
             .map(|val| -> Result<i64, _> { val.parse() })
             .tuples()
             .map(|(x, y, z)| -> Result<_, Error> { Ok(BoxSize(x?, y?, z?)) })
-            .exactly_one()??)
+            .exactly_one_or_err()??)
     }
 }
 

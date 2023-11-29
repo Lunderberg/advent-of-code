@@ -1,10 +1,6 @@
-#![allow(unused_imports)]
+use aoc_utils::prelude::*;
+
 use std::{ops::RangeInclusive, str::FromStr};
-
-use crate::{Error, Puzzle};
-
-use aoc_framework::utils::GridMap;
-use itertools::Itertools;
 
 #[derive(Clone, Copy)]
 pub enum CommandType {
@@ -45,7 +41,7 @@ impl FromStr for Command {
             .split(',')
             .map(|s| s.parse::<i64>())
             .tuples()
-            .exactly_one()?;
+            .exactly_one_or_err()?;
         iter.next(); // skip the word "through"
         let (xmax, ymax) = iter
             .next()
@@ -53,7 +49,7 @@ impl FromStr for Command {
             .split(',')
             .map(|s| s.parse::<i64>())
             .tuples()
-            .exactly_one()?;
+            .exactly_one_or_err()?;
 
         Ok(Command {
             ty: command_ty,

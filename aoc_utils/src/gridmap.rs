@@ -1,4 +1,5 @@
-use crate::utils::geometry::Vector;
+use crate::extensions::ExactlyOneExt;
+use crate::geometry::Vector;
 
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::FromIterator;
@@ -218,7 +219,7 @@ where
         let x_size = line_length
             .into_iter()
             .unique()
-            .exactly_one()
+            .exactly_one_or_err()
             .map_err(|_| GridMapError::InconsistentLineSize)
             .unwrap();
 

@@ -1,9 +1,6 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
 use std::collections::HashSet;
-
-use itertools::Itertools;
 
 pub struct RuckSack {
     contents: Vec<u32>,
@@ -73,7 +70,7 @@ impl Puzzle for ThisDay {
                     .reduce(|a, b| a.intersection(&b).copied().collect())
                     .unwrap()
                     .into_iter()
-                    .exactly_one()?)
+                    .exactly_one_or_err()?)
             })
             .sum::<Result<u32, Error>>()
     }
