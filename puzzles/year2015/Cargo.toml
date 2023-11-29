@@ -16,3 +16,4 @@ aoc_utils = { path = "../../aoc_utils" }
 
 itertools = "*"
 md5 = "*"
+bit-set = "*"
