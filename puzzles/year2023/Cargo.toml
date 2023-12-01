@@ -15,3 +15,4 @@ aoc_framework = { path = "../../aoc_framework" }
 aoc_utils = { path = "../../aoc_utils" }
 
 itertools = "*"
+regex = "*"
