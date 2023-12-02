@@ -8,6 +8,7 @@ pub enum Error {
 
     WrappedError(Box<dyn std::error::Error>),
     ExpectedExactlyOne,
+    WrongIteratorSize,
 
     // Used by puzzle solutions.
     WrongInt(std::num::ParseIntError),
