@@ -1,8 +1,6 @@
-#![allow(unused_imports)]
-use crate::utils::{Adjacency, GridMap, GridPos};
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use itertools::Itertools;
+use crate::utils::{Adjacency, GridMap, GridPos};
 
 use std::collections::HashSet;
 

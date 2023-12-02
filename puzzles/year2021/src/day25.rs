@@ -1,13 +1,9 @@
-#![allow(unused_imports)]
-use crate::utils::GridMap;
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::ops;
 use std::str::FromStr;
-
-use itertools::Itertools;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;

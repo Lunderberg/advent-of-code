@@ -1,8 +1,4 @@
-#![allow(unused_imports)]
-use crate::utils::extensions::*;
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
+use aoc_utils::prelude::*;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;

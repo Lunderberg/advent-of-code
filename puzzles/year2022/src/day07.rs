@@ -1,9 +1,7 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
+
 use std::collections::HashMap;
 use std::str::FromStr;
-
-use itertools::Itertools;
 
 #[derive(Debug)]
 pub enum TerminalLine {

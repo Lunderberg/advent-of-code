@@ -1,8 +1,4 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
-use std::iter::FromIterator;
+use aoc_utils::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct KeepAway {

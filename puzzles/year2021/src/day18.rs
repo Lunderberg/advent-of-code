@@ -1,12 +1,8 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
 use std::borrow::BorrowMut;
 use std::fmt::{Debug, Formatter};
-use std::iter;
 use std::str::FromStr;
-
-use itertools::Itertools;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;

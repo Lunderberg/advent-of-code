@@ -1,9 +1,6 @@
-#![allow(unused_imports)]
+use aoc_utils::prelude::*;
+
 use regex::Regex;
-
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;

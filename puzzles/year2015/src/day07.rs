@@ -1,13 +1,10 @@
-#![allow(unused_imports)]
+use aoc_utils::prelude::*;
+
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
     str::FromStr,
 };
-
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
 
 pub struct Circuit {
     wires: Vec<Connection>,

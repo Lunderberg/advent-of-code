@@ -1,11 +1,6 @@
-#![allow(unused_imports)]
-use crate::utils::graph::DynamicGraph;
-use crate::utils::{Adjacency, GridMap, GridPos};
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use priority_queue::PriorityQueue;
-use std::cmp::Reverse;
-use std::collections::HashMap;
+use crate::utils::Adjacency;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;

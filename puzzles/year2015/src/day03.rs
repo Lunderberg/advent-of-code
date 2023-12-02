@@ -1,8 +1,4 @@
-#![allow(unused_imports)]
-use crate::utils::geometry::Vector;
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
+use aoc_utils::prelude::*;
 
 pub enum Direction {
     North,

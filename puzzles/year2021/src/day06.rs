@@ -1,9 +1,6 @@
-#![allow(unused_imports)]
+use aoc_utils::prelude::*;
+
 use std::collections::VecDeque;
-
-use itertools::Itertools;
-
-use crate::{Error, Puzzle};
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;

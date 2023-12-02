@@ -1,14 +1,11 @@
-#![allow(unused_imports)]
-use crate::utils::graph::DynamicGraph;
+use aoc_utils::prelude::*;
+
 use crate::utils::Adjacency;
-use crate::{Error, Puzzle};
 
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
-
-use itertools::Itertools;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;

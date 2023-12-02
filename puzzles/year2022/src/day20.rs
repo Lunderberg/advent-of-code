@@ -1,9 +1,6 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use std::collections::{HashSet, VecDeque};
-
-use itertools::Itertools;
+use std::collections::VecDeque;
 
 struct Data {
     numbers: VecDeque<Number>,

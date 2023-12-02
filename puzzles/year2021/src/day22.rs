@@ -1,12 +1,8 @@
-#![allow(unused_imports)]
-use crate::{Error, Puzzle};
+use aoc_utils::prelude::*;
 
-use std::convert::TryInto;
-use std::marker::PhantomData;
 use std::ops::Range;
 use std::str::FromStr;
 
-use itertools::Itertools;
 use regex::Regex;
 
 #[derive(aoc_macros::YearDay)]

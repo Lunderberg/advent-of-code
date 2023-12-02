@@ -1,9 +1,4 @@
-#![allow(unused_imports)]
-use crate::utils::geometry::Vector;
-use crate::utils::graph::*;
-use crate::{Error, Puzzle};
-
-use itertools::Itertools;
+use aoc_utils::prelude::*;
 
 use std::collections::HashSet;
 use std::convert::TryInto;
