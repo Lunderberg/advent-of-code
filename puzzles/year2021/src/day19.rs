@@ -142,7 +142,6 @@ impl ScannerSet {
             .map(|((self_a, other_a), (self_b, other_b))| {
                 (*self_b - *self_a, *other_b - *other_a)
             })
-            .map(|(self_diff, other_diff)| (self_diff, other_diff))
             .collect();
 
         let rotation_matrix = Matrix::<3, 3>::iter_90degrees()

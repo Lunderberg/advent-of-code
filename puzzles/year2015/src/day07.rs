@@ -124,7 +124,7 @@ impl FromStr for Connection {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut tokens = s.split_ascii_whitespace().peekable();
 
-        let input = if let Some(_) = tokens.next_if(|s| s == &"NOT") {
+        let input = if tokens.next_if(|s| s == &"NOT").is_some() {
             let arg: Arg =
                 tokens.next().ok_or(Error::UnexpectedEndOfStream)?.parse()?;
             Expr::Not(arg)

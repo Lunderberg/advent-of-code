@@ -156,9 +156,7 @@ impl CaveSystem {
         let mut to_visit: Vec<TraversalState> = vec![initial_state];
         let mut initial_edge_map: HashMap<usize, Vec<usize>> = HashMap::new();
 
-        while !to_visit.is_empty() {
-            let state = to_visit.pop().unwrap();
-
+        while let Some(state) = to_visit.pop() {
             let state_num = initial_indexing.get(&state).copied().unwrap();
 
             let dest_state_nums = state
@@ -326,8 +324,7 @@ impl CaveSystem {
         let mut unfinished: Vec<Vec<usize>> = vec![vec![0]];
         let mut finished: Vec<Vec<usize>> = Vec::new();
 
-        while !unfinished.is_empty() {
-            let path = unfinished.pop().unwrap();
+        while let Some(path) = unfinished.pop() {
             let state = *path.last().unwrap();
             connections[state]
                 .iter()

@@ -114,7 +114,7 @@ impl DynamicGraph<ChecksumState> for ChecksumGraph {
                     })
                     .collect()
             })
-            .unwrap_or_else(Vec::new)
+            .unwrap_or_default()
     }
 
     fn heuristic_between(

@@ -16,7 +16,7 @@ where
             let digit = iter.next()?;
             let mut count = 1;
 
-            while let Some(_) = iter.next_if(|peek| *peek == digit) {
+            while iter.next_if(|peek| *peek == digit).is_some() {
                 count += 1;
             }
             assert!(count < 10);
@@ -44,7 +44,7 @@ impl Puzzle for ThisDay {
         values: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
         let mut iter: Box<dyn Iterator<Item = u8>> =
-            Box::new(values.iter().map(|c| *c));
+            Box::new(values.iter().copied());
         for _ in 0..40 {
             iter = Box::new(iter.look_and_say());
         }
@@ -55,7 +55,7 @@ impl Puzzle for ThisDay {
         values: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
         let mut iter: Box<dyn Iterator<Item = u8>> =
-            Box::new(values.iter().map(|c| *c));
+            Box::new(values.iter().copied());
         for _ in 0..50 {
             iter = Box::new(iter.look_and_say());
         }

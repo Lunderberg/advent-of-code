@@ -25,8 +25,7 @@ impl PuzzlePath {
             .iter()
             .rev()
             .map(|component| component.to_str().unwrap())
-            .filter(|component| component.starts_with("year"))
-            .next()
+            .find(|component| component.starts_with("year"))
     }
 
     fn day_str(&self) -> Option<&str> {
@@ -54,7 +53,7 @@ fn collect_all_solutions(base_dir: &Path) -> Vec<PuzzlePath> {
                     .expect("Cannot convert path to UTF-8")
                     .starts_with("day")
         })
-        .map(|path| PuzzlePath(path))
+        .map(PuzzlePath)
         .collect();
 
     output.sort();
@@ -66,39 +65,39 @@ fn generate_solution_iter(
     solutions: &[PuzzlePath],
     out_file: &mut impl std::io::Write,
 ) -> Result<(), std::io::Error> {
-    write!(out_file, "// Found {} puzzle solutions\n", solutions.len())?;
-    write!(
+    writeln!(out_file, "// Found {} puzzle solutions", solutions.len())?;
+    writeln!(
         out_file,
-        "// CARGO_MANIFEST_DIR: {}\n",
+        "// CARGO_MANIFEST_DIR: {}",
         std::env::var("CARGO_MANIFEST_DIR").unwrap()
     )?;
-    write!(
+    writeln!(
         out_file,
-        "// CARGO_PKG_NAME: {}\n",
+        "// CARGO_PKG_NAME: {}",
         std::env::var("CARGO_PKG_NAME").unwrap()
     )?;
 
     assert!(!solutions.is_empty());
 
     solutions.iter().try_for_each(|puzzle| {
-        write!(out_file, "#[path = \"{}\"]\n", puzzle.path_display())?;
-        write!(out_file, "mod {};\n", puzzle.mod_name())
+        writeln!(out_file, "#[path = \"{}\"]", puzzle.path_display())?;
+        writeln!(out_file, "mod {};", puzzle.mod_name())
     })?;
 
-    write!(
+    writeln!(
         out_file,
-        "pub fn solutions() -> impl Iterator<Item = Box<dyn ::aoc_framework::framework::PuzzleRunner>> {{\n")?;
-    write!(out_file, "    [\n")?;
+        "pub fn solutions() -> impl Iterator<Item = Box<dyn ::aoc_framework::framework::PuzzleRunner>> {{")?;
+    writeln!(out_file, "    [")?;
     solutions
         .iter()
         .try_for_each(|puzzle| {
-            write!(
+            writeln!(
                 out_file,
-                "        ::aoc_framework::framework::PuzzleRunnerImpl::<{}::ThisDay>::new_box(),\n",
+                "        ::aoc_framework::framework::PuzzleRunnerImpl::<{}::ThisDay>::new_box(),",
                 puzzle.mod_name()
             )
         })?;
-    write!(out_file, "    ].into_iter()\n")?;
+    writeln!(out_file, "    ].into_iter()")?;
     write!(out_file, "}}")?;
 
     Ok(())

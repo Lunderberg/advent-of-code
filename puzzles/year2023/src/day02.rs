@@ -20,7 +20,7 @@ impl FromStr for Game {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (game, sets) = s
-            .split(":")
+            .split(':')
             .collect_tuple()
             .ok_or(Error::WrongIteratorSize)?;
 
@@ -31,7 +31,7 @@ impl FromStr for Game {
         let id = id.parse()?;
 
         let sets = sets
-            .split(";")
+            .split(';')
             .map(|set_str| set_str.parse())
             .collect::<Result<Vec<_>, Error>>()?;
 
@@ -46,7 +46,7 @@ impl FromStr for CubeSet {
         let mut green = None;
         let mut blue = None;
 
-        for item in s.split(",") {
+        for item in s.split(',') {
             let (count, color) = item
                 .trim()
                 .split_ascii_whitespace()

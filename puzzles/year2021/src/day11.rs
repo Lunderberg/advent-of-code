@@ -101,8 +101,7 @@ impl OctopusMap {
             .collect();
         let mut all_flashes: HashSet<_> = flash_stack.iter().copied().collect();
 
-        while !flash_stack.is_empty() {
-            let flashing = flash_stack.pop().unwrap();
+        while let Some(flashing) = flash_stack.pop() {
             self.map[flashing].try_flash();
 
             self.adjacent_points(flashing)

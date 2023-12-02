@@ -58,7 +58,7 @@ fn collect_all_solutions(base_dir: &Path) -> Vec<PuzzlePath> {
                             .starts_with("day")
                 })
         })
-        .map(|path| PuzzlePath(path))
+        .map(PuzzlePath)
         .collect();
 
     output.sort();
@@ -71,24 +71,24 @@ fn generate_solution_iter(
     out_file: &mut impl std::io::Write,
 ) -> Result<(), std::io::Error> {
     solutions.iter().try_for_each(|puzzle| {
-        write!(out_file, "#[path = \"{}\"]\n", puzzle.path_display())?;
-        write!(out_file, "mod {};\n", puzzle.mod_name())
+        writeln!(out_file, "#[path = \"{}\"]", puzzle.path_display())?;
+        writeln!(out_file, "mod {};", puzzle.mod_name())
     })?;
 
-    write!(
+    writeln!(
         out_file,
-        "pub fn solutions() -> impl Iterator<Item = Box<dyn ::aoc_framework::framework::PuzzleRunner>> {{\n")?;
-    write!(out_file, "    [\n")?;
+        "pub fn solutions() -> impl Iterator<Item = Box<dyn ::aoc_framework::framework::PuzzleRunner>> {{")?;
+    writeln!(out_file, "    [")?;
     solutions
         .iter()
         .try_for_each(|puzzle| {
-            write!(
+            writeln!(
                 out_file,
-                "        ::aoc_framework::framework::PuzzleRunnerImpl::<{}::ThisDay>::new_box(),\n",
+                "        ::aoc_framework::framework::PuzzleRunnerImpl::<{}::ThisDay>::new_box(),",
                 puzzle.mod_name()
             )
         })?;
-    write!(out_file, "    ].into_iter()\n")?;
+    writeln!(out_file, "    ].into_iter()")?;
     write!(out_file, "}}")?;
 
     Ok(())

@@ -54,7 +54,7 @@ impl Puzzle for ThisDay {
         lines
             .map(|line| -> Result<_, Error> {
                 let captures = reg.captures(line).ok_or(Error::Mismatch)?;
-                let vals = vec!["x1", "y1", "x2", "y2"]
+                let vals = ["x1", "y1", "x2", "y2"]
                     .iter()
                     .map(|name| {
                         captures

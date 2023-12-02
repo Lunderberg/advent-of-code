@@ -232,10 +232,8 @@ impl Snailfish {
         let append_steps = leaves
             .iter()
             .enumerate()
-            .filter_map(|(i, leaf)| {
-                (leaf.depth > 4)
-                    .then(|| (i, leaf.snailfish.as_value().unwrap()))
-            })
+            .filter(|&(_i, leaf)| (leaf.depth > 4))
+            .map(|(i, leaf)| (i, leaf.snailfish.as_value().unwrap()))
             .take(2)
             .enumerate()
             .filter_map(|(left_right, (i_explode, val))| {

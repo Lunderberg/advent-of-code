@@ -62,9 +62,9 @@ impl Polymer {
         self.pair_counts
             .iter()
             .flat_map(|((a, b), counts)| {
-                vec![(*a, *counts), (*b, *counts)].into_iter()
+                [(*a, *counts), (*b, *counts)].into_iter()
             })
-            .chain(vec![(self.first, 1), (self.last, 1)].into_iter())
+            .chain([(self.first, 1), (self.last, 1)])
             .into_group_map()
             .into_values()
             .map(|counts| counts.iter().sum::<usize>() / 2)

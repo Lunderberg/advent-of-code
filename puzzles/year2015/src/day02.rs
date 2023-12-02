@@ -6,11 +6,11 @@ pub struct BoxSize(i64, i64, i64);
 impl std::str::FromStr for BoxSize {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(s.split('x')
+        s.split('x')
             .map(|val| -> Result<i64, _> { val.parse() })
             .tuples()
             .map(|(x, y, z)| -> Result<_, Error> { Ok(BoxSize(x?, y?, z?)) })
-            .exactly_one_or_err()??)
+            .exactly_one_or_err()?
     }
 }
 

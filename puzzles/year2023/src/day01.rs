@@ -68,12 +68,12 @@ impl Puzzle for ThisDay {
                 // let a = iter.next().unwrap();
                 // let b = iter.last().unwrap_or(a);
 
-                let a = to_digit(reg.find(&line).unwrap().as_str()).unwrap();
+                let a = to_digit(reg.find(line).unwrap().as_str()).unwrap();
 
                 let b = (0..line.len())
                     .rev()
                     .find_map(|i| {
-                        reg.find_at(&line, i)
+                        reg.find_at(line, i)
                             .map(|m| to_digit(m.as_str()).unwrap())
                     })
                     .unwrap();
