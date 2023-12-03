@@ -61,7 +61,7 @@ impl Display for Schematic {
 
 impl Schematic {
     fn iter_components(&self) -> impl Iterator<Item = Component> + '_ {
-        self.tiles.iter().peekable().batching(|iter| {
+        self.tiles.iter_pos().peekable().batching(|iter| {
             while iter
                 .next_if(|(_, tile)| matches!(tile, Tile::None))
                 .is_some()
@@ -164,7 +164,7 @@ impl Puzzle for ThisDay {
                 })
                 .collect();
 
-            schematic.tiles.map(|loc, tile| {
+            schematic.tiles.map(|(loc, tile)| {
                 styled.get(&loc).map_or_else(
                     || Style::new().apply_to(tile),
                     |style| style.apply_to(tile),
@@ -262,7 +262,7 @@ impl Puzzle for ThisDay {
                 })
                 .collect();
 
-            schematic.tiles.map(|loc, tile| {
+            schematic.tiles.map(|(loc, tile)| {
                 styled.get(&loc).map_or_else(
                     || Style::new().apply_to(tile),
                     |style| style.apply_to(tile),

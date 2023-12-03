@@ -21,46 +21,18 @@ pub struct GridPos {
 }
 
 #[derive(Debug)]
-enum GridMapError {
+pub enum GridMapError {
     InconsistentLineSize,
     MissingValue,
     DuplicateValue,
+    InvalidLinearIndex,
+    InvalidXYIndex,
 }
 
 pub enum Adjacency {
     Rook,
     Queen,
     Region3x3,
-}
-
-pub enum InputGridPos {
-    FlatIndex(usize),
-    XY(i64, i64),
-}
-
-impl From<GridPos> for InputGridPos {
-    fn from(pos: GridPos) -> Self {
-        InputGridPos::FlatIndex(pos.index)
-    }
-}
-
-impl From<usize> for InputGridPos {
-    fn from(i: usize) -> Self {
-        InputGridPos::FlatIndex(i)
-    }
-}
-
-impl From<(i64, i64)> for InputGridPos {
-    fn from((x, y): (i64, i64)) -> Self {
-        InputGridPos::XY(x, y)
-    }
-}
-
-impl From<Vector<2, i64>> for InputGridPos {
-    fn from(value: Vector<2, i64>) -> Self {
-        let (x, y) = value.into();
-        InputGridPos::XY(x, y)
-    }
 }
 
 impl GridPos {
@@ -80,29 +52,112 @@ impl GridPos {
     }
 }
 
-impl InputGridPos {
-    fn normalize<T>(&self, map: &GridMap<T>) -> Option<GridPos> {
-        use InputGridPos::*;
-        match self {
-            FlatIndex(index) => Some(GridPos { index: *index }),
-            XY(x, y) => {
-                let coordinates_valid = *x >= 0
-                    && *y >= 0
-                    && *x < (map.x_size as i64)
-                    && *y < (map.y_size as i64);
-                coordinates_valid.then_some(GridPos {
-                    index: (*y as usize) * map.x_size + (*x as usize),
-                })
-            }
+pub trait IntoGridPos {
+    fn into_grid_pos<T>(
+        self,
+        map: &GridMap<T>,
+    ) -> Result<GridPos, GridMapError>;
+}
+
+pub trait FromGridPos<'map, T> {
+    fn from_grid_pos(pos: GridPos, map: &'map GridMap<T>) -> Self;
+}
+
+impl IntoGridPos for GridPos {
+    fn into_grid_pos<T>(self, _: &GridMap<T>) -> Result<GridPos, GridMapError> {
+        Ok(self)
+    }
+}
+
+impl<'map, T> FromGridPos<'map, T> for GridPos {
+    fn from_grid_pos(pos: GridPos, _: &'map GridMap<T>) -> Self {
+        pos
+    }
+}
+
+impl IntoGridPos for usize {
+    fn into_grid_pos<T>(
+        self,
+        map: &GridMap<T>,
+    ) -> Result<GridPos, GridMapError> {
+        let (width, height) = map.shape();
+        if self < width * height {
+            Ok(GridPos { index: self })
+        } else {
+            Err(GridMapError::InvalidLinearIndex)
         }
     }
+}
 
-    fn as_xy<T>(&self, map: &GridMap<T>) -> (i64, i64) {
-        use InputGridPos::*;
-        match self {
-            FlatIndex(index) => GridPos { index: *index }.as_xy(map),
-            XY(x, y) => (*x, *y),
+impl<'map, T> FromGridPos<'map, T> for usize {
+    fn from_grid_pos(pos: GridPos, _: &'map GridMap<T>) -> Self {
+        pos.index
+    }
+}
+
+impl IntoGridPos for (i64, i64) {
+    fn into_grid_pos<T>(
+        self,
+        map: &GridMap<T>,
+    ) -> Result<GridPos, GridMapError> {
+        let (width, height) = map.shape();
+        let (x, y) = self;
+        let coordinates_valid =
+            x >= 0 && y >= 0 && x < (width as i64) && y < (height as i64);
+
+        if coordinates_valid {
+            let x = x as usize;
+            let y = y as usize;
+            Ok(GridPos {
+                index: y * width + x,
+            })
+        } else {
+            Err(GridMapError::InvalidXYIndex)
         }
+    }
+}
+
+impl<'map, T> FromGridPos<'map, T> for (i64, i64) {
+    fn from_grid_pos(pos: GridPos, map: &'map GridMap<T>) -> Self {
+        let (width, _) = map.shape();
+        let x = pos.index.rem_euclid(width) as i64;
+        let y = pos.index.div_euclid(width) as i64;
+        (x, y)
+    }
+}
+
+impl IntoGridPos for Vector<2, i64> {
+    fn into_grid_pos<T>(
+        self,
+        map: &GridMap<T>,
+    ) -> Result<GridPos, GridMapError> {
+        (self.x(), self.y()).into_grid_pos(map)
+    }
+}
+
+impl<'map, T> FromGridPos<'map, T> for Vector<2, i64> {
+    fn from_grid_pos(pos: GridPos, map: &'map GridMap<T>) -> Self {
+        let (x, y): (i64, i64) = FromGridPos::from_grid_pos(pos, map);
+        (x, y).into()
+    }
+}
+
+impl<'map, 'item, Pos, T> FromGridPos<'map, T> for (Pos, &'item T)
+where
+    'map: 'item,
+    Pos: FromGridPos<'map, T>,
+{
+    fn from_grid_pos(pos: GridPos, map: &'map GridMap<T>) -> Self {
+        (FromGridPos::from_grid_pos(pos, map), &map[pos])
+    }
+}
+
+impl<'map, 'item, T> FromGridPos<'map, T> for &'item T
+where
+    'map: 'item,
+{
+    fn from_grid_pos(pos: GridPos, map: &'map GridMap<T>) -> Self {
+        &map[pos]
     }
 }
 
@@ -283,24 +338,21 @@ impl<T> GridMap<T> {
         }
     }
 
-    pub fn is_valid<Arg: Into<InputGridPos>>(&self, index: Arg) -> bool {
-        index.into().normalize(self).is_some()
+    pub fn is_valid(&self, index: impl IntoGridPos) -> bool {
+        index.into_grid_pos(self).is_ok()
     }
 
-    pub fn get<Arg: Into<InputGridPos>>(&self, index: Arg) -> Option<&T> {
+    pub fn get(&self, index: impl IntoGridPos) -> Option<&T> {
         index
-            .into()
-            .normalize(self)
+            .into_grid_pos(self)
+            .ok()
             .map(|grid_pos| &self.values[grid_pos.index])
     }
 
-    pub fn get_mut<Arg: Into<InputGridPos>>(
-        &mut self,
-        index: Arg,
-    ) -> Option<&mut T> {
+    pub fn get_mut(&mut self, index: impl IntoGridPos) -> Option<&mut T> {
         index
-            .into()
-            .normalize(self)
+            .into_grid_pos(self)
+            .ok()
             .map(move |grid_pos| &mut self.values[grid_pos.index])
     }
 
@@ -308,77 +360,74 @@ impl<T> GridMap<T> {
         (self.x_size, self.y_size)
     }
 
-    pub fn grid_pos<Arg: Into<InputGridPos>>(
-        &self,
-        arg: Arg,
-    ) -> Option<GridPos> {
-        arg.into().normalize(self)
+    pub fn grid_pos(&self, arg: impl IntoGridPos) -> Option<GridPos> {
+        arg.into_grid_pos(self).ok()
     }
 
-    fn adjacent_points_internal<P>(
+    fn adjacent_points_internal(
         &self,
-        pos: P,
+        pos: impl IntoGridPos,
         adj: Adjacency,
-    ) -> impl Iterator<Item = (Option<GridPos>, (i64, i64))> + '_
-    where
-        P: Into<InputGridPos>,
-    {
-        let (x0, y0) = pos.into().as_xy(self);
+    ) -> Result<impl Iterator<Item = Option<GridPos>> + '_, GridMapError> {
+        let (x0, y0) = pos.into_grid_pos(self)?.as_xy(self);
 
-        adj.offsets().map(move |(dx, dy)| {
+        let iter = adj.offsets().map(move |(dx, dy)| {
             let y = y0 + dy;
             let x = x0 + dx;
-            let gridpos = InputGridPos::XY(x, y).normalize(self);
-
-            (gridpos, (x, y))
-        })
+            (x, y).into_grid_pos(self).ok()
+        });
+        Ok(iter)
     }
 
-    pub fn adjacent_points<P>(
+    pub fn adjacent_points(
         &self,
-        pos: P,
+        pos: impl IntoGridPos,
         adj: Adjacency,
-    ) -> impl Iterator<Item = GridPos> + '_
-    where
-        P: Into<InputGridPos>,
-    {
-        let pos = pos.into();
+    ) -> impl Iterator<Item = GridPos> + '_ {
         self.adjacent_points_internal(pos, adj)
-            .filter_map(|(adj_pos, _xy)| adj_pos)
+            .unwrap()
+            .flatten()
+            .map(|pos| FromGridPos::from_grid_pos(pos, self))
     }
 
-    pub fn adjacent_values_default<P>(
+    pub fn adjacent_values_default(
         &self,
-        pos: P,
+        pos: impl IntoGridPos,
         adj: Adjacency,
         default: T,
     ) -> impl Iterator<Item = T> + '_
     where
-        P: Into<InputGridPos>,
         T: Clone,
     {
-        let pos = pos.into();
         self.adjacent_points_internal(pos, adj)
-            .map(move |(adj_pos, _xy)| {
-                adj_pos
-                    .map(|pos| self[pos].clone())
-                    .unwrap_or_else(|| default.clone())
+            .unwrap()
+            .map(move |opt_pos| {
+                opt_pos.map_or_else(|| default.clone(), |pos| self[pos].clone())
             })
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (GridPos, &T)> {
-        self.values
-            .iter()
-            .enumerate()
-            .map(move |(index, val)| (GridPos { index }, val))
+    pub fn iter<'map, Item>(&'map self) -> impl Iterator<Item = Item> + '_
+    where
+        Item: FromGridPos<'map, T>,
+    {
+        (0..self.values.len())
+            .map(|index| GridPos { index })
+            .map(|pos| FromGridPos::from_grid_pos(pos, self))
     }
 
-    // TODO: Maybe this would be more convenient to have as the default?
+    pub fn iter_item(&self) -> impl Iterator<Item = &T> {
+        self.iter()
+    }
+
+    pub fn iter_pos(&self) -> impl Iterator<Item = (GridPos, &T)> {
+        self.iter()
+    }
+
     pub fn iter_vec(&self) -> impl Iterator<Item = (Vector<2, i64>, &T)> {
-        self.iter().map(move |(pos, val)| (pos.as_vec(self), val))
+        self.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (GridPos, &mut T)> {
+    pub fn iter_pos_mut(&mut self) -> impl Iterator<Item = (GridPos, &mut T)> {
         self.values
             .iter_mut()
             .enumerate()
@@ -404,9 +453,10 @@ impl<T> GridMap<T> {
     }
 
     pub fn bottom_right(&self) -> GridPos {
-        InputGridPos::XY((self.x_size as i64) - 1, (self.y_size as i64) - 1)
-            .normalize(self)
-            .unwrap()
+        let (width, height) = self.shape();
+        let x = (width - 1) as i64;
+        let y = (height - 1) as i64;
+        (x, y).into_grid_pos(self).unwrap()
     }
 
     pub fn iter_ray(
@@ -419,9 +469,11 @@ impl<T> GridMap<T> {
             let (prev_x, prev_y) = prev.as_xy(self);
             let x = prev_x + step.0;
             let y = prev_y + step.1;
-            InputGridPos::XY(x, y)
-                .normalize(self)
+
+            (x, y)
+                .into_grid_pos(self)
                 .map(|gridpos| (gridpos, &self[gridpos]))
+                .ok()
         })
     }
 
@@ -435,9 +487,10 @@ impl<T> GridMap<T> {
             let (prev_x, prev_y) = prev.as_xy(self);
             let x = (prev_x + step.0).rem_euclid(self.x_size as i64);
             let y = (prev_y + step.1).rem_euclid(self.y_size as i64);
-            InputGridPos::XY(x, y)
-                .normalize(self)
+            (x, y)
+                .into_grid_pos(self)
                 .map(|gridpos| (gridpos, &self[gridpos]))
+                .ok()
         })
     }
 
@@ -450,18 +503,21 @@ impl<T> GridMap<T> {
         let (x_b, y_b) = corner_b.as_xy(self);
         (y_a..=y_b)
             .flat_map(move |y| (x_a..=x_b).map(move |x| (x, y)))
-            .filter_map(|(x, y)| InputGridPos::XY(x, y).normalize(self))
+            .filter_map(|xy| xy.into_grid_pos(self).ok())
             .map(|gridpos| (gridpos, &self[gridpos]))
     }
 
-    pub fn map<'a, F, U>(&'a self, mut func: F) -> GridMap<U>
+    pub fn map<'map, Arg, F, U>(&'map self, mut func: F) -> GridMap<U>
     where
-        F: FnMut(Vector<2, i64>, &'a T) -> U,
-        T: 'a,
-        U: 'a,
+        Arg: FromGridPos<'map, T>,
+        F: FnMut(Arg) -> U,
     {
-        self.iter_vec()
-            .map(|(pos, tile)| (pos, func(pos, tile)))
+        self.iter()
+            .map(|grid_pos: GridPos| {
+                let pos: Vector<2> = FromGridPos::from_grid_pos(grid_pos, self);
+                let arg: Arg = FromGridPos::from_grid_pos(grid_pos, self);
+                (pos, func(arg))
+            })
             .collect()
     }
 }
@@ -562,19 +618,17 @@ impl<T> IntoIterator for GridMap<T> {
     }
 }
 
-impl<T, Arg: Into<InputGridPos>> Index<Arg> for GridMap<T> {
+impl<T, Arg: IntoGridPos> Index<Arg> for GridMap<T> {
     type Output = T;
     fn index(&self, pos: Arg) -> &T {
-        let input: InputGridPos = pos.into();
-        let grid_pos: GridPos = input.normalize(self).unwrap();
+        let grid_pos: GridPos = pos.into_grid_pos(self).unwrap();
         &self.values[grid_pos.index]
     }
 }
 
-impl<T, Arg: Into<InputGridPos>> IndexMut<Arg> for GridMap<T> {
+impl<T, Arg: IntoGridPos> IndexMut<Arg> for GridMap<T> {
     fn index_mut(&mut self, pos: Arg) -> &mut T {
-        let input: InputGridPos = pos.into();
-        let grid_pos: GridPos = input.normalize(self).unwrap();
+        let grid_pos: GridPos = pos.into_grid_pos(self).unwrap();
         &mut self.values[grid_pos.index]
     }
 }

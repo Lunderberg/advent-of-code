@@ -20,10 +20,10 @@ impl Puzzle for ThisDay {
     ) -> Result<impl std::fmt::Debug, Error> {
         Ok(gridmap
             .iter()
-            .filter(|(pos, height)| {
+            .filter(|&(pos, &height)| {
                 Adjacency::Rook.offsets().any(|offset| {
-                    gridmap.iter_ray(*pos, offset).skip(1).all(
-                        |(_other_pos, &other_height)| **height > other_height,
+                    gridmap.iter_ray(pos, offset).skip(1).all(
+                        |(_other_pos, &other_height)| height > other_height,
                     )
                 })
             })
@@ -34,16 +34,16 @@ impl Puzzle for ThisDay {
         gridmap: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
         Ok(gridmap
-            .iter()
-            .map(|(pos, height)| {
+            .iter_pos()
+            .map(|(pos, &height)| {
                 Adjacency::Rook
                     .offsets()
                     .map(|offset| {
                         gridmap
                             .iter_ray(pos, offset)
                             .skip(1)
-                            .take_while_inclusive(|(_, other_height)| {
-                                *other_height < height
+                            .take_while_inclusive(|(_, &other_height)| {
+                                other_height < height
                             })
                             .count()
                     })

@@ -23,9 +23,8 @@ impl RiskMap {
         let grid = self
             .grid
             .iter()
-            .map(|(pos, val)| {
-                let (x, y) = pos.as_xy(&self.grid);
-                (x as usize, y as usize, *val)
+            .map(|((x, y), &val): ((i64, i64), _)| {
+                (x as usize, y as usize, val)
             })
             .flat_map(|(x, y, val)| {
                 (0..factor).map(move |tile_x| {

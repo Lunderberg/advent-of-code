@@ -70,21 +70,21 @@ impl HeightMap {
     fn start(&self) -> Result<GridPos, Error> {
         self.map
             .iter()
-            .find(|(_pos, val)| matches!(val, MapChar::Start))
+            .find(|(_pos, &val)| matches!(val, MapChar::Start))
             .map(|(pos, _val)| pos)
             .ok_or(Error::NoStartPosition)
     }
     fn end(&self) -> Result<GridPos, Error> {
         self.map
             .iter()
-            .find(|(_pos, val)| matches!(val, MapChar::End))
+            .find(|(_pos, &val)| matches!(val, MapChar::End))
             .map(|(pos, _val)| pos)
             .ok_or(Error::NoEndPosition)
     }
     fn highlight(&self, highlight: HashSet<GridPos>) -> String {
         let highlighted: GridMap<String> = self
             .map
-            .iter()
+            .iter_pos()
             .map(|(grid_pos, value)| {
                 let (x, y) = grid_pos.as_xy(&self.map);
                 (

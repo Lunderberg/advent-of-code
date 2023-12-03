@@ -14,7 +14,7 @@ pub struct OctopusMap {
     map: GridMap<Octopus>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum Octopus {
     Charging(u8),
     Flashing,
@@ -47,7 +47,7 @@ impl Octopus {
                     Charging(val + 1)
                 }
             }
-            _ => *self,
+            _ => self.clone(),
         }
     }
 
@@ -63,7 +63,7 @@ impl Octopus {
         use Octopus::*;
         match self {
             Flashing => Flashed,
-            _ => *self,
+            _ => self.clone(),
         }
     }
 
@@ -75,7 +75,7 @@ impl Octopus {
         use Octopus::*;
         match self {
             Flashed => Charging(0),
-            _ => *self,
+            _ => self.clone(),
         }
     }
 }
@@ -91,13 +91,14 @@ impl OctopusMap {
     #[allow(dead_code)]
     fn iterate_stack_based(&mut self) {
         self.map
-            .iter_mut()
+            .iter_pos_mut()
             .for_each(|(_pos, octo)| octo.accumulate());
 
         let mut flash_stack: Vec<_> = self
             .map
             .iter()
-            .flat_map(|(pos, octo)| octo.ready_to_flash().then_some(pos))
+            .filter(|(_, &ref octo)| octo.ready_to_flash())
+            .map(|(pos, _)| pos)
             .collect();
         let mut all_flashes: HashSet<_> = flash_stack.iter().copied().collect();
 
@@ -121,21 +122,23 @@ impl OctopusMap {
         }
         self.total_flashes += all_flashes.len();
 
-        self.map.iter_mut().for_each(|(_pos, octo)| octo.reset());
+        self.map
+            .iter_pos_mut()
+            .for_each(|(_pos, octo)| octo.reset());
     }
 
     #[allow(dead_code)]
     fn iterate_loop_all(&mut self) {
         self.map
-            .iter_mut()
+            .iter_pos_mut()
             .for_each(|(_pos, octo)| octo.accumulate());
 
         loop {
             let flashing: Vec<_> = self
                 .map
-                .iter_mut()
+                .iter_pos_mut()
                 .filter_map(|(pos, octo)| {
-                    let orig = *octo;
+                    let orig = octo.clone();
                     octo.try_flash();
                     (orig != *octo).then_some(pos)
                 })
@@ -155,7 +158,9 @@ impl OctopusMap {
                 .for_each(|pos| self.map[pos].accumulate());
         }
 
-        self.map.iter_mut().for_each(|(_pos, octo)| octo.reset());
+        self.map
+            .iter_pos_mut()
+            .for_each(|(_pos, octo)| octo.reset());
     }
 
     fn iterate(&mut self) {
@@ -165,7 +170,7 @@ impl OctopusMap {
     }
 
     fn is_synchronized(&self) -> bool {
-        self.map.iter().map(|(_pos, octo)| octo).all_equal()
+        self.map.iter_item().all_equal()
     }
 }
 

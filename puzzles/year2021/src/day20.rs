@@ -102,10 +102,7 @@ impl Image {
     }
 
     fn num_pixels(&self) -> usize {
-        self.grid
-            .iter()
-            .filter(|(_pos, p)| **p == Pixel::Light)
-            .count()
+        self.grid.iter().filter(|&&p| p == Pixel::Light).count()
     }
 }
 

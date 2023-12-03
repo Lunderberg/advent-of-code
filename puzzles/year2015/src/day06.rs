@@ -97,8 +97,10 @@ impl Puzzle for ThisDay {
                 }
             });
 
+        // let num_lights_on: i64 =
+        //     state.iter().map(|light: &bool| *light as i64).sum::<i64>();
         let num_lights_on: i64 =
-            state.iter().map(|(_, light)| *light as i64).sum::<i64>();
+            state.iter().map(|&light| light as i64).sum::<i64>();
 
         Ok(num_lights_on)
     }
@@ -132,7 +134,7 @@ impl Puzzle for ThisDay {
             });
 
         let total_brightness: u64 =
-            state.iter().map(|(_, brightness)| *brightness).sum::<u64>();
+            state.iter().map(|&brightness| brightness).sum::<u64>();
 
         Ok(total_brightness)
     }

@@ -21,7 +21,7 @@ impl HeightMap {
     }
 
     fn low_points(&self) -> impl Iterator<Item = (GridPos, u8)> + '_ {
-        self.map.iter().map(|(pos, height)| (pos, *height)).filter(
+        self.map.iter().map(|(pos, &height)| (pos, height)).filter(
             move |&(pos, height)| {
                 self.adjacent_points(pos).all(|adj| self.map[adj] > height)
             },

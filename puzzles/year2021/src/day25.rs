@@ -2,7 +2,6 @@ use aoc_utils::prelude::*;
 
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use std::ops;
 use std::str::FromStr;
 
 #[derive(aoc_macros::YearDay)]
@@ -14,40 +13,42 @@ pub struct CucumberMap {
     map_size: Vector2,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
-struct Vector2([i64; 2]);
+type Vector2 = Vector<2, i64>;
 
-impl ops::Add for Vector2 {
-    type Output = Vector2;
-    fn add(self, rhs: Self) -> Self {
-        let mut values = [0; 2];
-        self.0
-            .iter()
-            .zip(rhs.0.iter())
-            .map(|(a, b)| a + b)
-            .zip(values.iter_mut())
-            .for_each(|(val, out)| {
-                *out = val;
-            });
-        Self(values)
-    }
-}
+// #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
+// struct Vector2([i64; 2]);
 
-impl ops::Rem for Vector2 {
-    type Output = Vector2;
-    fn rem(self, rhs: Self) -> Self {
-        let mut values = [0; 2];
-        self.0
-            .iter()
-            .zip(rhs.0.iter())
-            .map(|(a, b)| a % b)
-            .zip(values.iter_mut())
-            .for_each(|(val, out)| {
-                *out = val;
-            });
-        Self(values)
-    }
-}
+// impl ops::Add for Vector2 {
+//     type Output = Vector2;
+//     fn add(self, rhs: Self) -> Self {
+//         let mut values = [0; 2];
+//         self.0
+//             .iter()
+//             .zip(rhs.0.iter())
+//             .map(|(a, b)| a + b)
+//             .zip(values.iter_mut())
+//             .for_each(|(val, out)| {
+//                 *out = val;
+//             });
+//         Self(values)
+//     }
+// }
+
+// impl ops::Rem for Vector2 {
+//     type Output = Vector2;
+//     fn rem(self, rhs: Self) -> Self {
+//         let mut values = [0; 2];
+//         self.0
+//             .iter()
+//             .zip(rhs.0.iter())
+//             .map(|(a, b)| a % b)
+//             .zip(values.iter_mut())
+//             .for_each(|(val, out)| {
+//                 *out = val;
+//             });
+//         Self(values)
+//     }
+// }
 
 #[derive(Debug)]
 struct Tile {
@@ -62,10 +63,10 @@ enum Cucumber {
 
 impl Display for CucumberMap {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let grid_map: GridMap<Tile> = (0..self.map_size.0[0])
-            .cartesian_product(0..self.map_size.0[1])
+        let grid_map: GridMap<Tile> = (0..self.map_size.x())
+            .cartesian_product(0..self.map_size.y())
             .map(|(i, j)| {
-                let pos = Vector2([i, j]);
+                let pos = [i, j].into();
                 let tile = Tile {
                     contents: self.cucumbers.get(&pos).copied(),
                 };
@@ -88,7 +89,8 @@ impl CucumberMap {
             .iter()
             .map(|(&pos, &cuke)| {
                 let new_pos = if cuke == moving_herd {
-                    let target_pos = (pos + cuke.step_delta()) % self.map_size;
+                    let target_pos = (pos + cuke.step_delta())
+                        .zip_map(self.map_size, |a, b| a % b);
                     if self.cucumbers.contains_key(&target_pos) {
                         pos
                     } else {
@@ -110,8 +112,8 @@ impl CucumberMap {
 impl Cucumber {
     fn step_delta(&self) -> Vector2 {
         match self {
-            Cucumber::South => Vector2([0, 1]),
-            Cucumber::East => Vector2([1, 0]),
+            Cucumber::South => [0, 1].into(),
+            Cucumber::East => [1, 0].into(),
         }
     }
 }
@@ -149,13 +151,12 @@ impl Puzzle for ThisDay {
         lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error> {
         let map = lines.collect::<GridMap<Tile>>();
-        let map_size = Vector2([map.x_size as i64, map.y_size as i64]);
+        let map_size = [map.x_size as i64, map.y_size as i64].into();
         let cucumbers = map
             .iter()
-            .filter_map(|(grid_pos, tile)| {
+            .filter_map(|(pos, tile): ((i64, i64), &Tile)| {
                 tile.contents.as_ref().map(|cuke| {
-                    let (i, j) = grid_pos.as_xy(&map);
-                    let pos = Vector2([i, j]);
+                    let pos = [pos.0, pos.1].into();
                     (pos, *cuke)
                 })
             })

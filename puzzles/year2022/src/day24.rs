@@ -181,7 +181,7 @@ impl StormSystem {
              minimum {} minutes remaining\n{}\n\n",
             info.initial_to_node,
             info.heuristic,
-            self.at_time(&node).map(|pos, tile| {
+            self.at_time(&node).map(|(pos, tile)| {
                 let style = if path.contains(&pos) {
                     Style::new().green().bright().bold()
                 } else {

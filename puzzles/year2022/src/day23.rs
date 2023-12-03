@@ -158,8 +158,8 @@ impl ElfSystem {
         let total = self.map.x_size * self.map.y_size;
         let num_elves = self
             .map
-            .iter()
-            .filter(|(_, tile)| matches!(tile, Tile::Elf))
+            .iter_item()
+            .filter(|tile| matches!(tile, Tile::Elf))
             .count();
         total - num_elves
     }
