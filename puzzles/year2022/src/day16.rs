@@ -194,7 +194,6 @@ impl DynamicGraph<SearchState> for ValveSystem {
                 &self.cached_path_lengths,
                 node.time_remaining,
             )
-            .into_iter()
             .flat_map(|(my_state, my_results)| {
                 let valves_available: BitSet = node
                     .valves_available

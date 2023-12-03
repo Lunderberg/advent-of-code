@@ -148,10 +148,7 @@ impl Puzzle for ThisDay {
             let style_red = Style::new().red();
             let styled: HashMap<_, _> = schematic
                 .iter_components()
-                .filter(|comp| match comp.kind {
-                    ComponentKind::Value(_) => true,
-                    _ => false,
-                })
+                .filter(|comp| matches!(comp.kind, ComponentKind::Value(_)))
                 .flat_map(|comp| {
                     let style = if is_adjacent_to_symbol(&comp) {
                         &style_green

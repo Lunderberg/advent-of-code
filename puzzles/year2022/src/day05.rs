@@ -28,15 +28,14 @@ impl CraneYard {
         // let stack_to = &mut self.stacks[inst.move_to].contents;
 
         // Has to be a better way to mutably borrow multiple elements.
-        Ok(self
-            .stacks
+        self.stacks
             .iter_mut()
             .enumerate()
             .filter(|(i, _)| *i == inst.move_from || *i == inst.move_to)
             .sorted_by_key(|(i, _)| *i == inst.move_from)
             .map(|(_i, stack)| &mut stack.contents)
             .tuples()
-            .exactly_one_or_err()?)
+            .exactly_one_or_err()
     }
 
     fn apply_part1(&mut self, inst: &Instruction) -> Result<(), Error> {

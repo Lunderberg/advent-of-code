@@ -17,12 +17,8 @@ fn has_double_letter(string: &str) -> bool {
 }
 
 fn has_naughty_string(string: &str) -> bool {
-    string.chars().tuple_windows().any(|(a, b)| match (a, b) {
-        ('a', 'b') => true,
-        ('c', 'd') => true,
-        ('p', 'q') => true,
-        ('x', 'y') => true,
-        _ => false,
+    string.chars().tuple_windows().any(|(a, b)| {
+        matches!((a, b), ('a', 'b') | ('c', 'd') | ('p', 'q') | ('x', 'y'))
     })
 }
 

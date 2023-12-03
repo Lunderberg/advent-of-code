@@ -22,7 +22,7 @@ pub fn derive_year_day(
     let generic_args: Vec<_> = generics
         .params
         .iter()
-        .map(|param| param.into_argument())
+        .map(|param| param.as_argument())
         .collect();
     let predicates: Vec<_> = generics
         .where_clause
@@ -44,7 +44,8 @@ pub fn derive_year_day(
                     .find(|segment| segment.starts_with("year"))
                     .expect("Couldn't find year#### directory");
                 assert!(dirname.starts_with("year"));
-                u32::from_str_radix(&dirname[4..], 10)
+                dirname[4..]
+                    .parse()
                     .expect("Couldn't parse directory as year####")
             }
             fn day() -> u8 {
@@ -53,7 +54,8 @@ pub fn derive_year_day(
                     .and_then(|stem| stem.to_str())
                     .expect("Couldn't parse filename as UTF-8");
                 assert!(stem.starts_with("day"));
-                u8::from_str_radix(&stem[3..], 10)
+                stem[3..]
+                    .parse()
                     .expect("Couldn't parse filename as day##.rs")
             }
         }

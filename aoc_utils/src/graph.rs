@@ -50,7 +50,7 @@ impl PartialEq for InternalInfo {
 
 impl PartialOrd for InternalInfo {
     fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
-        self.priority().partial_cmp(&rhs.priority())
+        Some(self.cmp(rhs))
     }
 }
 

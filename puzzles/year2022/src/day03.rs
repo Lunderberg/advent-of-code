@@ -62,7 +62,7 @@ impl Puzzle for ThisDay {
         values
             .chunks(3)
             .map(|group| -> Result<u32, Error> {
-                Ok(group
+                group
                     .iter()
                     .map(|rucksack| -> HashSet<_> {
                         rucksack.contents.iter().copied().collect()
@@ -70,7 +70,7 @@ impl Puzzle for ThisDay {
                     .reduce(|a, b| a.intersection(&b).copied().collect())
                     .unwrap()
                     .into_iter()
-                    .exactly_one_or_err()?)
+                    .exactly_one_or_err()
             })
             .sum::<Result<u32, Error>>()
     }

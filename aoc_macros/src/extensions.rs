@@ -1,11 +1,11 @@
 pub trait GenericParamExt {
-    fn into_argument(&self) -> syn::GenericArgument;
+    fn as_argument(&self) -> syn::GenericArgument;
 
     fn without_default(&self) -> syn::GenericParam;
 }
 
 impl GenericParamExt for syn::GenericParam {
-    fn into_argument(&self) -> syn::GenericArgument {
+    fn as_argument(&self) -> syn::GenericArgument {
         match self {
             syn::GenericParam::Lifetime(lifetime_param) => {
                 syn::GenericArgument::Lifetime(lifetime_param.lifetime.clone())

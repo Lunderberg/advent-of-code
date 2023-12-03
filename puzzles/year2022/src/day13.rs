@@ -207,41 +207,37 @@ impl Eq for Packet {}
 
 impl PartialOrd for Packet {
     fn partial_cmp(&self, rhs: &Packet) -> Option<Ordering> {
-        match (self, rhs) {
-            (Packet::Int(a), Packet::Int(b)) => a.partial_cmp(b),
-            (Packet::Int(_), Packet::List(b)) => {
-                if b.is_empty() {
-                    Some(Ordering::Greater)
-                } else if b.len() == 1 {
-                    self.partial_cmp(&b[0])
-                } else if matches!(self.partial_cmp(&b[0])?, Ordering::Greater)
-                {
-                    Some(Ordering::Greater)
-                } else {
-                    Some(Ordering::Less)
-                }
-            }
-            (Packet::List(_), Packet::Int(_)) => {
-                rhs.partial_cmp(self).map(|cmp| cmp.reverse())
-            }
-            (Packet::List(a), Packet::List(b)) => Some(
-                a.iter()
-                    .zip_longest(b.iter())
-                    .filter_map(|cmp| match cmp {
-                        EitherOrBoth::Right(_) => Some(Ordering::Less),
-                        EitherOrBoth::Left(_) => Some(Ordering::Greater),
-                        EitherOrBoth::Both(ai, bi) => ai.partial_cmp(bi),
-                    })
-                    .find(|ord| ord != &Ordering::Equal)
-                    .unwrap_or(Ordering::Equal),
-            ),
-        }
+        Some(self.cmp(rhs))
     }
 }
 
 impl Ord for Packet {
     fn cmp(&self, rhs: &Self) -> Ordering {
-        self.partial_cmp(rhs).unwrap()
+        match (self, rhs) {
+            (Packet::Int(a), Packet::Int(b)) => a.cmp(b),
+            (Packet::Int(_), Packet::List(b)) => {
+                if b.is_empty() {
+                    Ordering::Greater
+                } else if b.len() == 1 {
+                    self.cmp(&b[0])
+                } else if matches!(self.cmp(&b[0]), Ordering::Greater) {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
+                }
+            }
+            (Packet::List(_), Packet::Int(_)) => rhs.cmp(self).reverse(),
+            (Packet::List(a), Packet::List(b)) => a
+                .iter()
+                .zip_longest(b.iter())
+                .filter_map(|cmp| match cmp {
+                    EitherOrBoth::Right(_) => Some(Ordering::Less),
+                    EitherOrBoth::Left(_) => Some(Ordering::Greater),
+                    EitherOrBoth::Both(ai, bi) => ai.partial_cmp(bi),
+                })
+                .find(|ord| ord != &Ordering::Equal)
+                .unwrap_or(Ordering::Equal),
+        }
     }
 }
 

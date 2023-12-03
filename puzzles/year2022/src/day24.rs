@@ -123,7 +123,7 @@ impl StormSystem {
                     (pos, DisplayTile::Overlapping(vec_tile.len() as u8))
                 }
             })
-            .chain(special.into_iter())
+            .chain(special)
             .collect_resized_grid_map(DisplayTile::Tile(Tile::Ground))
     }
 

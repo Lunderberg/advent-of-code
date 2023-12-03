@@ -103,7 +103,8 @@ impl ElfSystem {
         let map = self
             .map
             .iter_vec()
-            .filter_map(|(pos, tile)| matches!(tile, Tile::Elf).then(|| pos))
+            .filter(|(_, tile)| matches!(tile, Tile::Elf))
+            .map(|(pos, _)| pos)
             .filter_map(|pos| self.proposed_location(pos))
             .counts()
             .into_iter()
@@ -130,7 +131,8 @@ impl ElfSystem {
         let map = self
             .map
             .iter_vec()
-            .filter_map(|(pos, tile)| matches!(tile, Tile::Elf).then(|| pos))
+            .filter(|(_, tile)| matches!(tile, Tile::Elf))
+            .map(|(pos, _)| pos)
             .map(|pos| {
                 self.proposed_location(pos)
                     .filter(|proposed| {

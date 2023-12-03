@@ -234,37 +234,35 @@ impl Program {
     {
         let mut inputs = inputs.into_iter();
 
-        self.instructions.iter().fold(
-            Ok(RuntimeState::_new()),
-            |res_state, inst| {
+        self.instructions.iter().try_fold(
+            RuntimeState::_new(),
+            |mut state, inst| -> Result<_, _> {
                 use Instruction::*;
 
-                res_state.and_then(|mut state| {
-                    match inst {
-                        Input(var) => {
-                            state[*var] = inputs
-                                .next()
-                                .ok_or(Error::InsufficientInputValues)?;
-                        }
-                        Add(var, arg) => {
-                            state[*var] += state._get_arg(arg);
-                        }
-                        Mul(var, arg) => {
-                            state[*var] *= state._get_arg(arg);
-                        }
-                        Div(var, arg) => {
-                            state[*var] /= state._get_arg(arg);
-                        }
-                        Mod(var, arg) => {
-                            state[*var] %= state._get_arg(arg);
-                        }
-                        Equal(var, arg) => {
-                            state[*var] =
-                                (state[*var] == state._get_arg(arg)) as i64;
-                        }
+                match inst {
+                    Input(var) => {
+                        state[*var] = inputs
+                            .next()
+                            .ok_or(Error::InsufficientInputValues)?;
                     }
-                    Ok(state)
-                })
+                    Add(var, arg) => {
+                        state[*var] += state._get_arg(arg);
+                    }
+                    Mul(var, arg) => {
+                        state[*var] *= state._get_arg(arg);
+                    }
+                    Div(var, arg) => {
+                        state[*var] /= state._get_arg(arg);
+                    }
+                    Mod(var, arg) => {
+                        state[*var] %= state._get_arg(arg);
+                    }
+                    Equal(var, arg) => {
+                        state[*var] =
+                            (state[*var] == state._get_arg(arg)) as i64;
+                    }
+                }
+                Ok(state)
             },
         )
     }

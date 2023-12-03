@@ -108,9 +108,9 @@ impl OctopusMap {
                 .filter(|adj| !all_flashes.contains(adj))
                 .collect::<Vec<_>>()
                 .into_iter()
-                .filter_map(|adj| {
-                    self.map[adj].accumulate();
-                    self.map[adj].ready_to_flash().then_some(adj)
+                .filter(|adj| {
+                    self.map[*adj].accumulate();
+                    self.map[*adj].ready_to_flash()
                 })
                 .collect::<Vec<_>>()
                 .into_iter()

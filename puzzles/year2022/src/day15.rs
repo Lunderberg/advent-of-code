@@ -17,7 +17,7 @@ struct Region1D {
 impl std::str::FromStr for Sensor {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(s.split(": ")
+        s.split(": ")
             .map(|s| s.strip_prefix("Sensor at ").unwrap_or(s))
             .map(|s| s.strip_prefix("closest beacon is at ").unwrap_or(s))
             .flat_map(|s| s.split(", "))
@@ -30,7 +30,7 @@ impl std::str::FromStr for Sensor {
             .map(|(a, b)| Vector::new([a, b]))
             .tuples()
             .map(|(loc, beacon)| Sensor { loc, beacon })
-            .exactly_one_or_err()?)
+            .exactly_one_or_err()
     }
 }
 
