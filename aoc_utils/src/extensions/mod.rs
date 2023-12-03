@@ -9,3 +9,6 @@ pub use range_intersects::*;
 
 mod exactly_one;
 pub use exactly_one::*;
+
+mod char_iter_loc;
+pub use char_iter_loc::*;

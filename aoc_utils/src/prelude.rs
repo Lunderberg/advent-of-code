@@ -2,6 +2,7 @@ pub use aoc_framework::prelude::*;
 
 pub use itertools::Itertools as _;
 
+pub use crate::extensions::CharIterLocExt as _;
 pub use crate::extensions::CollectBits as _;
 pub use crate::extensions::ExactlyOneExt as _;
 pub use crate::extensions::RangeIntersects as _;

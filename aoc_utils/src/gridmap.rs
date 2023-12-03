@@ -1,4 +1,4 @@
-use crate::extensions::ExactlyOneExt;
+use crate::extensions::{CharIterLocExt, ExactlyOneExt};
 use crate::geometry::Vector;
 
 use std::fmt::{Debug, Display, Formatter};
@@ -231,6 +231,26 @@ where
     }
 }
 
+impl<T> FromIterator<char> for GridMap<T>
+where
+    char: TryInto<T>,
+    <char as TryInto<T>>::Error: Debug,
+{
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = char>,
+    {
+        iter.into_iter()
+            .with_char_loc()
+            .filter(|(_, c)| *c != '\n')
+            .map(|(loc, c)| {
+                c.try_into().map(move |t| (loc.col_num, loc.line_num, t))
+            })
+            .collect::<Result<Self, _>>()
+            .unwrap()
+    }
+}
+
 impl<T> Display for GridMap<T>
 where
     T: Display,
@@ -419,6 +439,19 @@ impl<T> GridMap<T> {
                 .normalize(self)
                 .map(|gridpos| (gridpos, &self[gridpos]))
         })
+    }
+
+    pub fn iter_rect(
+        &self,
+        corner_a: GridPos,
+        corner_b: GridPos,
+    ) -> impl Iterator<Item = (GridPos, &T)> + '_ {
+        let (x_a, y_a) = corner_a.as_xy(self);
+        let (x_b, y_b) = corner_b.as_xy(self);
+        (y_a..=y_b)
+            .flat_map(move |y| (x_a..=x_b).map(move |x| (x, y)))
+            .filter_map(|(x, y)| InputGridPos::XY(x, y).normalize(self))
+            .map(|gridpos| (gridpos, &self[gridpos]))
     }
 
     pub fn map<'a, F, U>(&'a self, mut func: F) -> GridMap<U>
