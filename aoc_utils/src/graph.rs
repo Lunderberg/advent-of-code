@@ -104,7 +104,42 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
     // return 0 to fall back to using Dijkstra's.  If None, implies
     // that it's impossible to reach the target node from the
     // specified point.
-    fn heuristic_between(&self, node_from: &T, node_to: &T) -> Option<u64>;
+    fn heuristic_between(&self, _node_from: &T, _node_to: &T) -> Option<u64> {
+        Some(0)
+    }
+
+    // Iterate over all states reachable from the initial states
+    // given.  Each state is returned exactly once, even if multiple
+    // paths exist to reach it.
+    fn iter_depth_first<'a>(
+        &'a self,
+        initial: impl IntoIterator<Item = T>,
+    ) -> impl Iterator<Item = T> + 'a
+    where
+        T: 'a,
+        T: Clone,
+    {
+        let mut to_visit = Vec::new();
+        let mut seen = HashSet::new();
+
+        for initial in initial.into_iter() {
+            to_visit.push(initial.clone());
+            seen.insert(initial);
+        }
+
+        std::iter::from_fn(move || {
+            let visiting = to_visit.pop()?;
+
+            for (node, _) in self.connections_from(&visiting) {
+                if !seen.contains(&node) {
+                    seen.insert(node.clone());
+                    to_visit.push(node);
+                }
+            }
+
+            Some(visiting)
+        })
+    }
 
     // Returns the shortest path from initial to target, along with
     // the cost of each segment of the path.  Includes the target, but
