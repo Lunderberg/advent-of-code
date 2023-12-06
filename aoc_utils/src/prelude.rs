@@ -10,7 +10,9 @@ pub use crate::extensions::RangeIntersects as _;
 pub use crate::extensions::TakeWhileInclusive as _;
 
 pub use crate::geometry::{Matrix, Vector};
-pub use crate::graph::DynamicGraph;
+
+pub use crate::graph::{DirectedGraph, DynamicGraph};
+
 pub use crate::CollectResizedGridMap as _;
 pub use crate::DisplayString;
 pub use crate::{GridMap, GridPos};

@@ -95,22 +95,17 @@ impl From<InternalInfo> for SearchNodeMetadata {
     }
 }
 
-pub trait DynamicGraph<T: DynamicGraphNode> {
-    // Given a node, return all nodes directly excessible from that
-    // node, along with the cost associated with each edge.
-    fn connections_from(&self, node: &T) -> Vec<(T, u64)>;
+pub trait DirectedGraph<T> {
+    /// Given a node, return all nodes directly excessible from that
+    /// node, along with the cost associated with each edge.
+    fn connections_from<'a>(
+        &'a self,
+        node: &'a T,
+    ) -> impl Iterator<Item = T> + '_;
 
-    // Used for A* search.  If no such heuristic can be generated,
-    // return 0 to fall back to using Dijkstra's.  If None, implies
-    // that it's impossible to reach the target node from the
-    // specified point.
-    fn heuristic_between(&self, _node_from: &T, _node_to: &T) -> Option<u64> {
-        Some(0)
-    }
-
-    // Iterate over all states reachable from the initial states
-    // given.  Each state is returned exactly once, even if multiple
-    // paths exist to reach it.
+    /// Iterate over all states reachable from the initial states
+    /// given.  Each state is returned exactly once, even if multiple
+    /// paths exist to reach it.
     fn iter_depth_first<'a>(
         &'a self,
         initial: impl IntoIterator<Item = T>,
@@ -118,6 +113,7 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
     where
         T: 'a,
         T: Clone,
+        T: Eq + Hash,
     {
         let mut to_visit = Vec::new();
         let mut seen = HashSet::new();
@@ -130,7 +126,7 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
         std::iter::from_fn(move || {
             let visiting = to_visit.pop()?;
 
-            for (node, _) in self.connections_from(&visiting) {
+            for node in self.connections_from(&visiting) {
                 if !seen.contains(&node) {
                     seen.insert(node.clone());
                     to_visit.push(node);
@@ -139,6 +135,153 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
 
             Some(visiting)
         })
+    }
+}
+
+///
+pub struct SearchItem<T> {
+    /// The type of the node, as used by
+    /// `EdgeWeightedGraph::connections_from`.
+    pub item: T,
+
+    /// The total distance from an initial point to the item, given by
+    /// the sum of the distances return by
+    /// `EdgeWeightedGraph::connections_from`.
+    pub total_dist: u64,
+
+    /// The index of the node used to reach this one when taking the
+    /// shortest path to the current node.  Will be None for any node
+    /// that was part of the initial search locations, and Some(_)
+    /// otherwise.
+    pub backref: Option<usize>,
+}
+
+struct SearchItemMetadata {
+    total_dist: u64,
+    backref: Option<usize>,
+    heuristic_to_dest: u64,
+}
+
+impl SearchItemMetadata {
+    fn min_distance_to_dest(&self) -> u64 {
+        self.total_dist + self.heuristic_to_dest
+    }
+}
+
+impl PartialEq for SearchItemMetadata {
+    fn eq(&self, other: &Self) -> bool {
+        self.min_distance_to_dest() == other.min_distance_to_dest()
+    }
+}
+impl Eq for SearchItemMetadata {}
+impl PartialOrd for SearchItemMetadata {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for SearchItemMetadata {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.min_distance_to_dest()
+            .cmp(&other.min_distance_to_dest())
+    }
+}
+
+pub trait EdgeWeightedGraph<T> {
+    /// Given a node, return all nodes directly accessible from that
+    /// node, along with the cost associated with each edge.
+    fn connections_from(&self, node: &T) -> impl Iterator<Item = (T, u64)>;
+
+    /// Iterate over nodes, in increasing order of distance from the
+    /// initial node(s).
+    fn iter_dijkstra(
+        &self,
+        initial: impl IntoIterator<Item = T>,
+    ) -> impl Iterator<Item = SearchItem<T>>
+    where
+        T: Clone,
+        T: Eq + Hash,
+    {
+        self.iter_a_star(initial, |_| Some(0))
+    }
+
+    /// Iterate over nodes, in increasing order of minimum total
+    /// distance from the initial node(s), passing through the given
+    /// node, to the destination.
+    fn iter_a_star<F>(
+        &self,
+        initial: impl IntoIterator<Item = T>,
+        mut heuristic_func: F,
+    ) -> impl Iterator<Item = SearchItem<T>>
+    where
+        F: FnMut(&T) -> Option<u64>,
+        T: Clone,
+        T: Eq + Hash,
+    {
+        let mut search_queue: PriorityQueue<T, SearchItemMetadata> = initial
+            .into_iter()
+            .filter_map(|item| {
+                let heuristic_to_dest = heuristic_func(&item)?;
+                Some((
+                    item,
+                    SearchItemMetadata {
+                        total_dist: 0,
+                        backref: None,
+                        heuristic_to_dest,
+                    },
+                ))
+            })
+            .collect();
+        let mut finished: HashSet<T> = HashSet::new();
+
+        std::iter::from_fn(move || -> Option<SearchItem<T>> {
+            let (
+                item,
+                SearchItemMetadata {
+                    total_dist,
+                    backref,
+                    ..
+                },
+            ) = search_queue.pop()?;
+            let index = finished.len();
+            finished.insert(item.clone());
+
+            self.connections_from(&item)
+                .filter(|(new_item, _)| !finished.contains(new_item))
+                .filter_map(|(new_item, edge_weight)| {
+                    let heuristic_to_dest = heuristic_func(&new_item)?;
+                    Some((
+                        new_item,
+                        SearchItemMetadata {
+                            total_dist: total_dist + edge_weight,
+                            backref: Some(index),
+                            heuristic_to_dest,
+                        },
+                    ))
+                })
+                .for_each(|(new_item, info)| {
+                    search_queue.push_increase(new_item, info);
+                });
+
+            Some(SearchItem {
+                item,
+                total_dist,
+                backref,
+            })
+        })
+    }
+}
+
+pub trait DynamicGraph<T: DynamicGraphNode> {
+    // Given a node, return all nodes directly excessible from that
+    // node, along with the cost associated with each edge.
+    fn connections_from(&self, node: &T) -> Vec<(T, u64)>;
+
+    // Used for A* search.  If no such heuristic can be generated,
+    // return 0 to fall back to using Dijkstra's.  If None, implies
+    // that it's impossible to reach the target node from the
+    // specified point.
+    fn heuristic_between(&self, _node_from: &T, _node_to: &T) -> Option<u64> {
+        Some(0)
     }
 
     // Returns the shortest path from initial to target, along with
@@ -404,6 +547,20 @@ pub trait DynamicGraph<T: DynamicGraphNode> {
                 )
             })
             .collect()
+    }
+}
+
+impl<T: DynamicGraphNode, Graph> DirectedGraph<T> for Graph
+where
+    Graph: DynamicGraph<T>,
+{
+    fn connections_from<'a>(
+        &'a self,
+        node: &'a T,
+    ) -> impl Iterator<Item = T> + '_ {
+        DynamicGraph::connections_from(self, node)
+            .into_iter()
+            .map(move |(node, _)| node)
     }
 }
 
