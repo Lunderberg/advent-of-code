@@ -18,6 +18,9 @@ struct Options {
 
     #[structopt(short = "v", long = "verbose")]
     verbose: bool,
+
+    #[structopt(short = "b", long = "benchmark-iter")]
+    benchmark_iter: Option<u32>,
 }
 
 fn main() -> Result<(), Error> {
@@ -60,18 +63,26 @@ fn main() -> Result<(), Error> {
     runner.parse_inputs(&mut downloader, input_source, opt.verbose)?;
 
     PuzzlePart::iter()
-        .map(|part| {
-            let res = runner.run_puzzle_part(part, input_source);
-            (part, res)
-        })
-        .inspect(|(part, res)| {
+        .inspect(|part| {
             println!("{:04}-12-{:02}, {}", runner.year(), runner.day(), part);
-            match res {
-                Ok(val) => println!("{val}"),
-                Err(error) => println!("Error: {error:?}"),
-            }
         })
-        .map(|(_part, res)| res)
+        .map(|part| {
+            let iterations = opt.benchmark_iter.unwrap_or(1);
+            let start = std::time::Instant::now();
+            let output = (0..iterations)
+                .map(|_| runner.run_puzzle_part(part, input_source))
+                .last();
+            let elapsed = start.elapsed();
+
+            if let Some(benchmark_iterations) = opt.benchmark_iter {
+                println!("Avg. runtime: {:?}", elapsed / benchmark_iterations);
+            }
+            output.unwrap()
+        })
+        .inspect(|res| match res {
+            Ok(val) => println!("{val}"),
+            Err(error) => println!("Error: {error:?}"),
+        })
         .collect::<Result<Vec<_>, Error>>()?;
 
     Ok(())
