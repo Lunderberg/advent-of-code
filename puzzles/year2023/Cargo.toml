@@ -17,3 +17,4 @@ aoc_utils = { path = "../../aoc_utils" }
 itertools = "*"
 regex = "*"
 console = "*"
+num = "*"
