@@ -11,8 +11,8 @@ pub use crate::extensions::TakeWhileInclusive as _;
 
 pub use crate::geometry::{Matrix, Vector};
 
-pub use crate::graph::{DirectedGraph, DynamicGraph};
+pub use crate::graph::{DirectedGraph, DynamicGraph, EdgeWeightedGraph};
 
 pub use crate::CollectResizedGridMap as _;
 pub use crate::DisplayString;
-pub use crate::{GridMap, GridPos};
+pub use crate::{Adjacency, GridMap, GridPos};

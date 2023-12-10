@@ -181,15 +181,19 @@ impl PartialOrd for SearchItemMetadata {
 }
 impl Ord for SearchItemMetadata {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.min_distance_to_dest()
-            .cmp(&other.min_distance_to_dest())
+        other
+            .min_distance_to_dest()
+            .cmp(&self.min_distance_to_dest())
     }
 }
 
 pub trait EdgeWeightedGraph<T> {
     /// Given a node, return all nodes directly accessible from that
     /// node, along with the cost associated with each edge.
-    fn connections_from(&self, node: &T) -> impl Iterator<Item = (T, u64)>;
+    fn connections_from<'a>(
+        &'a self,
+        node: &'a T,
+    ) -> impl Iterator<Item = (T, u64)> + '_;
 
     /// Iterate over nodes, in increasing order of distance from the
     /// initial node(s).
