@@ -211,6 +211,10 @@ impl<const N: usize, T> Vector<N, T> {
         Self([(); N].map(|_| T::zero()))
     }
 
+    pub fn into_iter(self) -> impl Iterator<Item = T> {
+        self.0.into_iter()
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &T> + '_ {
         self.0.iter()
     }
@@ -242,11 +246,11 @@ impl<const N: usize, T> Vector<N, T> {
             .sum()
     }
 
-    pub fn map<F>(self, func: F) -> Self
+    pub fn map<U, F>(self, func: F) -> Vector<N, U>
     where
-        F: FnMut(T) -> T,
+        F: FnMut(T) -> U,
     {
-        Self(self.0.map(func))
+        Vector(self.0.map(func))
     }
 
     pub fn zip_map<F>(self, other: Self, mut func: F) -> Self
