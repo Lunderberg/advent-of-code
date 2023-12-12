@@ -194,14 +194,14 @@ impl Display for Tile {
         write!(f, "{c}")
     }
 }
-impl std::str::FromStr for Tile {
-    type Err = Error;
+impl TryFrom<char> for Tile {
+    type Error = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.chars().exactly_one_or_err()? {
+    fn try_from(c: char) -> Result<Self, Self::Error> {
+        match c {
             '#' => Ok(Tile::Elf),
             '.' => Ok(Tile::Ground),
-            c => Err(Error::UnknownChar(c)),
+            _ => Err(Error::UnknownChar(c)),
         }
     }
 }

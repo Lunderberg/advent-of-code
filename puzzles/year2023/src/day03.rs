@@ -104,10 +104,9 @@ impl Puzzle for ThisDay {
     fn parse_input<'a>(
         lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error> {
-        let tiles = lines
-            .flat_map(|line| line.chars().chain(std::iter::once('\n')))
-            .collect();
-        Ok(Schematic { tiles })
+        Ok(Schematic {
+            tiles: lines.collect(),
+        })
     }
 
     fn part_1(

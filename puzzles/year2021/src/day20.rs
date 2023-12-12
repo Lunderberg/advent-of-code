@@ -3,7 +3,6 @@ use aoc_utils::prelude::*;
 use crate::utils::Adjacency;
 
 use std::fmt::{Debug, Display, Formatter};
-use std::str::FromStr;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
@@ -43,10 +42,10 @@ impl Display for Image {
     }
 }
 
-impl FromStr for Pixel {
-    type Err = Error;
-    fn from_str(s: &str) -> Result<Self, Error> {
-        let c = s.chars().exactly_one_or_err()?;
+impl TryFrom<char> for Pixel {
+    type Error = Error;
+
+    fn try_from(c: char) -> Result<Self, Self::Error> {
         match c {
             '.' => Ok(Pixel::Dark),
             '#' => Ok(Pixel::Light),
@@ -117,7 +116,7 @@ impl Puzzle for ThisDay {
             .by_ref()
             .take_while(|line| !line.is_empty())
             .flat_map(|line| line.chars())
-            .map(|c| c.to_string().parse::<Pixel>())
+            .map(|c| c.try_into())
             .collect::<Result<_, _>>()?;
 
         let grid = lines.collect();

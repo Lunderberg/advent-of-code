@@ -2,7 +2,6 @@ use aoc_utils::prelude::*;
 
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use std::str::FromStr;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
@@ -118,15 +117,16 @@ impl Cucumber {
     }
 }
 
-impl FromStr for Tile {
-    type Err = Error;
-    fn from_str(s: &str) -> Result<Self, Error> {
-        let contents = match s {
-            ">" => Some(Cucumber::East),
-            "v" => Some(Cucumber::South),
-            "." => None,
-            _ => Err(Error::InvalidString(s.to_string()))?,
-        };
+impl TryFrom<char> for Tile {
+    type Error = Error;
+
+    fn try_from(c: char) -> Result<Self, Self::Error> {
+        let contents = match c {
+            '>' => Ok(Some(Cucumber::East)),
+            'v' => Ok(Some(Cucumber::South)),
+            '.' => Ok(None),
+            _ => Err(Error::UnknownChar(c)),
+        }?;
         Ok(Self { contents })
     }
 }

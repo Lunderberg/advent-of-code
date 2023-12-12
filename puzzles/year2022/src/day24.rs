@@ -238,11 +238,10 @@ impl DynamicGraph<State> for StormSystem {
     }
 }
 
-impl std::str::FromStr for Tile {
-    type Err = Error;
+impl TryFrom<char> for Tile {
+    type Error = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let c = s.chars().exactly_one_or_err()?;
+    fn try_from(c: char) -> Result<Self, Self::Error> {
         match c {
             '#' => Ok(Tile::Wall),
             '.' => Ok(Tile::Ground),

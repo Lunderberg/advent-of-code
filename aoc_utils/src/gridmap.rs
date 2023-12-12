@@ -1,10 +1,9 @@
-use crate::extensions::{CharIterLocExt, ExactlyOneExt};
+use crate::extensions::CharIterLocExt;
 use crate::geometry::Vector;
 
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::FromIterator;
 use std::ops::{Index, IndexMut};
-use std::str::FromStr;
 
 use itertools::Itertools;
 
@@ -247,42 +246,17 @@ impl<T> FromIterator<(Vector<2, i64>, T)> for GridMap<T> {
 
 impl<'a, T> FromIterator<&'a str> for GridMap<T>
 where
-    T: FromStr,
-    <T as FromStr>::Err: Debug,
+    char: TryInto<T>,
+    <char as TryInto<T>>::Error: Debug,
 {
-    fn from_iter<I>(iter: I) -> Self
+    fn from_iter<I>(lines: I) -> Self
     where
         I: IntoIterator<Item = &'a str>,
     {
-        let (line_length, line_num, value_results): (Vec<_>, Vec<_>, Vec<_>) =
-            iter.into_iter()
-                .enumerate()
-                .flat_map(|(line_num, line)| {
-                    let length = line.len();
-                    line.chars().collect::<Vec<_>>().into_iter().map(move |c| {
-                        (length, line_num, c.to_string().parse::<T>())
-                    })
-                })
-                .multiunzip();
-
-        let values = value_results
+        lines
             .into_iter()
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap();
-
-        let y_size = line_num.last().map_or(0, |last| last + 1);
-        let x_size = line_length
-            .into_iter()
-            .unique()
-            .exactly_one_or_err()
-            .map_err(|_| GridMapError::InconsistentLineSize)
-            .unwrap();
-
-        Self {
-            x_size,
-            y_size,
-            values,
-        }
+            .flat_map(|line| line.chars().chain(std::iter::once('\n')))
+            .collect()
     }
 }
 

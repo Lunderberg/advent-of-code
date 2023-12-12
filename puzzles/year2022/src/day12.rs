@@ -23,10 +23,10 @@ enum ReverseSearchPos {
     Pos(GridPos),
 }
 
-impl std::str::FromStr for MapChar {
-    type Err = Error;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let c = s.chars().exactly_one_or_err()?;
+impl TryFrom<char> for MapChar {
+    type Error = Error;
+
+    fn try_from(c: char) -> Result<Self, Self::Error> {
         match c {
             'a'..='z' => Ok(MapChar::Height(((c as u32) - ('a' as u32)) as i8)),
             'S' => Ok(MapChar::Start),

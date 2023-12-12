@@ -174,16 +174,16 @@ impl OctopusMap {
     }
 }
 
-impl std::str::FromStr for Octopus {
-    type Err = Error;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl TryFrom<char> for Octopus {
+    type Error = Error;
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
         use Octopus::*;
-        let char = s.chars().exactly_one_or_err()?;
-        match char {
-            '0'..='9' => Ok(Charging(s.parse::<u8>()?)),
+        match value {
+            '0'..='9' => Ok(Charging(value.to_digit(10).unwrap() as u8)),
             'F' => Ok(Flashing),
             '.' => Ok(Flashed),
-            _ => Err(Error::UnknownChar(char)),
+            _ => Err(Error::UnknownChar(value)),
         }
     }
 }

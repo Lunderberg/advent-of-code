@@ -235,10 +235,7 @@ impl Puzzle for ThisDay {
     fn parse_input<'a>(
         lines: impl Iterator<Item = &'a str>,
     ) -> Result<Self::ParsedInput, Error> {
-        let map = lines
-            .flat_map(|line| line.chars().chain(std::iter::once('\n')))
-            .collect();
-        Ok(PipeMap(map))
+        Ok(PipeMap(lines.collect()))
     }
 
     fn part_1(map: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
