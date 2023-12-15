@@ -78,31 +78,23 @@ impl Record {
 
         let remaining_group_sum =
             groups.iter().map(|g| *g as usize).sum::<usize>();
-        let potential_true_values = springs
-            .iter()
-            .filter(|spring| spring.unwrap_or(true))
-            .count();
+        let (minimum_true_values, maximum_true_values) =
+            springs
+                .iter()
+                .fold((0, 0), |(min, max), spring| match spring {
+                    Some(true) => (min + 1, max + 1),
+                    Some(false) => (min, max),
+                    None => (min, max + 1),
+                });
 
-        // let spring_str = springs
-        //     .iter()
-        //     .map(|spring| match spring {
-        //         None => '?',
-        //         Some(true) => '#',
-        //         Some(false) => '.',
-        //     })
-        //     .join("");
-        // let group_str = groups.iter().join(", ");
-
-        let result = if potential_true_values < remaining_group_sum {
-            // println!(
-            //     "Sequence {spring_str} doesn't have enough true values \
-            //      for {group_str}"
-            // );
+        let result = if maximum_true_values < remaining_group_sum
+            || remaining_group_sum < minimum_true_values
+        {
             0
         } else if let Some(&group) = groups.get(0) {
             let group = group as usize;
 
-            // For all regions that could fit a group of
+            // For all regions that could fit a group of the next size
             (0..=springs.len() - group)
                 // So long as we don't skip past a known true value,
                 .take_while_inclusive(|&i| match springs[i] {
@@ -115,15 +107,7 @@ impl Record {
                     (0..group).all(|offset| match springs[i + offset] {
                         None => true,
                         Some(true) => true,
-                        Some(false) => {
-                            // println!(
-                            //     "Placing group of size {group} \
-                            //      at location {i} \
-                            //      in sequences {spring_str} \
-                            //      would hit false value after {offset}"
-                            // );
-                            false
-                        }
+                        Some(false) => false,
                     })
                 })
                 // and the item after the group is either the end or may
@@ -131,26 +115,13 @@ impl Record {
                 .filter(|i| match springs.get(i + group) {
                     None => true,
                     Some(None) => true,
-                    Some(Some(true)) => {
-                        // println!(
-                        //     "Placing group of size {group} \
-                        //      at location {i} \
-                        //      in sequences {spring_str} \
-                        //      would be immediately followed by true"
-                        // );
-                        false
-                    }
+                    Some(Some(true)) => false,
                     Some(Some(false)) => true,
                 })
                 // then recursively count the number of possible arrangements
                 .map(|i| {
                     let earliest_next_group =
                         usize::min(i + group + 1, springs.len());
-                    // println!(
-                    //     "Sequence {spring_str} \
-                    //      could have first group of size {group} \
-                    //      starting at index {i}."
-                    // );
                     Self::count_possible_impl(
                         &springs[earliest_next_group..],
                         &groups[1..],
@@ -160,7 +131,6 @@ impl Record {
                 // and sum over all possible locations
                 .sum()
         } else {
-            // println!("Empty sequence {spring_str} with no groups {group_str}");
             1
         };
 
@@ -204,9 +174,7 @@ impl Puzzle for ThisDay {
     ) -> Result<impl std::fmt::Debug, Error> {
         let arrangements = records
             .iter()
-            .inspect(|record| println!("{record}"))
             .map(|record| record.count_possible())
-            .inspect(|val| println!("\t{val:?}"))
             .sum::<usize>();
 
         Ok(arrangements)
@@ -218,16 +186,7 @@ impl Puzzle for ThisDay {
         let arrangements = records
             .iter()
             .map(|record| record.unfold())
-            .inspect(|record| println!("{record}"))
-            //.map(|record| record.num_arrangements())
-            .map(|record| {
-                let start = std::time::Instant::now();
-                let result = record.count_possible();
-                let elapsed = start.elapsed();
-                println!("\t{elapsed:?}");
-                result
-            })
-            .inspect(|val| println!("\t{val:?}"))
+            .map(|record| record.count_possible())
             .sum::<usize>();
 
         Ok(arrangements)
