@@ -79,7 +79,7 @@ impl Observation {
                     .count() as u64;
 
                 let observed_distance = (a - b)
-                    .map(|delta| delta.abs() as u64)
+                    .map(|delta| delta.unsigned_abs())
                     .into_iter()
                     .sum::<u64>();
                 (observed_distance, num_empty)

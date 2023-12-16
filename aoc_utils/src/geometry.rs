@@ -199,6 +199,16 @@ where
     }
 }
 
+impl<const N: usize, T> IntoIterator for Vector<N, T> {
+    type Item = T;
+
+    type IntoIter = <[T; N] as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 impl<const N: usize, T> Vector<N, T> {
     pub fn new(arr: [T; N]) -> Self {
         Self(arr)
@@ -209,10 +219,6 @@ impl<const N: usize, T> Vector<N, T> {
         T: num::Zero,
     {
         Self([(); N].map(|_| T::zero()))
-    }
-
-    pub fn into_iter(self) -> impl Iterator<Item = T> {
-        self.0.into_iter()
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &T> + '_ {

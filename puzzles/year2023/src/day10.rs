@@ -24,9 +24,9 @@ struct Tile {
 #[derive(Debug, Clone)]
 pub struct PipeMap(GridMap<Tile>);
 
-impl Into<usize> for Direction {
-    fn into(self) -> usize {
-        match self {
+impl From<Direction> for usize {
+    fn from(val: Direction) -> Self {
+        match val {
             Direction::North => 0,
             Direction::South => 1,
             Direction::East => 2,
@@ -34,9 +34,9 @@ impl Into<usize> for Direction {
         }
     }
 }
-impl Into<Vector<2, i64>> for Direction {
-    fn into(self) -> Vector<2, i64> {
-        match self {
+impl From<Direction> for Vector<2, i64> {
+    fn from(val: Direction) -> Self {
+        match val {
             Direction::North => [0, -1].into(),
             Direction::South => [0, 1].into(),
             Direction::East => [1, 0].into(),
@@ -267,9 +267,7 @@ impl Puzzle for ThisDay {
         let map = map.clone().with_inferred_animal();
 
         let start_loc = map.animal_location().unwrap();
-        let start_dir_a = Direction::iter()
-            .filter(|&dir| map.0[start_loc][dir])
-            .next()
+        let start_dir_a = Direction::iter().find(|&dir| map.0[start_loc][dir])
             .expect("No viable start direction");
 
         let loop_winding: HashMap<_, _> = std::iter::successors(
@@ -277,9 +275,7 @@ impl Puzzle for ThisDay {
             |&(loc, _, in_dir)| {
                 let loc = loc + in_dir.into();
                 let tile = &map.0[loc];
-                let out_dir = Direction::iter()
-                    .filter(|&dir| dir != in_dir.reverse() && tile[dir])
-                    .next()
+                let out_dir = Direction::iter().find(|&dir| dir != in_dir.reverse() && tile[dir])
                     .expect("No output direction found");
                 Some((loc, in_dir, out_dir))
             },

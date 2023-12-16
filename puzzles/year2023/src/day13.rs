@@ -150,7 +150,7 @@ impl Puzzle for ThisDay {
                         .collect(),
                 )
             })
-            .map(|grid_map| Layer(grid_map))
+            .map(Layer)
             .collect();
         Ok(Terrain { layers })
     }

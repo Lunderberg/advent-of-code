@@ -161,7 +161,7 @@ impl MonkeyMap {
         let teleports: HashMap<State, State> = self
             .map
             .iter()
-            .filter(|(_, &ref tile)| !matches!(tile, Tile::Wrap))
+            .filter(|(_, tile): &(_, &_)| !matches!(tile, Tile::Wrap))
             .map(|(loc, _)| loc)
             .flat_map(|loc| {
                 Facing::iter().map(move |facing| State { loc, facing })

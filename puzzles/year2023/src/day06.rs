@@ -29,9 +29,7 @@ fn num_winning_times(race_time: u64, record_dist: u64) -> u64 {
     // floor((-b + sqrt_disc) / 2 - (-b - sqrt_disc) / 2) + 1
     // floor(-b/2 + sqrt_disc/2 + b/2 + sqrt_disc/2) + 1
     // floor(sqrt_disc) + 1
-    let result = sqrt_disc + 1;
-
-    result
+    sqrt_disc + 1
 }
 
 #[derive(aoc_macros::YearDay)]
@@ -65,7 +63,7 @@ impl Puzzle for ThisDay {
             .map(|&(race_time, record_dist)| {
                 num_winning_times(race_time, record_dist)
             })
-            .fold(1u64, |a, b| a * b);
+            .product::<u64>();
 
         Ok(value)
     }

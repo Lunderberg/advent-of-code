@@ -134,7 +134,7 @@ impl Puzzle for ThisDay {
             });
 
         let total_brightness: u64 =
-            state.iter().map(|&brightness| brightness).sum::<u64>();
+            state.iter().copied().sum::<u64>();
 
         Ok(total_brightness)
     }

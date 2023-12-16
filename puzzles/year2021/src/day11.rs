@@ -97,7 +97,7 @@ impl OctopusMap {
         let mut flash_stack: Vec<_> = self
             .map
             .iter()
-            .filter(|(_, &ref octo)| octo.ready_to_flash())
+            .filter(|(_, octo): &(_, &_)| octo.ready_to_flash())
             .map(|(pos, _)| pos)
             .collect();
         let mut all_flashes: HashSet<_> = flash_stack.iter().copied().collect();

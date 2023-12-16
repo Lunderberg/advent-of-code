@@ -9,7 +9,7 @@ impl Sequence {
     }
 
     fn first(&self) -> Option<i64> {
-        self.0.iter().next().cloned()
+        self.0.first().cloned()
     }
 
     fn last(&self) -> Option<i64> {

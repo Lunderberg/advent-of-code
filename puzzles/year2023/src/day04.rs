@@ -1,4 +1,7 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    collections::{HashMap, VecDeque},
+    str::FromStr,
+};
 
 use aoc_utils::prelude::*;
 
@@ -78,38 +81,26 @@ impl Puzzle for ThisDay {
     fn part_2(
         cards: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
-        let num_matches: HashMap<_, _> = cards
+        let mut num_matches: VecDeque<_> = cards
             .iter()
             .map(|card| (card.id, card.num_matches()))
             .collect();
 
         let mut num_cards: HashMap<u64, u64> = HashMap::new();
 
-        loop {
-            let mut made_change = false;
-
-            for (&id, &num_new_cards) in num_matches.iter() {
-                if !num_cards.contains_key(&id) {
-                    let child_sum: Option<_> = (1..=num_new_cards)
-                        .map(|i| i + id)
-                        .map(|child_id| num_cards.get(&child_id))
-                        .sum::<Option<u64>>();
-                    if let Some(child_sum) = child_sum {
-                        made_change = true;
-                        num_cards.insert(id, child_sum + 1);
-                    }
-                }
-            }
-
-            if !made_change {
-                break;
+        while let Some((id, num_new_cards)) = num_matches.pop_front() {
+            let child_sum: Option<_> = (1..=num_new_cards)
+                .map(|i| i + id)
+                .map(|child_id| num_cards.get(&child_id))
+                .sum::<Option<u64>>();
+            if let Some(child_sum) = child_sum {
+                num_cards.insert(id, child_sum + 1);
+            } else {
+                num_matches.push_back((id, num_new_cards));
             }
         }
 
-        let total_cards = num_cards
-            .into_iter()
-            .map(|(_, num_cards)| num_cards)
-            .sum::<u64>();
+        let total_cards = num_cards.into_values().sum::<u64>();
 
         Ok(total_cards)
     }

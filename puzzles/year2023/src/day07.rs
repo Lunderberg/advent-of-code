@@ -102,7 +102,7 @@ impl Hand {
             .collect();
         let num_jokers = self.0.iter().filter(|c| c.is_joker()).count();
 
-        let a = counts.get(0).cloned().unwrap_or(0) + num_jokers;
+        let a = counts.first().cloned().unwrap_or(0) + num_jokers;
         let b = counts.get(1).cloned().unwrap_or(0);
 
         assert_eq!(counts.iter().sum::<usize>() + num_jokers, 5);
@@ -152,7 +152,7 @@ impl Puzzle for ThisDay {
     ) -> Result<impl std::fmt::Debug, Error> {
         let value = hands
             .iter()
-            .sorted_by_key(|(hand, _)| (hand.strength(), &hand.0))
+            .sorted_by_key(|(hand, _)| (hand.strength(), hand.0))
             .enumerate()
             .map(|(i, (_, bid))| {
                 let i = i as u64;
@@ -168,7 +168,7 @@ impl Puzzle for ThisDay {
         let value = hands
             .iter()
             .map(|(hand, bid)| (hand.with_joker(), bid))
-            .sorted_by_key(|(hand, _)| (hand.strength(), hand.0.clone()))
+            .sorted_by_key(|(hand, _)| (hand.strength(), hand.0))
             .enumerate()
             .map(|(i, (_, bid))| {
                 let i = (i + 1) as u64;

@@ -67,10 +67,7 @@ impl Record {
         groups: &[u8],
         cache: &mut HashMap<(Vec<Option<bool>>, Vec<u8>), usize>,
     ) -> usize {
-        let key = (
-            springs.iter().cloned().collect(),
-            groups.iter().cloned().collect(),
-        );
+        let key = (springs.to_vec(), groups.to_vec());
 
         if let Some(&cached) = cache.get(&key) {
             return cached;
@@ -91,7 +88,7 @@ impl Record {
             || remaining_group_sum < minimum_true_values
         {
             0
-        } else if let Some(&group) = groups.get(0) {
+        } else if let Some(&group) = groups.first() {
             let group = group as usize;
 
             // For all regions that could fit a group of the next size
@@ -148,7 +145,7 @@ impl Record {
                     itertools::Position::Last => None,
                     _ => Some(None),
                 };
-                springs.into_iter().cloned().chain(after)
+                springs.iter().cloned().chain(after)
             })
             .collect();
         let groups = [&self.groups; 5].into_iter().flatten().cloned().collect();
