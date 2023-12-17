@@ -129,7 +129,26 @@ macro_rules! elementwise_binary_op {
     };
 }
 
+macro_rules! elementwise_binary_assign_op {
+    ($trait:ident, $method:ident, $op:tt) => {
+        // TODO: Same overload for matrix
+
+        impl<const N: usize, T, Rhs> ops::$trait<Vector<N,Rhs>> for Vector<N, T>
+        where T: ops::$trait<Rhs> {
+            fn $method(&mut self, rhs: Vector<N,Rhs>)  {
+                self.iter_mut()
+                    .zip(rhs.into_iter())
+                    .for_each(|(a,b)|{
+                        *a $op b;
+                    });
+            }
+        }
+    };
+}
+
 elementwise_unary_op!(Neg, neg, -);
+elementwise_binary_assign_op!(AddAssign, add_assign, +=);
+elementwise_binary_assign_op!(SubAssign, sub_assign, -=);
 elementwise_binary_op!(Add, add, +);
 elementwise_binary_op!(Sub, sub, -);
 elementwise_scalar_op!(Mul, mul, *);
@@ -366,9 +385,13 @@ impl<T> From<Vector<2, T>> for (T, T) {
     }
 }
 
-impl<T> From<(T, T)> for Vector<2, T> {
-    fn from(value: (T, T)) -> Self {
-        [value.0, value.1].into()
+impl<T, A, B> From<(A, B)> for Vector<2, T>
+where
+    T: From<A>,
+    T: From<B>,
+{
+    fn from(value: (A, B)) -> Self {
+        [value.0.into(), value.1.into()].into()
     }
 }
 
