@@ -16,15 +16,11 @@ impl Puzzle for ThisDay {
         )
     }
 
-    fn part_1(
-        values: &Self::ParsedInput,
-    ) -> Result<impl std::fmt::Debug, Error> {
+    fn part_1(_: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
         Err::<(), _>(Error::NotYetImplemented)
     }
 
-    fn part_2(
-        values: &Self::ParsedInput,
-    ) -> Result<impl std::fmt::Debug, Error> {
+    fn part_2(_: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
         Err::<(), _>(Error::NotYetImplemented)
     }
 }
