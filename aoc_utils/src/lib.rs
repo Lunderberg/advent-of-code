@@ -6,6 +6,7 @@ pub use gridmap::*;
 
 pub mod extensions;
 
+pub mod direction;
 pub mod geometry;
 
 pub mod graph;

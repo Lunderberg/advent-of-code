@@ -235,9 +235,16 @@ impl<T> FromIterator<(Vector<2, i64>, T)> for GridMap<T> {
     where
         I: IntoIterator<Item = (Vector<2, i64>, T)>,
     {
-        iter.into_iter()
+        let tuples: Vec<_> = iter.into_iter().collect();
+        let x_min = tuples.iter().map(|(pos, _)| pos.x()).min().clone();
+        let y_min = tuples.iter().map(|(pos, _)| pos.y()).min().clone();
+
+        tuples
+            .into_iter()
             .map(|(pos, tile)| {
                 let (x, y) = pos.into();
+                let x = x - x_min.unwrap();
+                let y = y - y_min.unwrap();
                 (x as usize, y as usize, tile)
             })
             .collect()
