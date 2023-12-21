@@ -28,7 +28,7 @@ enum ModuleKind {
     Output,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Module {
     name: String,
     kind: ModuleKind,
@@ -40,7 +40,7 @@ pub struct System {
     modules: Vec<Module>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum ModuleState {
     Button,
     Broadcaster,
@@ -58,11 +58,24 @@ enum ModuleState {
     Output,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct SystemState<'a> {
     system: &'a System,
     module_states: Vec<ModuleState>,
 }
+
+// Only compare the module_states, not the sytem
+impl<'a> std::hash::Hash for SystemState<'a> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.module_states.hash(state);
+    }
+}
+impl<'a> std::cmp::PartialEq for SystemState<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.module_states == other.module_states
+    }
+}
+impl<'a> std::cmp::Eq for SystemState<'a> {}
 
 impl Display for PulseKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -116,52 +129,151 @@ impl System {
             .find(|(_, module)| module.kind == kind)
             .map(|(i, _)| i)
     }
+
+    fn make_button_press(&self) -> Pulse {
+        let button =
+            self.find_kind(ModuleKind::Button).expect("No button found");
+
+        let broadcaster = self
+            .find_kind(ModuleKind::Broadcaster)
+            .expect("No broadcaster found");
+
+        Pulse {
+            kind: PulseKind::Low,
+            sender: button,
+            receiver: broadcaster,
+        }
+    }
+
+    fn get_name(&self, index: usize) -> Option<&str> {
+        self.modules.get(index).map(|module| module.name.as_str())
+    }
+
+    fn find_indirect_inputs(&self) -> HashMap<usize, BitSet<usize>> {
+        let mut inputs_from: HashMap<usize, BitSet<usize>> = self
+            .modules
+            .iter()
+            .enumerate()
+            .flat_map(|(from, module)| {
+                module.outputs_to.iter().cloned().map(move |to| (to, from))
+            })
+            .into_grouping_map()
+            .collect();
+
+        loop {
+            let next: HashMap<usize, BitSet<usize>> = inputs_from
+                .iter()
+                .map(|(to, froms)| {
+                    let froms = froms
+                        .iter()
+                        .flat_map(|from| {
+                            inputs_from.get(&from).into_iter().flatten()
+                        })
+                        .collect();
+                    (*to, froms)
+                })
+                .collect();
+
+            let old_size = inputs_from
+                .iter()
+                .map(|(_, froms)| froms.len())
+                .sum::<usize>();
+            let new_size =
+                next.iter().map(|(_, froms)| froms.len()).sum::<usize>();
+            if old_size == new_size {
+                break;
+            } else {
+                inputs_from = next;
+            }
+        }
+
+        inputs_from
+    }
+
+    fn get_pruned_tree(&self, index: usize) -> Self {
+        let required = self.find_indirect_inputs().remove(&index).unwrap();
+        let modules = self
+            .modules
+            .iter()
+            .cloned()
+            .enumerate()
+            .map(|(i, mut module)| {
+                if index == i || required.contains(i) {
+                    module
+                } else {
+                    module.kind = ModuleKind::Output;
+                    module.outputs_to = Vec::new();
+                    module
+                }
+            })
+            .collect();
+
+        Self { modules }
+    }
+
+    fn find_cycle(&self, index: usize) -> (usize, usize) {
+        let pruned = self.get_pruned_tree(index);
+        let mut state = pruned.initial_state();
+        let button = pruned.make_button_press();
+
+        let mut seen: HashMap<SystemState, usize> = HashMap::new();
+        seen.insert(state.clone(), seen.len());
+        loop {
+            state.process_single_pulse(button).for_each(|_| {});
+            if let Some(prev) = seen.get(&state) {
+                seen.iter()
+                    .map(|(state, i)| (&state.module_states[index], i))
+                    .sorted_by_key(|(_, i)| *i)
+                    .filter(|(module_state, _)| match module_state {
+                        ModuleState::Conjunction(bit_set) => {
+                            !bit_set.is_empty()
+                        }
+                        _ => true,
+                    })
+                    .for_each(|(module_state, i)| {
+                        println!("\t{i}: {module_state:?}")
+                    });
+
+                return (*prev, seen.len());
+            } else {
+                seen.insert(state.clone(), seen.len());
+            }
+        }
+    }
 }
 impl<'sys> SystemState<'sys> {
     fn process_button_presses<'state>(
         &'state mut self,
         num_presses: usize,
     ) -> impl Iterator<Item = Pulse> + 'state + Captures<&'sys ()> {
-        let button = self
-            .system
-            .find_kind(ModuleKind::Button)
-            .expect("No button found");
-        let broadcaster = self
-            .system
-            .find_kind(ModuleKind::Broadcaster)
-            .expect("No broadcaster found");
-        let pulse = Pulse {
-            kind: PulseKind::Low,
-            sender: button,
-            receiver: broadcaster,
-        };
+        let pulse = self.system.make_button_press();
 
         (0..num_presses).flat_map(move |_| {
             self.process_single_pulse(pulse).collect_vec().into_iter()
         })
     }
 
-    fn repeatedly_press_button<'state>(
-        &'state mut self,
-    ) -> impl Iterator<Item = Pulse> + 'state + Captures<&'sys ()> {
-        let button = self
-            .system
-            .find_kind(ModuleKind::Button)
-            .expect("No button found");
-        let broadcaster = self
-            .system
-            .find_kind(ModuleKind::Broadcaster)
-            .expect("No broadcaster found");
-        let pulse = Pulse {
-            kind: PulseKind::Low,
-            sender: button,
-            receiver: broadcaster,
-        };
+    // fn repeatedly_press_button<'state>(
+    //     &'state mut self,
+    // ) -> impl Iterator<Item = Pulse> + 'state + Captures<&'sys ()> {
+    //     let button = self
+    //         .system
+    //         .find_kind(ModuleKind::Button)
+    //         .expect("No button found");
+    //     let broadcaster = self
+    //         .system
+    //         .find_kind(ModuleKind::Broadcaster)
+    //         .expect("No broadcaster found");
+    //     let pulse = Pulse {
+    //         kind: PulseKind::Low,
+    //         sender: button,
+    //         receiver: broadcaster,
+    //     };
 
-        std::iter::repeat(()).flat_map(move |_| {
-            self.process_single_pulse(pulse).collect_vec().into_iter()
-        })
-    }
+    //     std::iter::repeat(()).flat_map(move |_| {
+    //         self.process_single_pulse(pulse).collect_vec().into_iter()
+    //     })
+    // }
 
     /// Process a single pulse, producing the pulses that are
     /// generated by the pulse's recipients, including all indirect
@@ -372,9 +484,21 @@ impl Puzzle for ThisDay {
     fn part_2(
         system: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
-        let button = system
-            .find_kind(ModuleKind::Button)
-            .expect("No button found");
+        // system
+        //     .find_indirect_inputs()
+        //     .into_iter()
+        //     .sorted_by_key(|(to, _)| *to)
+        //     .map(|(to, froms)| {
+        //         let to = system.get_name(to).unwrap();
+        //         let froms = froms
+        //             .into_iter()
+        //             .map(|from| system.get_name(from).unwrap())
+        //             .join(", ");
+        //         (to, froms)
+        //     })
+        //     .for_each(|(to, froms)| {
+        //         println!("{to} <= {froms}");
+        //     });
 
         let rx = system
             .modules
@@ -384,18 +508,52 @@ impl Puzzle for ThisDay {
             .map(|(i, _)| i)
             .expect("No 'rx' module found");
 
-        let mut initial_state = system.initial_state();
-        let num_presses = initial_state
-            .repeatedly_press_button()
-            .scan(0, |num_button_press, pulse| {
-                *num_button_press += (pulse.sender == button) as u32;
-                Some((*num_button_press, pulse))
+        // The rx nodes is the conjunction of several independent
+        // inputs.  Those inputs should each have their own cycle?
+        let cycle = system
+            .modules
+            .iter()
+            .enumerate()
+            .filter(|(_, module)| {
+                module.outputs_to.iter().any(|output| *output == rx)
             })
-            .find(|(_, pulse)| {
-                pulse.kind == PulseKind::Low && pulse.receiver == rx
+            .flat_map(|(i, _)| {
+                system
+                    .modules
+                    .iter()
+                    .enumerate()
+                    .filter(move |(_, module)| {
+                        module.outputs_to.iter().any(|output| *output == i)
+                    })
+                    .map(|(i, _)| i)
             })
-            .map(|(i, _)| i)
-            .unwrap();
-        Ok(num_presses)
+            .inspect(|i| println!("{}", system.get_name(*i).unwrap()))
+            .map(|i| system.find_cycle(i))
+            .inspect(|i| println!("\t{i:?}"))
+            .map(|(a, b)| b - a)
+            .product::<usize>();
+
+        Ok(cycle)
+
+        // let mut state = system.initial_state();
+        // let num_presses = (0..)
+        //     .inspect(|i| {
+        //         if i % 10000 == 0 {
+        //             println!("Checked up through {i}");
+        //         }
+        //     })
+        //     .flat_map(|i| {
+        //         state
+        //             .process_single_pulse(button_press)
+        //             .map(|pulse| (i, pulse))
+        //             .collect::<Vec<_>>()
+        //             .into_iter()
+        //     })
+        //     .find(|(_, pulse)| {
+        //         pulse.kind == PulseKind::Low && pulse.receiver == rx
+        //     })
+        //     .map(|(i, _)| i)
+        //     .unwrap();
+        // Ok(num_presses)
     }
 }
