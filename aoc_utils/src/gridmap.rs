@@ -337,6 +337,10 @@ impl<T> GridMap<T> {
             .map(move |grid_pos| &mut self.values[grid_pos.index])
     }
 
+    pub fn shape_vec(&self) -> Vector<2, i64> {
+        [self.x_size as i64, self.y_size as i64].into()
+    }
+
     pub fn shape(&self) -> (usize, usize) {
         (self.x_size, self.y_size)
     }
