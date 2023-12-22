@@ -1,4 +1,8 @@
-use std::{collections::VecDeque, fmt::Display, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    fmt::Display,
+    str::FromStr,
+};
 
 use aoc_utils::prelude::*;
 
@@ -51,14 +55,6 @@ impl Display for Brick {
 }
 
 impl Brick {
-    fn num_bricks(&self) -> usize {
-        let dist = (self.end - self.start)
-            .into_iter()
-            .map(|delta| delta.abs() as usize)
-            .sum::<usize>();
-        dist + 1
-    }
-
     fn iter_bricks(&self) -> impl Iterator<Item = Vector<3, i64>> + '_ {
         self.start.cardinal_points_to(&self.end)
     }
@@ -70,7 +66,7 @@ impl Brick {
     }
 
     fn is_supported_by(&self, other: &Brick) -> bool {
-        other != self
+        self != other
             && self
                 .iter_bricks()
                 .flat_map(|a| other.iter_bricks().map(move |b| (a, b)))
@@ -132,6 +128,30 @@ impl BrickSystem {
 
         Self { bricks }
     }
+
+    fn support_map(
+        &self,
+    ) -> (HashMap<Brick, Vec<Brick>>, HashMap<Brick, Vec<Brick>>) {
+        let mut supports: HashMap<Brick, Vec<Brick>> = HashMap::new();
+        let mut supported_by: HashMap<Brick, Vec<Brick>> = HashMap::new();
+
+        self.bricks
+            .iter()
+            .cartesian_product(self.bricks.iter())
+            .filter(|(a, b)| a.is_supported_by(b))
+            .for_each(|(a, b)| {
+                supported_by
+                    .entry(a.clone())
+                    .or_insert_with(Default::default)
+                    .push(b.clone());
+                supports
+                    .entry(b.clone())
+                    .or_insert_with(Default::default)
+                    .push(a.clone());
+            });
+
+        (supports, supported_by)
+    }
 }
 
 #[derive(aoc_macros::YearDay)]
@@ -164,37 +184,63 @@ impl Puzzle for ThisDay {
         bricks: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
         let system = BrickSystem::new(bricks.clone());
-        println!("Initial:\n{}\n", system.bricks.iter().join("\n"));
         let system = system.topological_sort();
-        println!(
-            "After topological sort:\n{}\n",
-            system.bricks.iter().join("\n")
-        );
         let system = system.after_falling();
-        println!("After falling:\n{}\n", system.bricks.iter().join("\n"));
 
-        let num_unsafe_to_disintegrate = system
+        let (supports, supported_by) = system.support_map();
+
+        let num_safe_to_disintegrate = system
             .bricks
             .iter()
-            .filter_map(|brick| {
-                system
-                    .bricks
-                    .iter()
-                    .filter(|other| brick.is_supported_by(other))
-                    .exactly_one()
-                    .ok()
-                    .cloned()
+            .filter(|brick| {
+                supports
+                    .get(brick)
+                    .map(|bricks_above| {
+                        bricks_above.iter().all(|brick_above| {
+                            supported_by[brick_above].len() > 1
+                        })
+                    })
+                    .unwrap_or(true)
             })
-            .unique()
-            .inspect(|other| println!("{other} is unsafe to disintegrate"))
             .count();
-        let num_safe_to_disintegrate =
-            system.bricks.len() - num_unsafe_to_disintegrate;
 
         Ok(num_safe_to_disintegrate)
     }
 
-    fn part_2(_: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
-        Err::<(), _>(Error::NotYetImplemented)
+    fn part_2(
+        bricks: &Self::ParsedInput,
+    ) -> Result<impl std::fmt::Debug, Error> {
+        let system = BrickSystem::new(bricks.clone());
+        let system = system.topological_sort();
+        let system = system.after_falling();
+
+        let (_, supported_by) = system.support_map();
+
+        let all_cascades = system
+            .bricks
+            .iter()
+            .enumerate()
+            .map(|(i, brick)| {
+                let mut removed = HashSet::new();
+                removed.insert(brick);
+
+                for other in &system.bricks[i..] {
+                    let is_now_unsupported = supported_by
+                        .get(other)
+                        .map(|supports| {
+                            supports
+                                .iter()
+                                .all(|support| removed.contains(support))
+                        })
+                        .unwrap_or(false);
+                    if is_now_unsupported {
+                        removed.insert(other);
+                    }
+                }
+                removed.len() - 1
+            })
+            .sum::<usize>();
+
+        Ok(all_cascades)
     }
 }
