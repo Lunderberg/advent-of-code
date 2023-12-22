@@ -61,46 +61,6 @@ impl GardenMap {
             .map(|(pos, _)| pos)
     }
 
-    // fn without_elf(&self) -> Self {
-    //     let map = self
-    //         .map
-    //         .iter()
-    //         .map(|(pos, &tile)| {
-    //             (pos, if tile.is_elf() { Tile::Garden } else { tile })
-    //         })
-    //         .collect();
-    //     Self {
-    //         map,
-    //         tiled: self.tiled,
-    //     }
-    // }
-
-    // fn with_elves(
-    //     &self,
-    //     elves: &std::collections::HashSet<Vector<2, i64>>,
-    // ) -> Self {
-    //     let map = self
-    //         .map
-    //         .iter()
-    //         .map(|(pos, &tile)| {
-    //             (
-    //                 pos,
-    //                 if elves.contains(&pos) {
-    //                     Tile::Elf
-    //                 } else if tile.is_garden() {
-    //                     Tile::Garden
-    //                 } else {
-    //                     tile
-    //                 },
-    //             )
-    //         })
-    //         .collect();
-    //     Self {
-    //         map,
-    //         tiled: self.tiled,
-    //     }
-    // }
-
     fn apply_map_tile(
         &self,
         global_pos: Vector<2, i64>,
@@ -136,13 +96,6 @@ impl GardenMap {
             .map(|tile| tile.is_garden())
             .unwrap_or(false)
     }
-
-    fn as_tiled(&self) -> Self {
-        Self {
-            map: self.map.clone(),
-            tiled: true,
-        }
-    }
 }
 
 impl EdgeWeightedGraph<Vector<2, i64>> for GardenMap {
@@ -175,16 +128,9 @@ impl Puzzle for ThisDay {
         garden: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
         let initial = garden.elf_location().unwrap();
-        //let num_steps = 64;
-        let num_steps: u64 = std::env::var("NUM_STEPS")
-            .map(|var| {
-                var.parse()
-                    .expect("Couldn't parse NUM_STEPS environment variable")
-            })
-            .unwrap_or(64);
+        let num_steps = 64;
 
         let num_final_locations = garden
-            .as_tiled()
             .iter_dijkstra([initial])
             .take_while(|search_item| search_item.total_dist <= num_steps)
             .filter(|search_item| search_item.total_dist % 2 == num_steps % 2)
@@ -196,17 +142,7 @@ impl Puzzle for ThisDay {
     fn part_2(
         garden: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
-        // 600089785143895: Too low
-        // 600090464062431: 5 minute delay
-        // 600090570270195: Too high
-
-        //let num_steps: u64 = 26501365;
-        let num_steps: u64 = std::env::var("NUM_STEPS")
-            .map(|var| {
-                var.parse()
-                    .expect("Couldn't parse NUM_STEPS environment variable")
-            })
-            .unwrap_or(26501365);
+        let num_steps: u64 = 26501365;
 
         // Verifying a few properties of the user-specific maps before
         // taking advantage of them.
@@ -235,8 +171,6 @@ impl Puzzle for ThisDay {
             .chain((0..shape.y()).map(|y| garden.map[(shape.x() - 1, y)]))
             .all(|tile| tile.is_garden()));
 
-        println!("The assertions hold");
-
         // With those assertions out of the way (which only hold for
         // the puzzle input, not for the example input), we can make
         // use of the following simplifying assumptions:
@@ -255,8 +189,6 @@ impl Puzzle for ThisDay {
         //    b. (4) Entering the map at the center of one of the
         //       four sides.
         //    c. (1) Starting the map at the center.
-
-        println!("Shape = {shape}");
 
         let categories: HashMap<Vector<2, i64>, GridMap<Option<u64>>> =
             [0, initial.x(), shape.x() - 1]
@@ -297,29 +229,6 @@ impl Puzzle for ThisDay {
                 })
                 .collect();
 
-        // categories
-        //     .iter()
-        //     .sorted_by_key(|(enter_at, _)| -> (i64, i64) {
-        //         (enter_at.x(), enter_at.y())
-        //     })
-        //     .for_each(|(enter_at, step_counts)| {
-        //         let step_digits: GridMap<_> = step_counts
-        //             .iter()
-        //             .map(|(pos, opt_steps): (Vector<2, i64>, &_)| {
-        //                 (
-        //                     pos,
-        //                     opt_steps
-        //                         .map(|steps| {
-        //                             char::from_digit((steps % 10) as u32, 10)
-        //                                 .unwrap()
-        //                         })
-        //                         .unwrap_or('#'),
-        //                 )
-        //             })
-        //             .collect();
-        //         println!("Enter at: {enter_at}\n{step_digits}");
-        //     });
-
         // Used to determine how many maps around the outer border
         // need to be inspected.  For my input, it ended up being the
         // diagonal (`shape.x() + shape.y() - 2`), but there could be
@@ -331,52 +240,14 @@ impl Puzzle for ThisDay {
             .max()
             .unwrap();
 
-        // let tile_x_min =
-        //     (initial.x() - (num_steps as i64)).div_euclid(shape.x());
-        // let tile_x_max =
-        //     (initial.x() + (num_steps as i64)).div_euclid(shape.x());
-        // let tile_y_min =
-        //     (initial.y() - (num_steps as i64)).div_euclid(shape.y());
-        // let tile_y_max =
-        //     (initial.y() + (num_steps as i64)).div_euclid(shape.y());
-
-        // let fully_visited_tile_radius =
-        //     (num_steps - max_steps_in_map).div_euclid(shape.x() as u64);
         let partially_visited_tile_radius =
             (num_steps + 1).div_ceil(shape.x() as u64) + 1;
 
-        // println!("Max steps in map: {max_steps_in_map}");
-        // println!("X tiles; {tile_x_min} through {tile_x_max} (inclusive)");
-        // println!("Y tiles; {tile_y_min} through {tile_y_max} (inclusive)");
-        // println!("Fully visited radius: {fully_visited_tile_radius}");
-        // println!("Partially visited radius: {partially_visited_tile_radius}");
-
-        // // The initial starting point
-        // let from_center_on_even_step = 1;
-
-        // // The distance
-        // let cardinal_side = fully_visited_tile_radius - 1;
-        // let from_side_on_odd_step =
-        //     cardinal_side.div_euclid(2) + (initial.x() as u64) % 2;
-        // let from_side_on_even_step =
-        //     cardinal_side.div_euclid(2) + (initial.x() as u64 + 1) % 2;
-
-        // // Distance=1 from center of (0,0) to top-right, then another
-        // // distance = 1 to offset.
-        // let triangle_side = fully_visited_tile_radius - 2;
-        // // Number of map iterations in the triangle, entered on an
-        // // even number of steps.  Take the side of the triangle, and
-        // // divide by two to find the number of odd numbers present.
-        // // Then, square it to find the sum of the first N odd numbers.
-        // let from_corner_on_even_step = (triangle_side + 1).div_euclid(2).pow(2);
-        // let from_corner_on_odd_step =
-        //     triangle_side * (triangle_side + 1) / 2 - from_corner_on_even_step;
-
-        // println!("from_side_on_odd_step = {from_side_on_odd_step}");
-        // println!("from_side_on_even_step = {from_side_on_even_step}");
-        // println!("from_corner_on_odd_step = {from_corner_on_odd_step}");
-        // println!("from_corner_on_even_step = {from_corner_on_even_step}");
-
+        // This is still inefficient to a degree, since all tiles up
+        // through some the last 2-3 will be fully visited, and could
+        // be determined explicitly.  However, that would be another
+        // possibility for off-by-one errors, and this is fast enough
+        // for the time being.
         let reachable_garden_tiles = (0..partially_visited_tile_radius)
             .flat_map(|i| {
                 // Initial tile, for i==0
@@ -422,12 +293,6 @@ impl Puzzle for ThisDay {
                     u64,
                     u64,
                 )| {
-                    // println!(
-                    //     "With step count {starting_step_count}, \
-                    //      entering at {starting_loc} \
-                    //      for {num_maps} tiles of the map."
-                    // );
-
                     let tiles_per_map = if starting_step_count
                         + max_steps_in_map
                         <= num_steps
