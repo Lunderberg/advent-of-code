@@ -139,6 +139,7 @@ pub trait DirectedGraph<T> {
 }
 
 ///
+#[derive(Debug)]
 pub struct SearchItem<T> {
     /// The type of the node, as used by
     /// `EdgeWeightedGraph::connections_from`.
