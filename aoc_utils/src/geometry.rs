@@ -316,6 +316,18 @@ impl<const N: usize, T> Vector<N, T> {
         // std::iter::successors(Some(*self), move |&prev| Some(prev + step))
         //     .take((len + T::one()).into())
     }
+
+    pub fn dot_product(self, other: Self) -> T
+    where
+        T: std::iter::Sum,
+        T: num::Zero,
+        T: std::ops::Mul<T, Output = T>,
+    {
+        self.into_iter()
+            .zip(other.into_iter())
+            .map(|(a, b)| a * b)
+            .sum()
+    }
 }
 
 impl<const N: usize, T> Default for Vector<N, T>

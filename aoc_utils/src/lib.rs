@@ -17,4 +17,7 @@ pub use display_string::*;
 mod pause;
 pub use pause::*;
 
+mod fraction;
+pub use fraction::Fraction;
+
 pub mod prelude;
