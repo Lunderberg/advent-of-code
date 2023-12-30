@@ -11,7 +11,13 @@ use itertools::Itertools;
 pub struct Vector<const N: usize, T = i64>([T; N]);
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub struct Matrix<const N: usize, const M: usize, T = i64>([[T; M]; N]);
+pub struct Matrix<const N: usize, const M: usize, T = i64>([Vector<M, T>; N]);
+
+pub struct DisplayHelper<'a, T> {
+    item: &'a T,
+    line_prefix: Option<&'a str>,
+    prefix_first_line: bool,
+}
 
 macro_rules! elementwise_unary_op {
     ($trait:ident, $method:ident, $op:tt) => {
@@ -94,36 +100,20 @@ macro_rules! elementwise_scalar_op_lhs {
 macro_rules! elementwise_binary_op {
     ($trait:ident, $method:ident, $op:tt) => {
         impl<const N: usize, const M: usize, T> ops::$trait for Matrix<N, M, T>
-        where T: ops::$trait<Output = T> + num::Zero + Copy {
+        where T: ops::$trait<Output = T> + Copy {
             type Output = Self;
             fn $method(self, rhs: Self) -> Self {
-                let mut result = Self::zero();
-                self.iter_flat()
-                    .zip(rhs.iter_flat())
-                    .map(|(a, b)| *a $op *b)
-                    .zip(result.iter_flat_mut())
-                    .for_each(|(val, out)| {
-                        *out = val;
-                    });
-
-                result
+                Self::new(
+                    std::array::from_fn(|i| self[i] $op rhs[i])
+                )
             }
         }
 
         impl<const N: usize, T> ops::$trait for Vector<N, T>
-        where T: ops::$trait<Output = T> + num::Zero + Copy {
+        where T: ops::$trait<Output = T> + Copy  {
             type Output = Self;
             fn $method(self, rhs: Self) -> Self {
-                let mut result = Self::zero();
-                self.iter()
-                    .zip(rhs.iter())
-                    .map(|(a, b)| *a $op *b)
-                    .zip(result.iter_mut())
-                    .for_each(|(val, out)| {
-                        *out = val;
-                    });
-
-                result
+                std::array::from_fn(|i| self[i] $op rhs[i]).into()
             }
         }
     };
@@ -160,6 +150,11 @@ impl<const N: usize, T> ops::Index<usize> for Vector<N, T> {
         &self.0[index]
     }
 }
+impl<const N: usize, T> ops::IndexMut<usize> for Vector<N, T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
 
 impl<const N: usize, T> Display for Vector<N, T>
 where
@@ -177,6 +172,37 @@ where
         Ok(())
     }
 }
+impl<'a, const M: usize, const N: usize, T> Display
+    for DisplayHelper<'a, Matrix<N, M, T>>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let col_widths: [usize; M] = std::array::from_fn(|i| {
+            (0..N)
+                .map(|j| format!("{}", self.item[(j, i)]).len())
+                .max()
+                .unwrap_or(0)
+        });
+        let total_width = col_widths.iter().map(|w| w + 2).sum();
+        let prefix = &self.line_prefix.unwrap_or("");
+
+        if self.prefix_first_line {
+            write!(f, "{prefix}")?;
+        }
+
+        writeln!(f, "┌{:width$}┐", "", width = total_width)?;
+        self.item.iter_rows().try_for_each(|row| {
+            write!(f, "{prefix}|")?;
+            row.iter()
+                .zip(col_widths.iter())
+                .try_for_each(|(item, width)| write!(f, " {item:width$} "))?;
+            writeln!(f, "|")
+        })?;
+        writeln!(f, "{prefix}└{:width$}┘", "", width = total_width)?;
+        Ok(())
+    }
+}
 
 impl<const N: usize, const M: usize, T> ops::Index<(usize, usize)>
     for Matrix<N, M, T>
@@ -187,18 +213,45 @@ impl<const N: usize, const M: usize, T> ops::Index<(usize, usize)>
     }
 }
 
-impl<const N: usize, const R: usize, const M: usize> ops::Mul<Matrix<R, M>>
-    for Matrix<N, R>
+impl<const N: usize, const M: usize, T> ops::IndexMut<(usize, usize)>
+    for Matrix<N, M, T>
 {
-    type Output = Matrix<N, M>;
-    fn mul(self, rhs: Matrix<R, M>) -> Self::Output {
-        let mut values = [[0; M]; N];
-        values.iter_mut().enumerate().for_each(|(i, row)| {
-            row.iter_mut().enumerate().for_each(|(j, val)| {
-                *val = (0..R).map(|k| self[(i, k)] * rhs[(k, j)]).sum();
-            });
+    fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
+        &mut self.0[index.0][index.1]
+    }
+}
+
+impl<const N: usize, const M: usize, T> ops::Index<usize> for Matrix<N, M, T> {
+    type Output = Vector<M, T>;
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl<const N: usize, const M: usize, T> ops::IndexMut<usize>
+    for Matrix<N, M, T>
+{
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
+impl<const N: usize, const R: usize, const M: usize, T>
+    ops::Mul<Matrix<R, M, T>> for Matrix<N, R, T>
+where
+    T: Copy,
+    T: ops::Mul<Output = T>,
+    T: std::iter::Sum,
+{
+    type Output = Matrix<N, M, T>;
+    fn mul(self, rhs: Matrix<R, M, T>) -> Self::Output {
+        let values = std::array::from_fn(|i| {
+            std::array::from_fn(|j| {
+                (0..R).map(|k| self[(i, k)] * rhs[(k, j)]).sum()
+            })
+            .into()
         });
-        Matrix::<N, M>(values)
+        Matrix::<N, M, T>(values)
     }
 }
 
@@ -228,6 +281,25 @@ impl<const N: usize, T> IntoIterator for Vector<N, T> {
     }
 }
 
+impl<const N: usize, T> num::Zero for Vector<N, T>
+where
+    T: num::Zero,
+    T: Copy,
+{
+    fn zero() -> Self {
+        // Would be more succint to write as `[T::zero(), N]`, but
+        // that would require `T: Copy`.  Since `T` is usually a
+        // primitive, the likelihood of finding a `T` that implements
+        // `num::Zero` but doesn't implement `Copy` seems pretty low,
+        // but might as well avoid requiring it.
+        std::array::from_fn(|_| T::zero()).into()
+    }
+
+    fn is_zero(&self) -> bool {
+        self.iter().all(|value| value.is_zero())
+    }
+}
+
 impl<const N: usize, T> Vector<N, T> {
     pub fn new(arr: [T; N]) -> Self {
         Self(arr)
@@ -246,6 +318,10 @@ impl<const N: usize, T> Vector<N, T> {
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> + '_ {
         self.0.iter_mut()
+    }
+
+    pub fn swap(&mut self, a: usize, b: usize) {
+        self.0.swap(a, b)
     }
 
     pub fn dist2(&self, other: &Self) -> T
@@ -407,16 +483,48 @@ where
     }
 }
 
-impl<const N: usize, const M: usize, T> Matrix<N, M, T> {
-    pub fn new(values: [[T; M]; N]) -> Self {
-        Self(values)
+impl<const N: usize, const M: usize, T> num::Zero for Matrix<N, M, T>
+where
+    T: num::Zero,
+    T: Copy,
+{
+    fn zero() -> Self {
+        Matrix::new(std::array::from_fn(|_| Vector::zero()))
     }
 
-    pub fn zero() -> Self
+    fn is_zero(&self) -> bool {
+        self.iter_rows().all(|row| row.is_zero())
+    }
+}
+
+impl<const N: usize, const M: usize, T> Matrix<N, M, T> {
+    pub fn new<Row>(rows: [Row; N]) -> Self
     where
-        T: num::Zero,
+        Row: Into<Vector<M, T>>,
     {
-        Self([(); N].map(|_| [(); M].map(|_| T::zero())))
+        Self(rows.map(|row| row.into()))
+    }
+
+    pub fn transpose(self) -> Matrix<M, N, T> {
+        let mut take_from = self.0.map(|row| row.map(|item| Some(item)));
+
+        Matrix::new(std::array::from_fn(|i| {
+            std::array::from_fn(|j| {
+                take_from[j][i].take().expect(
+                    "Internal error, \
+                     transpose should only take \
+                     each element once.",
+                )
+            })
+        }))
+    }
+
+    pub fn iter_rows(&self) -> impl Iterator<Item = &Vector<M, T>> + '_ {
+        self.0.iter()
+    }
+
+    pub fn swap_rows(&mut self, a: usize, b: usize) {
+        self.0.swap(a, b)
     }
 
     pub fn iter_flat(&self) -> impl Iterator<Item = &T> + '_ {
@@ -426,51 +534,81 @@ impl<const N: usize, const M: usize, T> Matrix<N, M, T> {
     pub fn iter_flat_mut(&mut self) -> impl Iterator<Item = &mut T> + '_ {
         self.0.iter_mut().flat_map(|row| row.iter_mut())
     }
+
+    pub fn display(&self) -> DisplayHelper<'_, Self> {
+        DisplayHelper {
+            item: self,
+            line_prefix: None,
+            prefix_first_line: false,
+        }
+    }
 }
 
-impl<const N: usize> Matrix<N, N> {
-    pub fn identity() -> Self {
-        let mut values = [[0; N]; N];
-
-        values.iter_mut().enumerate().for_each(|(i, row)| {
-            row.iter_mut()
-                .enumerate()
-                .filter(move |(j, _)| &i == j)
-                .for_each(|(_, val)| {
-                    *val = 1;
-                })
-        });
-
-        Self(values)
+impl<'a, T> DisplayHelper<'a, T> {
+    pub fn line_prefix<'b>(self, line_prefix: &'b str) -> DisplayHelper<'b, T>
+    where
+        'a: 'b,
+    {
+        DisplayHelper {
+            line_prefix: Some(line_prefix),
+            ..self
+        }
     }
 
-    pub fn pow(&self, power: usize) -> Self {
+    pub fn prefix_first_line(self, prefix_first_line: bool) -> Self {
+        Self {
+            prefix_first_line,
+            ..self
+        }
+    }
+}
+
+impl<const N: usize, T> Matrix<N, N, T> {
+    pub fn identity() -> Self
+    where
+        T: num::Zero + num::One,
+    {
+        Matrix::new(std::array::from_fn(|i| {
+            std::array::from_fn(|j| if i == j { T::one() } else { T::zero() })
+        }))
+    }
+
+    pub fn pow(&self, power: usize) -> Self
+    where
+        T: Copy,
+        T: num::Zero + num::One,
+        T: ops::Mul<Output = T>,
+        T: std::iter::Sum,
+    {
         (0..power).fold(Self::identity(), |cum_prod, _i| *self * cum_prod)
     }
 }
 
-impl Matrix<2, 2> {
+impl<T> Matrix<2, 2, T> {
     // 90 degree rotation about the origin, positive angle
     // (counter-clockwise).
-    pub fn rotate() -> Self {
-        Self([[0, -1], [1, 0]])
+    pub fn rotate() -> Self
+    where
+        T: num::Zero + num::One + num::Signed,
+    {
+        Self::new([[T::zero(), T::zero() - T::one()], [T::one(), T::zero()]])
     }
 }
 
 impl Matrix<3, 3> {
     // 90 degree rotation about the x axis.
     pub fn rotate_x() -> Self {
-        Self([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+        Self::new([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
     }
 
     // 90 degree rotation about the y axis.
     pub fn rotate_y() -> Self {
-        Self([[0, 0, -1], [0, 1, 0], [1, 0, 0]])
+        Self::new([[0, 0, -1], [0, 1, 0], [1, 0, 0]])
     }
 
     // 90 degree rotation about the z axis.
     pub fn rotate_z() -> Self {
-        Self([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+        Self::new([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
     }
 
     pub fn iter_90degrees() -> impl Iterator<Item = Self> {

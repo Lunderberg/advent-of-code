@@ -1,6 +1,6 @@
 use std::fmt::Display;
 use std::iter::Sum;
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use num::integer::gcd as find_gcd;
 
@@ -8,6 +8,41 @@ use num::integer::gcd as find_gcd;
 pub struct Fraction<T = i64> {
     pub num: T,
     pub denom: T,
+}
+
+impl<T> Fraction<T> {
+    pub fn normalize(self) -> Self
+    where
+        T: Copy,
+        T: num::Integer,
+        T: num::Zero,
+        T: PartialOrd,
+        T: Sub<Output = T>,
+        T: Div<Output = T>,
+    {
+        let Self { num, denom } = self;
+
+        let (num, denom) = if denom < T::zero() {
+            (T::zero() - num, T::zero() - denom)
+        } else {
+            (num, denom)
+        };
+        let gcd = find_gcd(num, denom);
+        let (num, denom) = (num / gcd, denom / gcd);
+
+        Self { num, denom }
+    }
+
+    pub fn round_nearest(self) -> T
+    where
+        T: num::traits::Euclid,
+        T: num::traits::FromPrimitive,
+        T: std::ops::Add<Output = T>,
+        T: Copy,
+    {
+        let Fraction { num, denom } = self;
+        (num + denom / T::from_i8(2).unwrap()).div_euclid(&denom)
+    }
 }
 
 impl<T> From<T> for Fraction<T>
@@ -97,30 +132,6 @@ where
     }
 }
 
-impl<T> Fraction<T> {
-    pub fn normalize(self) -> Self
-    where
-        T: Copy,
-        T: num::Integer,
-        T: num::Zero,
-        T: PartialOrd,
-        T: Sub<Output = T>,
-        T: Div<Output = T>,
-    {
-        let Self { num, denom } = self;
-
-        let (num, denom) = if denom < T::zero() {
-            (T::zero() - num, T::zero() - denom)
-        } else {
-            (num, denom)
-        };
-        let gcd = find_gcd(num, denom);
-        let (num, denom) = (num / gcd, denom / gcd);
-
-        Self { num, denom }
-    }
-}
-
 impl<T> PartialEq<T> for Fraction<T>
 where
     T: Mul<Output = T>,
@@ -165,6 +176,21 @@ where
         let num = self.num * (rhs.denom / gcd) - rhs.num * (self.denom / gcd);
         let denom = self.denom * rhs.denom;
         Self { num, denom }
+    }
+}
+
+impl<T> Neg for Fraction<T>
+where
+    T: Neg<Output = T>,
+    T: Clone,
+{
+    type Output = Fraction<T>;
+
+    fn neg(self) -> Self::Output {
+        Self {
+            num: -self.num,
+            denom: self.denom,
+        }
     }
 }
 
