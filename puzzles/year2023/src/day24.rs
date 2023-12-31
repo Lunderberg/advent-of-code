@@ -1,6 +1,9 @@
+#![allow(dead_code)]
+
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use aoc_utils::prelude::*;
+use num::integer::gcd as find_gcd;
 
 pub struct Storm {
     hail: Vec<Hail>,
@@ -70,101 +73,112 @@ where
     }
 }
 
-trait MatrixExt {
-    fn row_echelon_form(&self) -> Self;
-
-    // TODO: Remove this function after `generic_const_exprs` can be
-    // used.  Would be cleaner to implement in terms of an
-    // `augment_column` function with signature below.
-    //
-    // fn augment_column(self, col: Vector<M,T>) -> Matrix<{N+1},M,T>;
-    //
-    // However, this would require const expressions for the return
-    // type.
-    type Column;
-    fn row_echelon_form_with_augment(
-        self,
-        augment: Self::Column,
-    ) -> (Self, Self::Column)
-    where
-        Self: Sized;
-
-    type Rhs;
-    type Solution;
-    fn solve_system(&self, rhs: Self::Rhs) -> Self::Solution;
+struct AffineLinearSpace<const N: usize, T> {
+    offset: Vector<N, T>,
+    basis_states: Vec<Vector<N, T>>,
 }
-impl<const M: usize, const N: usize, T> MatrixExt for Matrix<M, N, T>
+
+#[derive(Clone)]
+struct AugmentedMatrix<const ROWS: usize, const COLS: usize, T> {
+    matrix: Matrix<ROWS, COLS, T>,
+    augment: Vector<ROWS, T>,
+}
+
+impl<const ROWS: usize, const COLS: usize, T> std::fmt::Display
+    for AugmentedMatrix<ROWS, COLS, T>
 where
-    T: Copy,
-    T: num::Integer,
-    T: num::Signed,
     T: Display,
 {
-    fn row_echelon_form(&self) -> Self {
-        todo!()
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let col_widths: [usize; COLS] = std::array::from_fn(|i| {
+            (0..ROWS)
+                .map(|j| format!("{}", self.matrix[(j, i)]).len())
+                .max()
+                .unwrap_or(0)
+        });
+        let aug_width = (0..ROWS)
+            .map(|j| format!("{}", self.augment[j]).len())
+            .max()
+            .unwrap_or(0);
+        let total_width =
+            col_widths.iter().map(|w| w + 2).sum::<usize>() + aug_width + 3;
+
+        writeln!(f, "┌{:width$}┐", "", width = total_width)?;
+        (0..ROWS).try_for_each(|j| {
+            write!(f, "|")?;
+            self.matrix[j]
+                .iter()
+                .zip(col_widths.iter())
+                .try_for_each(|(item, width)| write!(f, " {item:width$} "))?;
+            writeln!(f, "| {:aug_width$} |", self.augment[j])
+        })?;
+        writeln!(f, "└{:width$}┘", "", width = total_width)?;
+        Ok(())
+    }
+}
+
+impl<const ROWS: usize, const COLS: usize, T> AugmentedMatrix<ROWS, COLS, T> {
+    fn normalize_equation(&mut self, i: usize)
+    where
+        T: Copy,
+        T: num::Integer,
+        T: num::Signed,
+        T: Display,
+    {
+        // Not technically required here, but canceling out
+        // unnecessary factors in each row avoids some integer
+        // overflow cases.
+        if let Some(gcd) = self.matrix[i]
+            .iter()
+            .chain(std::iter::once(&self.augment[i]))
+            .cloned()
+            .reduce(find_gcd)
+        {
+            let leading_sign = self.matrix[i]
+                .iter()
+                .find(|val| !val.is_zero())
+                .map(|val| val.signum())
+                .unwrap_or(T::one());
+            let gcd = gcd * leading_sign;
+
+            if !gcd.is_zero() {
+                // println!(
+                //     "Normalizing line {i} ({}), dividing by {gcd}",
+                //     self.matrix[i]
+                // );
+
+                self.matrix[i] = self.matrix[i] / gcd;
+                self.augment[i] = self.augment[i] / gcd;
+            }
+        }
     }
 
-    type Column = Vector<M, T>;
-    fn row_echelon_form_with_augment(
-        mut self,
-        mut augment: Vector<M, T>,
-    ) -> (Self, Self::Column)
+    fn row_echelon_form(mut self) -> Self
     where
-        Self: Sized,
+        T: Copy,
+        T: num::Integer,
+        T: num::Signed,
+        T: Display,
     {
-        use num::integer::gcd as find_gcd;
-
-        let normalize_line = |this: &mut Matrix<M, N, T>,
-                              augment: &mut Vector<M, T>,
-                              i: usize| {
-            // Not technically required here, but canceling out
-            // unnecessary factors in each row avoids some integer
-            // overflow cases.
-            if let Some(gcd) = this[i]
-                .iter()
-                .chain(std::iter::once(&augment[i]))
-                .cloned()
-                .reduce(find_gcd)
-            {
-                let leading_sign = this[i]
-                    .iter()
-                    .find(|val| !val.is_zero())
-                    .map(|val| val.signum())
-                    .unwrap_or(T::one());
-                let gcd = gcd * leading_sign;
-
-                if !gcd.is_zero() {
-                    // println!(
-                    //     "Normalizing line {i} ({}), dividing by {gcd}",
-                    //     this[i]
-                    // );
-
-                    this[i] = this[i] / gcd;
-                    augment[i] = augment[i] / gcd;
-                }
-            }
-        };
-
-        for i in 0..M {
-            normalize_line(&mut self, &mut augment, i);
+        // println!("Before normalization:\n{}", self);
+        for row in 0..ROWS {
+            self.normalize_equation(row);
         }
 
-        for i in 0..M {
-            // println!(
-            //     "Before line {i}: {}",
-            //     self.display().line_prefix("               ")
-            // );
-            // println!("Before line {i}: {augment}");
+        let mut row = 0;
+
+        for column in 0..COLS {
+            // println!("Before column {column}:\n{}", self);
             if let Some(nonzero_row_i) =
-                (i..M).find(|&j| !T::is_zero(&self[j][i]))
+                (row..ROWS).find(|&j| !self.matrix[j][column].is_zero())
             {
-                if i != nonzero_row_i {
+                if row != nonzero_row_i {
                     // println!(
-                    //     "Swapping lines {i} and {nonzero_row_i} ({} and {})",
-                    //     self[i], self[nonzero_row_i]
+                    //     "Swapping lines {row} and {nonzero_row_i} ({} and {})",
+                    //     self.matrix[row], self.matrix[nonzero_row_i]
                     // );
-                    self.swap_rows(i, nonzero_row_i);
-                    augment.swap(i, nonzero_row_i);
+                    self.matrix.swap_rows(row, nonzero_row_i);
+                    self.augment.swap(row, nonzero_row_i);
                 }
 
                 // This loop could be reduced to only cover (i+1..M)
@@ -174,75 +188,70 @@ where
                 // is to scale each row to have a leading value of
                 // one.  This isn't done by default, as it would also
                 // require changing the type from T to Fraction<T>.
-                for j in 0..M {
-                    if i != j && !self[j][i].is_zero() {
-                        let a = self[i][i];
-                        let b = self[j][i];
+                for j in 0..ROWS {
+                    if row != j && !self.matrix[j][column].is_zero() {
+                        let a = self.matrix[row][column];
+                        let b = self.matrix[j][column];
                         let gcd = find_gcd(a, b);
 
-                        // println!("Updating line {j} based on line {i}");
-                        // println!("\tScaling line {j} by {},", a / gcd);
-                        // println!("\tthen scaling line {i} by {}", b / gcd);
+                        // println!("Updating row {j} based on row {row}");
+                        // println!("\tScaling row {j} by {},", a / gcd);
+                        // println!("\tthen scaling row {row} by {}", b / gcd);
                         // println!(
                         //     "\tsubtracting {} from {}",
-                        //     self[i] * (b / gcd),
-                        //     self[j] * (a / gcd)
+                        //     self.matrix[row] * (b / gcd),
+                        //     self.matrix[j] * (a / gcd)
                         // );
                         // println!(
                         //     "\tresults in {}",
-                        //     self[j] * (a / gcd) - self[i] * (b / gcd)
+                        //     self.matrix[j] * (a / gcd)
+                        //         - self.matrix[row] * (b / gcd)
                         // );
 
-                        self[j] = self[j] * (a / gcd) - self[i] * (b / gcd);
+                        self.matrix[j] = self.matrix[j] * (a / gcd)
+                            - self.matrix[row] * (b / gcd);
 
-                        augment[j] =
-                            augment[j] * (a / gcd) - augment[i] * (b / gcd);
-                        normalize_line(&mut self, &mut augment, j);
+                        self.augment[j] = self.augment[j] * (a / gcd)
+                            - self.augment[row] * (b / gcd);
+                        // println!(
+                        //     "After canceliing out {row} from {j}:\n{}",
+                        //     self
+                        // );
+                        self.normalize_equation(j);
+
+                        // println!("After re-normalizing {j}:\n{}", self);
                     }
                 }
+                row += 1;
             }
-            // println!(
-            //     "After line {i}: {}",
-            //     self.display().line_prefix("              ")
-            // );
-            // println!("After line {i}: {augment}");
+
+            // println!("After column {column}:\n{}", self);
         }
 
-        (self, augment)
+        self
     }
 
-    type Rhs = Vector<M, T>;
+    fn solve_system(&self) -> Option<AffineLinearSpace<ROWS, Fraction<T>>>
+    where
+        T: Copy,
+        T: num::Integer,
+        T: num::Signed,
+        T: Display,
+    {
+        let echelon_form = self.clone().row_echelon_form();
+        println!("Echelon form:\n{}", echelon_form);
+        let AugmentedMatrix {
+            matrix: echelon_form,
+            augment: solution,
+        } = echelon_form;
 
-    type Solution = Option<Vector<N, Fraction<T>>>;
-
-    /// Solve the system `self*solution == rhs`.
-    ///
-    /// Where `self` has shape `[M,N]`, the solution has shape
-    /// `[N,1]`, and the right-hand side has shape `[M,1]`.
-    fn solve_system(&self, rhs: Self::Rhs) -> Self::Solution {
-        // println!("rhs = {rhs}");
-        let (echelon_form, solution) = self.row_echelon_form_with_augment(rhs);
-
-        // println!("[M,N] = [{M}, {N}]");
-        // println!(
-        //     "Echelon form = {}",
-        //     echelon_form.display().line_prefix("               ")
-        // );
-        // println!("Solution: {solution}");
-
-        let row_of_zeros: [bool; M] = std::array::from_fn(|i| {
-            (0..N).all(|j| T::is_zero(&echelon_form[(i, j)]))
+        let row_of_zeros: [bool; ROWS] = std::array::from_fn(|i| {
+            (0..COLS).all(|j| echelon_form[(i, j)].is_zero())
         });
 
         let rank = row_of_zeros.iter().map(|b| !b as usize).sum::<usize>();
-        assert!(rank <= N);
-        assert!(rank <= M);
-
-        // The rank of the matrix may be insufficient to constrain the
-        // system.  (Maybe I should bail out early if `M < N`?  The
-        // rank cannot exceed `min(M,N)`, so that would skip the row
-        // echelon form step.)
-        let is_fully_constrained = rank == N;
+        assert!(rank <= ROWS);
+        assert!(rank <= COLS);
 
         // If the system of equations is inconsistent, the LHS will
         // contain a fully-canceled row, but the RHS will not cancel
@@ -253,30 +262,106 @@ where
             .filter(|(i, _)| row_of_zeros[*i])
             .all(|(_, t)| T::is_zero(t));
 
-        if is_fully_constrained && is_consistent {
-            // For a solution to exist, the echelon form must have a
-            // diagonal matrix matrix as the top `[N,N]` square,
-            let is_diagonal = echelon_form
-                .iter_flat()
-                .enumerate()
-                .map(|(i, t)| (i.div_euclid(N), i.rem_euclid(M), t))
-                .filter(|(i, j, _)| i != j)
-                .all(|(_, _, t)| T::is_zero(t));
-            assert!(is_diagonal);
-
-            Some(
-                std::array::from_fn(|i| {
-                    Fraction {
-                        num: solution[i],
-                        denom: echelon_form[(i, i)],
-                    }
-                    .normalize()
-                })
-                .into(),
-            )
-        } else {
-            None
+        if !is_consistent {
+            return None;
         }
+
+        // The rank of the matrix may be insufficient to constrain the
+        // system.  (Maybe I should bail out early if `M < N`?  The
+        // rank cannot exceed `min(M,N)`, so that would skip the row
+        // echelon form step.)
+        let _is_fully_constrained = rank == COLS;
+
+        let leading_terms: [Option<usize>; ROWS] = std::array::from_fn(|row| {
+            echelon_form[row]
+                .iter()
+                .enumerate()
+                .find(|(_, element)| !element.is_zero())
+                .map(|(col, _)| col)
+        });
+
+        // The leading non-zero term in each row is used to determine
+        // a point that lies within the solution space.
+        let offset: Vector<ROWS, Fraction<T>> = (0..ROWS)
+            .filter_map(|row| {
+                leading_terms[row].map(|col| {
+                    let value = Fraction {
+                        num: solution[row],
+                        denom: echelon_form[(row, col)],
+                    };
+                    Vector::<ROWS, _>::one_hot(col) * value.normalize()
+                })
+            })
+            .sum();
+
+        // Columns that do not contain a leading non-zero term are
+        // used to determine the basis vectors of the solution space.
+        let basis_states: Vec<Vector<ROWS, Fraction<T>>> = (0..COLS)
+            .filter(|col| !leading_terms.iter().contains(&Some(*col)))
+            .map(|col| {
+                (0..ROWS)
+                    .filter_map(|row| {
+                        leading_terms[row].map(|leading_col| (row, leading_col))
+                    })
+                    .filter(|(_, leading_col)| *leading_col != col)
+                    .map(|(row, leading_col)| {
+                        Vector::<ROWS, _>::one_hot(leading_col)
+                            * Fraction {
+                                num: -echelon_form[(row, leading_col)],
+                                denom: echelon_form[(row, col)],
+                            }
+                    })
+                    .fold(Vector::one_hot(col), |a, b| a + b)
+            })
+            .collect();
+
+        println!("Offset = {offset}");
+        println!("Basis states = [{}]", basis_states.iter().join(",\n\t"));
+
+        // (0..COLS)
+        //     .map(|col| {
+        //         (0..ROWS)
+        //             .map(|row| (row,echelon_form[(row,col)]))
+        //             .filter(|(_,element)| !element.is_zero())
+        //             .map(|(row,element)| {
+        //                 let leading_col = leading_terms[row].unwrap();
+        //                 if col==leading_col {
+        //                     // The non-zero element is the leading
+        //                     // term in its row.  It should be used to
+        //                     // determine a point that lies within the
+        //                     // solution space.
+        //                     let offset = Vector::<COLS, _>::one_hot(col)
+        //                     * Fraction {
+        //                         num: solution[row],
+        //                         denom: element,
+        //                     };
+        //                 } else {
+        //                     // The column does not contain any leading
+        //                     // terms.  It is instead used to
+        //                 }
+        //             })
+        //     });
+
+        // // Any column that does not contain a leading term provides a bas
+
+        // (0..COLS).flat_map(|col| {
+        //     (0..ROWS)
+        //         .map(|row| (row, &echelon_form[(row, col)]))
+        //         .filter(|(_, element)| !element.is_zero())
+        //         .map(|(row, current_element)| {
+        //             (0..col)
+        //                 .map(|lrow| (lrow, &echelon_form[(lrow, col)]))
+        //                 .find(|(_, left_element)| !left_element.is_zero())
+        //                 .map(|(leading_row, leading_element)| {
+        //                     // If there is a previous non-zero element in this row, then the
+        //                 });
+        //         })
+        // });
+
+        Some(AffineLinearSpace {
+            offset,
+            basis_states,
+        })
     }
 }
 
@@ -386,78 +471,82 @@ impl Hail {
         }
     }
 
-    fn at_time(&self, time: i128) -> Vector<3, i128> {
-        self.position + self.velocity * time
-    }
+    // fn at_time(&self, time: i128) -> Vector<3, i128> {
+    //     self.position + self.velocity * time
+    // }
 
     fn newtons_method_jacobian(
         hail: [&Hail; 3],
-        time: [i128; 3],
-    ) -> (Matrix<3, 3, i128>, Vector<3, i128>) {
-        // Starting with the equations requiring the rock to intersect
-        // with three distinct pieces of hail:
+        prev: Vector<9, i128>,
+    ) -> AugmentedMatrix<9, 9, i128> {
+        // p_i + v_i*t_i == p_rock + v_rock*t_i
+        // 0 == f_i == p_i + vi*ti - p_rock - v_rock*ti
         //
-        // p0 + v0*t0 == p_rock + v_rock*t0
-        // p1 + v1*t1 == p_rock + v_rock*t1
-        // p2 + v2*t2 == p_rock + v_rock*t2
+        //  f_i == p_i + vi*ti - p_rock - v_rock*ti
         //
-        // The p_rock and v_rock are the easiest to cancel out,
-        // leaving the equation:
+        // (d/p_rock)f_i = -1
+        // (d/v_rock)f_i = -ti
+        // (d/ti)f_i = vi - v_rock
         //
-        // 0 == (
-        //     + (v1-v2)*t1*t2
-        //     + (v0-v1)*t0*t1
-        //     + (v2-v0)*t0*t2
-        //     + (p2-p1)*t0
-        //     + (p1-p0)*t2
-        //     + (p0-p2)*t1
-        // )
-        //
-        // Since this must hold for all three x/y/z coordinates, this
-        // is three equations with three unknowns, and could be solved
-        // explicitly for t0/t1/t2.  However, solving cubics is a
-        // pain.  Therefore, iteratively approaching the solution with
-        // Newton's method instead.
-        //
-        // df/dt0 = (
-        //     + (v0-v1)*t1
-        //     + (v2-v0)*t2
-        //     + (p2-p1)
-        // )
-        //
-        // df/dt1 = (
-        //     + (v1-v2)*t2
-        //     + (v0-v1)*t0
-        //     + (p0-p2)
-        // )
-        //
-        // df/dt2 = (
-        //     + (v1-v2)*t1
-        //     + (v2-v0)*t0
-        //     + (p1-p0)
-        // )
+        //  f_i.x == p_i.x + vi.x*ti - p_rock.x - v_rock.x*ti
+        //  f_i.x == (p_i.x - p_rock.x) + (vi.x - v_rock.x)*ti
 
-        let dv0 = hail[0].velocity - hail[1].velocity;
-        let dv1 = hail[1].velocity - hail[2].velocity;
-        let dv2 = hail[2].velocity - hail[0].velocity;
-        let dp0 = hail[0].position - hail[2].position;
-        let dp1 = hail[1].position - hail[0].position;
-        let dp2 = hail[2].position - hail[1].position;
+        let p_rock = Vector::new([prev[0], prev[1], prev[2]]);
+        let v_rock = Vector::new([prev[3], prev[4], prev[5]]);
+        let t = [prev[6], prev[7], prev[8]];
 
-        let function_value = dv1 * time[1] * time[2]
-            + dv0 * time[0] * time[1]
-            + dv2 * time[0] * time[2]
-            + dp2 * time[0]
-            + dp1 * time[2]
-            + dp0 * time[1];
+        let dp = hail.map(|stone| stone.position - p_rock);
+        let dv = hail.map(|stone| stone.velocity - v_rock);
 
-        let df_dt0 = dv0 * time[1] + dv2 * time[2] + dp2;
-        let df_dt1 = dv1 * time[2] + dv0 * time[0] + dp0;
-        let df_dt2 = dv1 * time[1] + dv2 * time[0] + dp1;
+        // let function_value: Vector<9, i128> = hail
+        //     .iter()
+        //     .zip(t.iter().cloned())
+        //     .map(|(hail, ti)| {
+        //         (hail.position - p_rock) + (hail.velocity - v_rock) * ti
+        //     })
+        //     .flat_map(|p| p.into_iter())
+        //     .collect::<Vec<_>>()
+        //     .try_into()
+        //     .unwrap();
 
-        let jacobian = Matrix::new([df_dt0, df_dt1, df_dt2]).transpose();
+        let function_value: Vector<9, i128> = [
+            dp[0].x() + dv[0].x() * t[0],
+            dp[0].y() + dv[0].y() * t[0],
+            dp[0].z() + dv[0].z() * t[0],
+            dp[1].x() + dv[0].x() * t[1],
+            dp[1].y() + dv[0].y() * t[1],
+            dp[1].z() + dv[0].z() * t[1],
+            dp[2].x() + dv[0].x() * t[2],
+            dp[2].y() + dv[0].y() * t[2],
+            dp[2].z() + dv[0].z() * t[2],
+        ]
+        .into();
 
-        (jacobian, function_value)
+        let jacobian = Matrix::new([
+            // f_0.x
+            [-1, 0, 0, -t[0], 0, 0, dv[0].x(), 0, 0],
+            // f_0.y
+            [0, -1, 0, 0, -t[0], 0, 0, dv[0].y(), 0],
+            // f_0.z
+            [0, 0, -1, 0, 0, -t[0], 0, 0, dv[0].z()],
+            // f_1.x
+            [-1, 0, 0, -t[1], 0, 0, dv[1].x(), 0, 0],
+            // f_1.y
+            [0, -1, 0, 0, -t[1], 0, 0, dv[1].y(), 0],
+            // f_1.z
+            [0, 0, -1, 0, 0, -t[1], 0, 0, dv[1].z()],
+            // f_2.x
+            [-1, 0, 0, -t[2], 0, 0, dv[2].x(), 0, 0],
+            // f_2.y
+            [0, -1, 0, 0, -t[2], 0, 0, dv[2].y(), 0],
+            // f_2.z
+            [0, 0, -1, 0, 0, -t[2], 0, 0, dv[2].z()],
+        ]);
+
+        AugmentedMatrix {
+            matrix: jacobian,
+            augment: -function_value,
+        }
     }
 
     fn find_rock_position(hail: [&Hail; 3]) -> Hail {
@@ -466,72 +555,117 @@ impl Hail {
         println!("\t{}", hail[1]);
         println!("\t{}", hail[2]);
 
-        let initial_guess: [i128; 3] = [0, 1, 2];
-        // let initial_guess: [i128; 3] = [5, 3, 4];
+        //let initial_guess: Vector<9, i128> = [0; 9].into();
+        let initial_guess: Vector<9, i128> = [0, 0, 0, 1, 1, 1, 1, 2, 3].into();
+        // let initial_guess: Vector<9, i128> = [
+        //     24, 13, 10, // p_rock
+        //     -3, 1, 2, // v_rock
+        //     5, 3, 4, // t0/t1/t2
+        // ]
+        // .into();
 
         println!(
-            "Starting at (t0,t1,t2) = ({}, {}, {})",
-            initial_guess[0], initial_guess[1], initial_guess[2]
+            "Starting at p_rock = {}, \
+             v_rock = {}, \
+             (t0,t1,t2) = {}",
+            Vector::new([initial_guess[0], initial_guess[1], initial_guess[2]]),
+            Vector::new([initial_guess[3], initial_guess[4], initial_guess[5]]),
+            Vector::new([initial_guess[6], initial_guess[7], initial_guess[8]]),
         );
 
-        let collision_times =
-            std::iter::successors(Some(initial_guess), |prev_time| {
-                println!(
-                    "Improving guess from (t0,t1,t2) = ({}, {}, {})",
-                    prev_time[0], prev_time[1], prev_time[2]
-                );
-                let (jacobian, function_value) =
-                    Self::newtons_method_jacobian(hail, *prev_time);
+        let solution = std::iter::successors(Some(initial_guess), |prev| {
+            println!(
+                "Improving guess from \
+                     p_rock = {}, \
+                     v_rock = {}, \
+                     (t0,t1,t2) = {}",
+                Vector::new([prev[0], prev[1], prev[2]]),
+                Vector::new([prev[3], prev[4], prev[5]]),
+                Vector::new([prev[6], prev[7], prev[8]]),
+            );
+            let jacobian = Self::newtons_method_jacobian(hail, *prev);
 
-                println!("\tf(t0,t1,t2) = {function_value}");
+            println!("Jacobian:\n{}", jacobian);
+
+            let converged = jacobian.augment.iter().all(|value| *value == 0);
+            if converged {
+                println!("\tFound zero-point, converged");
+                None
+            } else {
+                let solution =
+                    jacobian.solve_system().expect("Could not solve Jacobian");
+                let delta = solution.offset;
                 println!(
-                    "\tJ(f) = {}",
-                    jacobian.display().line_prefix("\t       ")
+                    "\tUpdating by delta,  \
+                         p_rock = {}, \
+                         v_rock = {}, \
+                         (t0,t1,t2) = {}",
+                    Vector::new([delta[0], delta[1], delta[2]]),
+                    Vector::new([delta[3], delta[4], delta[5]]),
+                    Vector::new([delta[6], delta[7], delta[8]]),
                 );
 
-                let converged = function_value.iter().all(|value| *value == 0);
-                if converged {
-                    println!("\tFound zero-point, converged");
-                    None
-                } else {
-                    //let delta = jacobian * Vector::new([1; 3]);
-                    let delta = jacobian
-                        .solve_system(-function_value)
-                        .expect("Could not solve Jacobian");
-                    println!("\tUpdating by delta = {delta}");
-                    let delta = delta.map(|fraction| fraction.round_nearest());
-                    println!("\tUpdating by delta = {delta}");
-                    let new_time = [
-                        prev_time[0] + delta[0],
-                        prev_time[1] + delta[1],
-                        prev_time[2] + delta[2],
-                    ];
-                    println!(
-                        "\tNext guess = ({}, {}, {})",
-                        new_time[0], new_time[1], new_time[2]
-                    );
-                    Some(new_time)
+                let delta = delta.map(|fraction| fraction.round_nearest());
+                println!(
+                    "\tUpdating by delta,  \
+                         p_rock = {}, \
+                         v_rock = {}, \
+                         (t0,t1,t2) = {}",
+                    Vector::new([delta[0], delta[1], delta[2]]),
+                    Vector::new([delta[3], delta[4], delta[5]]),
+                    Vector::new([delta[6], delta[7], delta[8]]),
+                );
+
+                let mut next = *prev + delta;
+
+                println!(
+                    "\tNext values,  \
+                         p_rock = {}, \
+                         v_rock = {}, \
+                         (t0,t1,t2) = {}",
+                    Vector::new([next[0], next[1], next[2]]),
+                    Vector::new([next[3], next[4], next[5]]),
+                    Vector::new([next[6], next[7], next[8]]),
+                );
+
+                for ti in 6..9 {
+                    if next[ti] < 1 {
+                        next[ti] = 1;
+                    }
                 }
-            })
-            .last()
-            .unwrap();
+                for ta in 6..9 {
+                    if (6..9)
+                        .filter(|&tb| ta != tb)
+                        .any(|tb| next[ta] == next[tb])
+                    {
+                        next[ta] = (next[ta]..)
+                            .find(|&t| {
+                                (6..9)
+                                    .filter(|&tb| ta != tb)
+                                    .all(|tb| t != next[tb])
+                            })
+                            .unwrap();
+                    }
+                }
 
-        let p_collision_0 = hail[0].at_time(collision_times[0]);
-        let p_collision_1 = hail[1].at_time(collision_times[1]);
-        let dt = collision_times[1] - collision_times[0];
+                println!(
+                    "\tRestricting to valid values for t,  \
+                         p_rock = {}, \
+                         v_rock = {}, \
+                         (t0,t1,t2) = {}",
+                    Vector::new([next[0], next[1], next[2]]),
+                    Vector::new([next[3], next[4], next[5]]),
+                    Vector::new([next[6], next[7], next[8]]),
+                );
 
-        println!(
-            "p_collision_0 = {p_collision_0} at t = {}",
-            collision_times[0]
-        );
-        println!(
-            "p_collision_1 = {p_collision_1} at t = {}",
-            collision_times[1]
-        );
-        println!("dt = {dt}");
+                Some(next)
+            }
+        })
+        .last()
+        .unwrap();
 
-        let v_rock = (p_collision_1 - p_collision_0) / dt;
-        let p_rock = p_collision_0 - v_rock * collision_times[0];
+        let p_rock = [solution[0], solution[1], solution[2]].into();
+        let v_rock = [solution[3], solution[4], solution[5]].into();
 
         println!("v_rock = {v_rock}");
         println!("p_rock = {p_rock}");
