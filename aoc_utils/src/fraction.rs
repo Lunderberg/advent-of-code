@@ -15,20 +15,23 @@ impl<T> Fraction<T> {
     where
         T: Copy,
         T: num::Integer,
-        T: num::Zero,
-        T: PartialOrd,
-        T: Sub<Output = T>,
-        T: Div<Output = T>,
     {
-        let Self { num, denom } = self;
+        let Self { mut num, mut denom } = self;
 
-        let (num, denom) = if denom < T::zero() {
-            (T::zero() - num, T::zero() - denom)
-        } else {
-            (num, denom)
+        if num.is_zero() {
+            denom = T::one();
+        }
+
+        if denom < T::zero() {
+            num = T::zero() - num;
+            denom = T::zero() - denom;
         };
+
         let gcd = find_gcd(num, denom);
-        let (num, denom) = (num / gcd, denom / gcd);
+        if !gcd.is_one() {
+            num = num / gcd;
+            denom = denom / gcd;
+        }
 
         Self { num, denom }
     }
@@ -147,17 +150,14 @@ impl<T> Add for Fraction<T>
 where
     T: num::Integer,
     T: Copy,
-    T: Add<Output = T>,
-    T: Mul<Output = T>,
-    T: Div<Output = T>,
 {
     type Output = Fraction<T>;
 
     fn add(self, rhs: Self) -> Self::Output {
         let gcd: T = find_gcd(self.denom, rhs.denom);
         let num = self.num * (rhs.denom / gcd) + rhs.num * (self.denom / gcd);
-        let denom = self.denom * rhs.denom;
-        Self { num, denom }
+        let denom = self.denom * (rhs.denom / gcd);
+        Self { num, denom }.normalize()
     }
 }
 
@@ -165,9 +165,6 @@ impl<T> Sub for Fraction<T>
 where
     T: num::Integer,
     T: Copy,
-    T: Sub<Output = T>,
-    T: Mul<Output = T>,
-    T: Div<Output = T>,
 {
     type Output = Fraction<T>;
 
@@ -175,7 +172,7 @@ where
         let gcd: T = find_gcd(self.denom, rhs.denom);
         let num = self.num * (rhs.denom / gcd) - rhs.num * (self.denom / gcd);
         let denom = self.denom * rhs.denom;
-        Self { num, denom }
+        Self { num, denom }.normalize()
     }
 }
 
@@ -196,27 +193,29 @@ where
 
 impl<T> Div for Fraction<T>
 where
-    T: Mul<Output = T>,
+    T: Copy,
+    T: num::Integer,
 {
     type Output = Fraction<T>;
 
     fn div(self, rhs: Self) -> Self::Output {
         let num = self.num * rhs.denom;
         let denom = self.denom * rhs.num;
-        Self { num, denom }
+        Self { num, denom }.normalize()
     }
 }
 
 impl<T> Mul for Fraction<T>
 where
-    T: Mul<Output = T>,
+    T: Copy,
+    T: num::Integer,
 {
     type Output = Fraction<T>;
 
     fn mul(self, rhs: Self) -> Self::Output {
         let num = self.num * rhs.num;
         let denom = self.denom * rhs.denom;
-        Self { num, denom }
+        Self { num, denom }.normalize()
     }
 }
 
@@ -224,8 +223,6 @@ impl<T> Sum for Fraction<T>
 where
     T: num::Integer,
     T: Copy,
-    T: num::Zero + num::One,
-    T: Div<Output = T>,
 {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(
@@ -242,8 +239,6 @@ impl<T> num::Zero for Fraction<T>
 where
     T: num::Integer,
     T: Copy,
-    T: num::Zero + num::One,
-    T: Div<Output = T>,
 {
     fn zero() -> Self {
         Fraction {
@@ -259,7 +254,8 @@ where
 
 impl<T> num::One for Fraction<T>
 where
-    T: num::One,
+    T: num::Integer,
+    T: Copy,
 {
     fn one() -> Self {
         Fraction {

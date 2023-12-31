@@ -10,6 +10,8 @@ pub enum Error {
     ExpectedExactlyOne,
     WrongIteratorSize,
 
+    UnexpectedSize(usize),
+
     // Used by puzzle solutions.
     WrongInt(std::num::ParseIntError),
     IoError(std::io::Error),

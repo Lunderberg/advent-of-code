@@ -144,6 +144,17 @@ elementwise_binary_op!(Sub, sub, -);
 elementwise_scalar_op!(Mul, mul, *);
 elementwise_scalar_op!(Div, div, /);
 
+impl<const N: usize, T> std::iter::Sum for Vector<N, T>
+where
+    T: Copy,
+    T: num::Zero,
+    T: ops::Add<Output = T>,
+{
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(num::Zero::zero(), |a, b| a + b)
+    }
+}
+
 impl<const N: usize, T> ops::Index<usize> for Vector<N, T> {
     type Output = T;
     fn index(&self, index: usize) -> &Self::Output {
@@ -287,12 +298,7 @@ where
     T: Copy,
 {
     fn zero() -> Self {
-        // Would be more succint to write as `[T::zero(), N]`, but
-        // that would require `T: Copy`.  Since `T` is usually a
-        // primitive, the likelihood of finding a `T` that implements
-        // `num::Zero` but doesn't implement `Copy` seems pretty low,
-        // but might as well avoid requiring it.
-        std::array::from_fn(|_| T::zero()).into()
+        [T::zero(); N].into()
     }
 
     fn is_zero(&self) -> bool {
@@ -310,6 +316,14 @@ impl<const N: usize, T> Vector<N, T> {
         T: num::Zero,
     {
         Self([(); N].map(|_| T::zero()))
+    }
+
+    pub fn one_hot(i: usize) -> Self
+    where
+        T: num::Zero + num::One,
+    {
+        std::array::from_fn(|j| if i == j { T::one() } else { T::zero() })
+            .into()
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &T> + '_ {
@@ -457,6 +471,17 @@ impl<T> Vector<3, T> {
 impl<const N: usize, T> From<[T; N]> for Vector<N, T> {
     fn from(values: [T; N]) -> Self {
         Self::new(values)
+    }
+}
+
+impl<const N: usize, T> TryFrom<Vec<T>> for Vector<N, T> {
+    type Error = Error;
+
+    fn try_from(value: Vec<T>) -> Result<Self, Self::Error> {
+        value
+            .try_into()
+            .map(|arr| Self(arr))
+            .map_err(|vec| Error::UnexpectedSize(vec.len()))
     }
 }
 
