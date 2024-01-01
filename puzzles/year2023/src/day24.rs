@@ -916,23 +916,58 @@ impl Puzzle for ThisDay {
     fn part_2(
         storm: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
-        // let best_rock = Hail {
-        //     position: [24, 13, 10].into(),
-        //     velocity: [-3, 1, 2].into(),
-        // };
+        let v_rock: Vector<3, i128> = std::array::from_fn(|dim| {
+            let constraints: Vec<_> = storm
+                .hail
+                .iter()
+                .map(|hailstone| {
+                    (hailstone.velocity[dim], hailstone.position[dim])
+                })
+                .sorted_by_key(|(_, p)| *p)
+                .into_group_map()
+                .into_iter()
+                .filter(|(_, positions)| positions.len() > 1)
+                .sorted_by_key(|(v, _)| *v)
+                .filter(|(_, p)| p.len() > 1)
+                .flat_map(|(velocity, positions)| {
+                    let first = positions[0];
+                    positions
+                        .into_iter()
+                        .skip(1)
+                        .map(move |position| (position - first, velocity))
+                })
+                .collect();
 
-        // let best_rock = Hail::find_rock_position(&storm.hail[..3]);
-        let best_rock = Hail::find_rock_position(&storm.hail);
+            println!("Constraints: {constraints:#?}");
 
-        let best_rock_collisions = storm
-            .hail
-            .iter()
-            .filter(|other| best_rock.intersection_time(other).is_some())
-            .count();
+            (1..)
+                // .take(10000000)
+                .flat_map(|i| [i, -i])
+                .filter(|v_rock| {
+                    constraints.iter().all(|(dp, velocity)| {
+                        v_rock != velocity && dp % (v_rock - velocity) == 0
+                    })
+                })
+                // .exactly_one()
+                .next()
+                .unwrap()
+        })
+        .into();
+        println!("v_rock = {v_rock}");
 
-        println!("Best rock: {best_rock:?}");
-        println!("Num collisions: {best_rock_collisions}");
+        Err::<(), _>(Error::NotYetImplemented)
 
-        Ok(best_rock.position.into_iter().sum::<i128>())
+        // let best_rock = Hail::find_rock_position(&storm.hail);
+
+        // let best_rock_collisions = storm
+        //     .hail
+        //     .iter()
+        //     .filter(|other| best_rock.intersection_time(other).is_some())
+        //     .count();
+
+        // println!("Best rock: {best_rock:?}");
+        // println!("Num collisions: {best_rock_collisions}");
+
+        // Ok(best_rock.position.into_iter().sum::<i128>())
     }
 }
