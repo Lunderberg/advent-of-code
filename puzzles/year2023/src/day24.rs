@@ -232,7 +232,7 @@ impl<const ROWS: usize, const COLS: usize, T> AugmentedMatrix<ROWS, COLS, T> {
         self
     }
 
-    fn solve_system(&self) -> Option<AffineLinearSpace<ROWS, Fraction<T>>>
+    fn solve_system(&self) -> Option<AffineLinearSpace<COLS, Fraction<T>>>
     where
         T: Copy,
         T: num::Integer,
@@ -283,21 +283,21 @@ impl<const ROWS: usize, const COLS: usize, T> AugmentedMatrix<ROWS, COLS, T> {
 
         // The leading non-zero term in each row is used to determine
         // a point that lies within the solution space.
-        let offset: Vector<ROWS, Fraction<T>> = (0..ROWS)
+        let offset: Vector<COLS, Fraction<T>> = (0..ROWS)
             .filter_map(|row| {
                 leading_terms[row].map(|col| {
                     let value = Fraction {
                         num: solution[row],
                         denom: echelon_form[(row, col)],
                     };
-                    Vector::<ROWS, _>::one_hot(col) * value.normalize()
+                    Vector::<COLS, _>::one_hot(col) * value.normalize()
                 })
             })
             .sum();
 
         // Columns that do not contain a leading non-zero term are
         // used to determine the basis vectors of the solution space.
-        let basis_states: Vec<Vector<ROWS, Fraction<T>>> = (0..COLS)
+        let basis_states: Vec<Vector<COLS, Fraction<T>>> = (0..COLS)
             .filter(|col| !leading_terms.iter().contains(&Some(*col)))
             .map(|col| {
                 (0..ROWS)
@@ -306,7 +306,7 @@ impl<const ROWS: usize, const COLS: usize, T> AugmentedMatrix<ROWS, COLS, T> {
                     })
                     .filter(|(_, leading_col)| *leading_col != col)
                     .map(|(row, leading_col)| {
-                        Vector::<ROWS, _>::one_hot(leading_col)
+                        Vector::<COLS, _>::one_hot(leading_col)
                             * Fraction {
                                 num: -echelon_form[(row, leading_col)],
                                 denom: echelon_form[(row, col)],
@@ -713,166 +713,102 @@ impl Hail {
         (min_dist2, gradient_p, gradient_v)
     }
 
-    fn find_rock_position(hail: &[Hail]) -> Hail {
-        // let (initial_p, initial_v): (
-        //     Vector<3, Fraction<i128>>,
-        //     Vector<3, Fraction<i128>>,
-        // ) = hail.iter().fold(
-        //     (Vector::zero(), Vector::zero()),
-        //     |(pos, vel), hailstone| {
-        //         let n = hail.len() as i128;
-        //         (
-        //             pos + hailstone.position.map(|d| Fraction::new(d, n)),
-        //             vel + hailstone.velocity.map(|d| Fraction::new(d, n)),
-        //         )
-        //     },
-        // );
-
-        let (initial_p, initial_v): (
-            Vector<3, Fraction<i128>>,
-            Vector<3, Fraction<i128>>,
-        ) = (
-            [24.into(), 13.into(), 10.into()].into(),
-            [(-3).into(), 1.into(), 2.into()].into(),
-        );
-        // let initial_p = initial_p
-        //     + [Fraction::new(1, 1), Fraction::zero(), Fraction::zero()].into();
-        let temp_offset = 1;
-        let initial_p = initial_p
-            + [
-                Fraction::new(1, temp_offset),
-                Fraction::new(-1, temp_offset),
-                Fraction::new(1, temp_offset),
-            ]
-            .into();
-        let initial_v = initial_v
-            + [
-                Fraction::new(1, temp_offset),
-                Fraction::new(-1, temp_offset),
-                Fraction::new(1, temp_offset),
-            ]
+    fn find_rock_position(hail: &[Hail], v_rock: Vector<3, i128>) -> Hail {
+        let initial_p: Vector<3, Fraction<i128>> =
+            std::array::from_fn(|dim| -> Fraction<i128> {
+                if v_rock[dim] < -100 {
+                    hail.iter()
+                        .map(|hailstone| hailstone.position[dim])
+                        .max()
+                        .unwrap()
+                        .into()
+                } else if v_rock[dim] > 100 {
+                    hail.iter()
+                        .map(|hailstone| hailstone.position[dim])
+                        .min()
+                        .unwrap()
+                        .into()
+                } else {
+                    hail.iter()
+                        .map(|hailstone| hailstone.position[dim])
+                        .map(|value| Fraction::new(value, hail.len() as i128))
+                        .sum()
+                }
+            })
             .into();
 
-        println!("Starting at p_rock = {initial_p}, v_rock = {initial_v}");
+        println!("Starting at p_rock = {initial_p}, v_rock = {v_rock}");
 
         let initial_p = initial_p.map(|d| d.round_nearest());
-        let initial_v = initial_v.map(|d| d.round_nearest());
 
-        let (final_p, final_v) = std::iter::successors(
-            Some((initial_p, initial_v)),
-            |&(p_rock, v_rock)| {
-                println!(
-                    "Improving guess from \
+        let final_p = std::iter::successors(Some(initial_p), |&p_rock| {
+            println!(
+                "Improving guess from \
                           p_rock = {p_rock}, \
                           v_rock = {v_rock}"
-                );
-                // println!(
-                //     "Improving guess from \
-                //           p_rock = {:.2}, \
-                //           v_rock = {:.2}",
-                //     p_rock.map(|f| (f.num as f64) / (f.denom as f64)),
-                //     v_rock.map(|f| (f.num as f64) / (f.denom as f64)),
-                // );
+            );
+            let (min_dist2, gradient_p) = hail
+                .iter()
+                .map(|hailstone| {
+                    let p_rock = p_rock.map(|d| Fraction::new(d, 1));
+                    let v_rock = v_rock.map(|d| Fraction::new(d, 1));
+                    hailstone.min_dist2_with_gradient(p_rock, v_rock)
+                })
+                .map(|(d, p, _)| (d, p))
+                .reduce(|(da, pa), (db, pb)| {
+                    (
+                        (da + db).round_to_denom(65536),
+                        (pa + pb).map(|d| d.round_to_denom(65536)),
+                    )
+                })
+                .unwrap();
 
-                let (min_dist2, gradient_p, gradient_v) = hail
-                    .iter()
-                    .map(|hailstone| {
-                        let p_rock = p_rock.map(|d| Fraction::new(d, 1));
-                        let v_rock = v_rock.map(|d| Fraction::new(d, 1));
-                        hailstone.min_dist2_with_gradient(p_rock, v_rock)
-                    })
-                    .reduce(|(da, pa, va), (db, pb, vb)| {
-                        (
-                            (da + db).round_to_denom(65536),
-                            (pa + pb).map(|d| d.round_to_denom(65536)),
-                            (va + vb).map(|d| d.round_to_denom(65536)),
-                        )
-                    })
-                    .unwrap();
+            // println!("\tSum(dist^2) = {min_dist2}");
+            // println!("\tGradient = {gradient_p}");
+            let min_dist2 = min_dist2.round_to_denom(128);
+            let gradient_p = gradient_p.map(|d| d.round_to_denom(128));
+            // println!("\tRounded Sum(dist^2) = {min_dist2}");
+            // println!("\tRounded Gradient = {gradient_p}");
 
-                println!("\tSum(dist^2) = {min_dist2}");
-                println!("\tGradient = {gradient_p}, {gradient_v}");
-                let min_dist2 = min_dist2.round_to_denom(128);
-                let gradient_p = gradient_p.map(|d| d.round_to_denom(128));
-                let gradient_v = gradient_v.map(|d| d.round_to_denom(128));
-                println!("\tRounded Sum(dist^2) = {min_dist2}");
-                println!("\tRounded Gradient = {gradient_p}, {gradient_v}");
+            let gradient2 = gradient_p.mag2().round_to_denom(128);
 
-                let gradient2 =
-                    (gradient_p.mag2() + gradient_v.mag2()).round_to_denom(128);
+            if min_dist2.is_zero() || gradient2.is_zero() {
+                None
+            } else {
+                // println!("\tGradient^2 = {gradient2}");
+                let lambda = min_dist2 / gradient2;
+                //let lambda = lambda / 10;
 
-                if min_dist2.is_zero() || gradient2.is_zero() {
-                    None
-                } else {
-                    println!("\tGradient^2 = {gradient2}");
-                    let lambda = min_dist2 / gradient2;
-                    let lambda = lambda / 10;
-                    println!("\tUsing lambda = {lambda}");
-                    println!("\tdelta p = {}", gradient_p * lambda);
-                    println!("\tdelta v = {}", gradient_v * lambda);
+                // println!("\tUsing lambda = {lambda}");
+                // println!("\tdelta p = {}", gradient_p * lambda);
 
-                    let mut delta_p =
-                        (gradient_p * lambda).map(|d| d.round_nearest());
-                    let mut delta_v =
-                        (gradient_v * lambda).map(|d| d.round_nearest());
+                let mut delta_p =
+                    (gradient_p * lambda).map(|d| d.round_nearest());
 
-                    if delta_p.is_zero() && delta_v.is_zero() {
-                        (delta_p, delta_v) = gradient_p
-                            .into_iter()
-                            .chain(gradient_v.into_iter())
-                            .enumerate()
-                            .max_by_key(|(_, g)| *g)
-                            .map(|(i, g)| {
-                                let value = g.num.signum() * g.denom.signum();
-                                if i < 3 {
-                                    (
-                                        Vector::<3, _>::one_hot(i) * value,
-                                        Vector::zero(),
-                                    )
-                                } else {
-                                    (
-                                        Vector::zero(),
-                                        Vector::<3, _>::one_hot(i - 3) * value,
-                                    )
-                                }
-                            })
-                            .unwrap();
-                    }
-
-                    let next_p_rock = p_rock - delta_p;
-                    let next_v_rock = v_rock - delta_v;
-
-                    println!(
-                        "\tNext p_rock = {next_p_rock}, \
-                              v_rock = {next_v_rock}"
-                    );
-
-                    // let next_p_rock =
-                    //     next_p_rock.map(|d| d.round_to_denom(128));
-                    // let next_v_rock =
-                    //     next_v_rock.map(|d| d.round_to_denom(128));
-
-                    println!(
-                        "\tRounded, next p_rock = {next_p_rock}, \
-                              v_rock = {next_v_rock}"
-                    );
-
-                    Some((next_p_rock, next_v_rock))
+                if delta_p.is_zero() {
+                    delta_p = gradient_p
+                        .into_iter()
+                        .enumerate()
+                        .max_by_key(|(_, g)| *g)
+                        .map(|(i, g)| {
+                            let value = g.num.signum() * g.denom.signum();
+                            Vector::<3, _>::one_hot(i) * value
+                        })
+                        .unwrap();
                 }
-            },
-        )
+
+                let next_p_rock = p_rock - delta_p;
+
+                // println!("\tNext p_rock = {next_p_rock}");
+
+                Some(next_p_rock)
+            }
+        })
         .last()
         .unwrap();
 
-        println!("v_rock = {final_v}");
-        println!("p_rock = {final_p}");
-
-        // Hail {
-        //     velocity: final_v.map(|d| d.round_nearest()),
-        //     position: final_p.map(|d| d.round_nearest()),
-        // }
         Hail {
-            velocity: final_v,
+            velocity: v_rock,
             position: final_p,
         }
     }
@@ -916,58 +852,118 @@ impl Puzzle for ThisDay {
     fn part_2(
         storm: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
-        let v_rock: Vector<3, i128> = std::array::from_fn(|dim| {
-            let constraints: Vec<_> = storm
-                .hail
-                .iter()
-                .map(|hailstone| {
-                    (hailstone.velocity[dim], hailstone.position[dim])
-                })
-                .sorted_by_key(|(_, p)| *p)
-                .into_group_map()
-                .into_iter()
-                .filter(|(_, positions)| positions.len() > 1)
-                .sorted_by_key(|(v, _)| *v)
-                .filter(|(_, p)| p.len() > 1)
-                .flat_map(|(velocity, positions)| {
-                    let first = positions[0];
-                    positions
-                        .into_iter()
-                        .skip(1)
-                        .map(move |position| (position - first, velocity))
-                })
-                .collect();
+        // p0 + v0*t0 == p_rock + v_rock*t0
+        // p1 + v1*t1 == p_rock + v_rock*t1
 
-            println!("Constraints: {constraints:#?}");
+        // (p1-p0) + v1*t1 - v0*t0 == v_rock*(t1-t0)
 
-            (1..)
-                // .take(10000000)
-                .flat_map(|i| [i, -i])
-                .filter(|v_rock| {
-                    constraints.iter().all(|(dp, velocity)| {
-                        v_rock != velocity && dp % (v_rock - velocity) == 0
+        // if v0==v1
+        // (p1-p0) + v*(t1-t0) == v_rock*(t1-t0)
+
+        // (p1-p0) == (v_rock-v)*(t1-t0)
+
+        // (p1-p0)%(v_rock-v) == 0
+
+        // The example doesn't have enough hailstones to fully
+        // constrain the velocity with this method.
+        let v_rock: Vector<3, i128> = if storm.hail.len() == 5 {
+            Vector::new([-3, 1, 2])
+        } else {
+            std::array::from_fn(|dim| {
+                let constraints: Vec<_> = storm
+                    .hail
+                    .iter()
+                    .map(|hailstone| {
+                        (hailstone.velocity[dim], hailstone.position[dim])
                     })
-                })
-                // .exactly_one()
-                .next()
-                .unwrap()
-        })
-        .into();
+                    .sorted_by_key(|(_, p)| *p)
+                    .into_group_map()
+                    .into_iter()
+                    .filter(|(_, positions)| positions.len() > 1)
+                    .sorted_by_key(|(v, _)| *v)
+                    .filter(|(_, p)| p.len() > 1)
+                    .flat_map(|(velocity, positions)| {
+                        let first = positions[0];
+                        positions
+                            .into_iter()
+                            .skip(1)
+                            .map(move |position| (position - first, velocity))
+                    })
+                    .collect();
+
+                // println!("Constraints: {constraints:#?}");
+
+                (1..)
+                    // .take(10000000)
+                    .flat_map(|i| [i, -i])
+                    .filter(|v_rock| {
+                        constraints.iter().all(|(dp, velocity)| {
+                            v_rock != velocity && dp % (v_rock - velocity) == 0
+                        })
+                    })
+                    // .exactly_one()
+                    .next()
+                    .unwrap()
+            })
+            .into()
+        };
         println!("v_rock = {v_rock}");
 
-        Err::<(), _>(Error::NotYetImplemented)
+        let system: AugmentedMatrix<6, 5, i128> = {
+            let p0 = storm.hail[0].position;
+            let p1 = storm.hail[1].position;
+            let dv0 = v_rock - storm.hail[0].velocity;
+            let dv1 = v_rock - storm.hail[1].velocity;
 
-        // let best_rock = Hail::find_rock_position(&storm.hail);
+            AugmentedMatrix {
+                matrix: Matrix::new([
+                    [1, 0, 0, dv0.x(), 0],
+                    [0, 1, 0, dv0.y(), 0],
+                    [0, 0, 1, dv0.z(), 0],
+                    [1, 0, 0, 0, dv1.x()],
+                    [0, 1, 0, 0, dv1.y()],
+                    [0, 0, 1, 0, dv1.z()],
+                ]),
+                augment: [p0.x(), p0.y(), p0.z(), p1.x(), p1.y(), p1.z()]
+                    .into(),
+            }
+        };
 
-        // let best_rock_collisions = storm
-        //     .hail
-        //     .iter()
-        //     .filter(|other| best_rock.intersection_time(other).is_some())
-        //     .count();
+        println!("System:\n{system}");
+        println!("Echelon Form:\n{}", system.clone().row_echelon_form());
+        let solution = system.solve_system();
+        let p_rock: Vector<3, i128> = solution
+            .expect("No solution for position")
+            .offset
+            .into_iter()
+            .take(3)
+            .map(|f| {
+                assert_eq!(f.num % f.denom, 0);
+                f.num / f.denom
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .expect("Iterator should have 3 items");
 
-        // println!("Best rock: {best_rock:?}");
-        // println!("Num collisions: {best_rock_collisions}");
+        println!("Position: {p_rock}");
 
-        // Ok(best_rock.position.into_iter().sum::<i128>())
+        let best_rock = Hail {
+            position: p_rock,
+            velocity: v_rock,
+        };
+        // let best_rock = Hail::find_rock_position(&storm.hail, v_rock);
+
+        let best_rock_collisions = storm
+            .hail
+            .iter()
+            .filter(|other| best_rock.intersection_time(other).is_some())
+            .count();
+
+        println!("Best rock: {best_rock:?}");
+        println!("Num collisions: {best_rock_collisions}");
+
+        assert_eq!(best_rock_collisions, storm.hail.len());
+
+        Ok(best_rock.position.into_iter().sum::<i128>())
     }
 }
