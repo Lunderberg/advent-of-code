@@ -1,9 +1,10 @@
 #![allow(dead_code)]
 
-use std::{collections::HashMap, fmt::Display, str::FromStr};
+use std::{fmt::Display, str::FromStr};
 
 use aoc_utils::prelude::*;
 use num::integer::gcd as find_gcd;
+use num::Zero;
 
 pub struct Storm {
     hail: Vec<Hail>,
@@ -435,11 +436,11 @@ impl Hail {
         let is_p1_future = (pos - p1)
             .into_iter()
             .zip(v1.into_iter())
-            .all(|(delta, v)| delta * v.into() >= 0.into());
+            .all(|(delta, v)| delta * v >= 0.into());
         let is_p2_future = (pos - p2)
             .into_iter()
             .zip(v2.into_iter())
-            .all(|(delta, v)| delta * v.into() >= 0.into());
+            .all(|(delta, v)| delta * v >= 0.into());
 
         if is_p1_future && is_p2_future {
             Some(pos)
@@ -549,7 +550,7 @@ impl Hail {
         }
     }
 
-    fn find_rock_position(hail: [&Hail; 3]) -> Hail {
+    fn find_rock_position_using_known_time(hail: [&Hail; 3]) -> Hail {
         println!("Finding rock to hit 3 hail particles at ");
         println!("\t{}", hail[0]);
         println!("\t{}", hail[1]);
@@ -675,6 +676,206 @@ impl Hail {
             position: p_rock,
         }
     }
+
+    fn min_dist2_with_gradient(
+        &self,
+        p_rock: Vector<3, Fraction<i128>>,
+        v_rock: Vector<3, Fraction<i128>>,
+    ) -> (
+        Fraction<i128>,
+        Vector<3, Fraction<i128>>,
+        Vector<3, Fraction<i128>>,
+    ) {
+        // distance(t)^2 = ((p_rock + v_rock*t) - (p + v*t))^2
+        // distance(t)^2 = ((p_rock - p) +  (v_rock - v)*t)^2
+
+        let dp: Vector<3, Fraction<_>> =
+            p_rock - self.position.map(|d| d.into());
+        let dv: Vector<3, Fraction<_>> =
+            v_rock - self.velocity.map(|d| d.into());
+
+        // distance(t)^2 = (dp + dv*t)^2
+        // distance(t)^2 = dp*dp + 2*(dv*dp)*t + (dv*dv)*t^2
+
+        // t_min = -(dv*dp)/(dv*dv)
+        // distance(t_min)^2 = dp*dp - (dv*dp)^2/(dv*dv)
+
+        let dp_dp = dp.mag2();
+        let dv_dp = dv.dot_product(dp);
+        let dv_dv = dv.mag2();
+
+        let min_dist2 = dp_dp - dv_dp * dv_dp / dv_dv;
+
+        let gradient_p = dp * 2.into() - dv * dv_dp * 2.into() / dv_dv;
+
+        let gradient_v = (dv * dv_dp - dp * dv_dv) * 2.into() / (dv_dv * dv_dv);
+
+        (min_dist2, gradient_p, gradient_v)
+    }
+
+    fn find_rock_position(hail: &[Hail]) -> Hail {
+        // let (initial_p, initial_v): (
+        //     Vector<3, Fraction<i128>>,
+        //     Vector<3, Fraction<i128>>,
+        // ) = hail.iter().fold(
+        //     (Vector::zero(), Vector::zero()),
+        //     |(pos, vel), hailstone| {
+        //         let n = hail.len() as i128;
+        //         (
+        //             pos + hailstone.position.map(|d| Fraction::new(d, n)),
+        //             vel + hailstone.velocity.map(|d| Fraction::new(d, n)),
+        //         )
+        //     },
+        // );
+
+        let (initial_p, initial_v): (
+            Vector<3, Fraction<i128>>,
+            Vector<3, Fraction<i128>>,
+        ) = (
+            [24.into(), 13.into(), 10.into()].into(),
+            [(-3).into(), 1.into(), 2.into()].into(),
+        );
+        // let initial_p = initial_p
+        //     + [Fraction::new(1, 1), Fraction::zero(), Fraction::zero()].into();
+        let temp_offset = 1;
+        let initial_p = initial_p
+            + [
+                Fraction::new(1, temp_offset),
+                Fraction::new(-1, temp_offset),
+                Fraction::new(1, temp_offset),
+            ]
+            .into();
+        let initial_v = initial_v
+            + [
+                Fraction::new(1, temp_offset),
+                Fraction::new(-1, temp_offset),
+                Fraction::new(1, temp_offset),
+            ]
+            .into();
+
+        println!("Starting at p_rock = {initial_p}, v_rock = {initial_v}");
+
+        let initial_p = initial_p.map(|d| d.round_nearest());
+        let initial_v = initial_v.map(|d| d.round_nearest());
+
+        let (final_p, final_v) = std::iter::successors(
+            Some((initial_p, initial_v)),
+            |&(p_rock, v_rock)| {
+                println!(
+                    "Improving guess from \
+                          p_rock = {p_rock}, \
+                          v_rock = {v_rock}"
+                );
+                // println!(
+                //     "Improving guess from \
+                //           p_rock = {:.2}, \
+                //           v_rock = {:.2}",
+                //     p_rock.map(|f| (f.num as f64) / (f.denom as f64)),
+                //     v_rock.map(|f| (f.num as f64) / (f.denom as f64)),
+                // );
+
+                let (min_dist2, gradient_p, gradient_v) = hail
+                    .iter()
+                    .map(|hailstone| {
+                        let p_rock = p_rock.map(|d| Fraction::new(d, 1));
+                        let v_rock = v_rock.map(|d| Fraction::new(d, 1));
+                        hailstone.min_dist2_with_gradient(p_rock, v_rock)
+                    })
+                    .reduce(|(da, pa, va), (db, pb, vb)| {
+                        (
+                            (da + db).round_to_denom(65536),
+                            (pa + pb).map(|d| d.round_to_denom(65536)),
+                            (va + vb).map(|d| d.round_to_denom(65536)),
+                        )
+                    })
+                    .unwrap();
+
+                println!("\tSum(dist^2) = {min_dist2}");
+                println!("\tGradient = {gradient_p}, {gradient_v}");
+                let min_dist2 = min_dist2.round_to_denom(128);
+                let gradient_p = gradient_p.map(|d| d.round_to_denom(128));
+                let gradient_v = gradient_v.map(|d| d.round_to_denom(128));
+                println!("\tRounded Sum(dist^2) = {min_dist2}");
+                println!("\tRounded Gradient = {gradient_p}, {gradient_v}");
+
+                let gradient2 =
+                    (gradient_p.mag2() + gradient_v.mag2()).round_to_denom(128);
+
+                if min_dist2.is_zero() || gradient2.is_zero() {
+                    None
+                } else {
+                    println!("\tGradient^2 = {gradient2}");
+                    let lambda = min_dist2 / gradient2;
+                    let lambda = lambda / 10;
+                    println!("\tUsing lambda = {lambda}");
+                    println!("\tdelta p = {}", gradient_p * lambda);
+                    println!("\tdelta v = {}", gradient_v * lambda);
+
+                    let mut delta_p =
+                        (gradient_p * lambda).map(|d| d.round_nearest());
+                    let mut delta_v =
+                        (gradient_v * lambda).map(|d| d.round_nearest());
+
+                    if delta_p.is_zero() && delta_v.is_zero() {
+                        (delta_p, delta_v) = gradient_p
+                            .into_iter()
+                            .chain(gradient_v.into_iter())
+                            .enumerate()
+                            .max_by_key(|(_, g)| *g)
+                            .map(|(i, g)| {
+                                let value = g.num.signum() * g.denom.signum();
+                                if i < 3 {
+                                    (
+                                        Vector::<3, _>::one_hot(i) * value,
+                                        Vector::zero(),
+                                    )
+                                } else {
+                                    (
+                                        Vector::zero(),
+                                        Vector::<3, _>::one_hot(i - 3) * value,
+                                    )
+                                }
+                            })
+                            .unwrap();
+                    }
+
+                    let next_p_rock = p_rock - delta_p;
+                    let next_v_rock = v_rock - delta_v;
+
+                    println!(
+                        "\tNext p_rock = {next_p_rock}, \
+                              v_rock = {next_v_rock}"
+                    );
+
+                    // let next_p_rock =
+                    //     next_p_rock.map(|d| d.round_to_denom(128));
+                    // let next_v_rock =
+                    //     next_v_rock.map(|d| d.round_to_denom(128));
+
+                    println!(
+                        "\tRounded, next p_rock = {next_p_rock}, \
+                              v_rock = {next_v_rock}"
+                    );
+
+                    Some((next_p_rock, next_v_rock))
+                }
+            },
+        )
+        .last()
+        .unwrap();
+
+        println!("v_rock = {final_v}");
+        println!("p_rock = {final_p}");
+
+        // Hail {
+        //     velocity: final_v.map(|d| d.round_nearest()),
+        //     position: final_p.map(|d| d.round_nearest()),
+        // }
+        Hail {
+            velocity: final_v,
+            position: final_p,
+        }
+    }
 }
 
 #[derive(aoc_macros::YearDay)]
@@ -715,76 +916,13 @@ impl Puzzle for ThisDay {
     fn part_2(
         storm: &Self::ParsedInput,
     ) -> Result<impl std::fmt::Debug, Error> {
-        println!("Num hail: {}", storm.hail.len());
-
-        let pos_lookup: HashMap<_, _> = storm
-            .hail
-            .iter()
-            .enumerate()
-            .flat_map(|(i, hail)| {
-                (0..=storm.hail.len())
-                    .map(move |t| {
-                        let t = t as i128;
-                        hail.position + hail.velocity * t
-                    })
-                    .map(move |pos| (pos, i))
-            })
-            .collect();
-        println!("Lookup size: {}", pos_lookup.len());
-
-        // pi = p0 + v0*ti
-
         // let best_rock = Hail {
         //     position: [24, 13, 10].into(),
         //     velocity: [-3, 1, 2].into(),
         // };
 
-        let best_rock = Hail::find_rock_position(
-            storm
-                .hail
-                .iter()
-                .take(3)
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap(),
-        );
-
-        // let best_rock = storm
-        //     .iter_pairs()
-        //     .flat_map(|(a, b)| [(a.clone(), b.clone()), (b, a)])
-        //     // .progress_count((storm.hail.len() * (storm.hail.len() - 1)) as u64)
-        //     .map(|(a, b)| {
-        //         let p1 = a.position + a.velocity * 1;
-        //         let p2 = b.position + b.velocity * 2;
-        //         let v0 = p2 - p1;
-        //         let p0 = p1 - v0;
-        //         // println!("From {a} at t=1 to {b} at t=2");
-        //         // println!("\tp0 = {p0}, v0 = {v0}");
-        //         Hail {
-        //             position: p0,
-        //             velocity: v0,
-        //         }
-        //     })
-        //     .max_by_key(|rock| {
-        //         (0..=storm.hail.len())
-        //             .filter_map(|t| {
-        //                 let t = t as i128;
-        //                 let pos = rock.position + rock.velocity * t;
-        //                 pos_lookup.get(&pos)
-        //             })
-        //             .unique()
-        //             .count()
-        //     })
-        //     .unwrap();
-
-        // let best_rock_collisions = (0..=storm.hail.len())
-        //     .filter_map(|t| {
-        //         let t = t as i128;
-        //         let pos = best_rock.position + best_rock.velocity * t;
-        //         pos_lookup.get(&pos)
-        //     })
-        //     .unique()
-        //     .count();
+        // let best_rock = Hail::find_rock_position(&storm.hail[..3]);
+        let best_rock = Hail::find_rock_position(&storm.hail);
 
         let best_rock_collisions = storm
             .hail
