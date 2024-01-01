@@ -11,6 +11,10 @@ pub struct Fraction<T = i64> {
 }
 
 impl<T> Fraction<T> {
+    pub fn new(num: T, denom: T) -> Self {
+        Self { num, denom }
+    }
+
     pub fn normalize(self) -> Self
     where
         T: Copy,
@@ -39,12 +43,22 @@ impl<T> Fraction<T> {
     pub fn round_nearest(self) -> T
     where
         T: num::traits::Euclid,
-        T: num::traits::FromPrimitive,
         T: std::ops::Add<Output = T>,
         T: Copy,
     {
         let Fraction { num, denom } = self;
-        (num + denom / T::from_i8(2).unwrap()).div_euclid(&denom)
+        (num + num + denom).div_euclid(&(denom + denom))
+    }
+
+    pub fn round_to_denom(self, denom: T) -> Self
+    where
+        T: num::traits::Euclid,
+        T: num::traits::FromPrimitive,
+        T: num::Integer,
+        T: Copy,
+    {
+        let num = (self * denom).round_nearest();
+        Self { num, denom }.normalize()
     }
 }
 
@@ -171,7 +185,7 @@ where
     fn sub(self, rhs: Self) -> Self::Output {
         let gcd: T = find_gcd(self.denom, rhs.denom);
         let num = self.num * (rhs.denom / gcd) - rhs.num * (self.denom / gcd);
-        let denom = self.denom * rhs.denom;
+        let denom = self.denom * (rhs.denom / gcd);
         Self { num, denom }.normalize()
     }
 }
@@ -205,6 +219,20 @@ where
     }
 }
 
+impl<T> Div<T> for Fraction<T>
+where
+    T: Copy,
+    T: num::Integer,
+{
+    type Output = Fraction<T>;
+
+    fn div(self, rhs: T) -> Self::Output {
+        let num = self.num;
+        let denom = self.denom * rhs;
+        Self { num, denom }.normalize()
+    }
+}
+
 impl<T> Mul for Fraction<T>
 where
     T: Copy,
@@ -215,6 +243,20 @@ where
     fn mul(self, rhs: Self) -> Self::Output {
         let num = self.num * rhs.num;
         let denom = self.denom * rhs.denom;
+        Self { num, denom }.normalize()
+    }
+}
+
+impl<T> Mul<T> for Fraction<T>
+where
+    T: Copy,
+    T: num::Integer,
+{
+    type Output = Fraction<T>;
+
+    fn mul(self, rhs: T) -> Self::Output {
+        let num = self.num * rhs;
+        let denom = self.denom;
         Self { num, denom }.normalize()
     }
 }

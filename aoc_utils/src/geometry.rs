@@ -338,6 +338,15 @@ impl<const N: usize, T> Vector<N, T> {
         self.0.swap(a, b)
     }
 
+    pub fn mag2(self) -> T
+    where
+        T: Copy,
+        T: ops::Mul<Output = T>,
+        T: std::iter::Sum,
+    {
+        self.into_iter().map(|a| a * a).sum()
+    }
+
     pub fn dist2(&self, other: &Self) -> T
     where
         T: ops::Sub<Output = T> + ops::Mul<Output = T>,
