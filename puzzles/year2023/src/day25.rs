@@ -99,7 +99,7 @@ impl IndexedGraph {
     //
     // TODO: Clean this up.  This is very C-ish code, and not very
     // readable at that.
-    fn stoer_wagner_min_cut(&self) -> (i64, Vec<i64>) {
+    fn stoer_wagner_min_cut(&self) -> Option<(i64, Vec<i64>)> {
         let n = self.connections.len();
         let mut mat: Vec<Vec<i64>> = vec![vec![0; n]; n];
         self.connections
@@ -110,15 +110,13 @@ impl IndexedGraph {
                 mat[i][j] = 1;
             });
 
-        let mut best: (i64, Vec<i64>) = (i64::MAX, vec![]);
-        let mut co: Vec<Vec<i64>> = vec![vec![]; n];
+        let mut best: Option<(i64, Vec<i64>)> = None;
 
-        for i in 0..n {
-            co[i] = vec![i as i64];
-        }
+        let mut co: Vec<Vec<i64>> = (0..n).map(|i| vec![i as i64]).collect();
 
         for ph in 1..n {
             let mut w: Vec<i64> = mat[0].clone();
+
             let mut s: i64 = 0;
             let mut t: i64 = 0;
             for _ in 0..(n - ph) {
@@ -129,11 +127,18 @@ impl IndexedGraph {
                     w[i] += mat[t as usize][i];
                 }
             }
-            if w[t as usize] - mat[t as usize][t as usize] < best.0 {
-                best = (
+
+            if best
+                .as_ref()
+                .map(|(prev, _)| {
+                    w[t as usize] - mat[t as usize][t as usize] < *prev
+                })
+                .unwrap_or(true)
+            {
+                best = Some((
                     w[t as usize] - mat[t as usize][t as usize],
                     co[t as usize].clone(),
-                );
+                ));
             }
             let co_t = co[t as usize].clone();
             co[s as usize].extend(co_t.into_iter());
@@ -146,7 +151,7 @@ impl IndexedGraph {
             mat[0][t as usize] = i64::MIN;
         }
 
-        return best;
+        best
     }
 }
 
@@ -165,9 +170,9 @@ impl Puzzle for ThisDay {
     ) -> Result<impl std::fmt::Debug, Error> {
         let graph: IndexedGraph = connections.clone().into();
 
-        let cut = graph.stoer_wagner_min_cut();
-        let n = cut.1.len();
-        Ok(n * (graph.connections.len() - n))
+        let (connectivity, cut) = graph.stoer_wagner_min_cut().unwrap();
+        assert_eq!(connectivity, 3);
+        Ok(cut.len() * (graph.connections.len() - cut.len()))
     }
 
     fn part_2(_: &Self::ParsedInput) -> Result<impl std::fmt::Debug, Error> {
