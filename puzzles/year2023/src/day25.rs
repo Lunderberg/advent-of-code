@@ -1,8 +1,6 @@
 use std::{collections::HashMap, str::FromStr};
 
 use aoc_utils::prelude::*;
-use bit_set::BitSet;
-use indicatif::ProgressIterator as _;
 
 #[derive(aoc_macros::YearDay)]
 pub struct ThisDay;
@@ -97,29 +95,6 @@ impl DirectedGraph<usize> for TrimmedGraph<'_> {
 }
 
 impl IndexedGraph {
-    fn segment_sizes<'a>(
-        &'a self,
-        removed: [(usize, usize); 3],
-    ) -> impl Iterator<Item = usize> + 'a {
-        let trimmed = TrimmedGraph {
-            connections: &self.connections,
-            removed,
-        };
-
-        let mut to_visit: BitSet = (0..self.connections.len()).collect();
-
-        std::iter::from_fn(move || {
-            to_visit.iter().next().map(|starting_point| {
-                trimmed
-                    .iter_depth_first([starting_point])
-                    .inspect(|&index| {
-                        to_visit.remove(index);
-                    })
-                    .count()
-            })
-        })
-    }
-
     // From https://en.wikipedia.org/wiki/Stoer%E2%80%93Wagner_algorithm
     //
     // TODO: Clean this up.  This is very C-ish code, and not very
