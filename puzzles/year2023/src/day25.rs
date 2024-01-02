@@ -144,7 +144,9 @@ impl IndexedGraph {
                     mat[s][i] += mat[t][i];
                     mat[i][s] = mat[s][i];
                 }
-                mat[0][t] = i64::MIN;
+                for i in 0..n {
+                    mat[i][t] = i64::MIN;
+                }
 
                 (connectivity, cut)
             })
