@@ -110,48 +110,36 @@ impl IndexedGraph {
                 mat[i][j] = 1;
             });
 
-        let mut best: Option<(i64, Vec<i64>)> = None;
-
         let mut co: Vec<Vec<i64>> = (0..n).map(|i| vec![i as i64]).collect();
 
-        for ph in 1..n {
-            let mut w: Vec<i64> = mat[0].clone();
+        (1..n)
+            .map(|ph| {
+                let mut w: Vec<i64> = mat[0].clone();
 
-            let mut s: i64 = 0;
-            let mut t: i64 = 0;
-            for _ in 0..(n - ph) {
-                w[t as usize] = i64::MIN;
-                s = t;
-                t = (0..w.len()).max_by_key(|i| w[*i]).unwrap() as i64;
-                for i in 0..n {
-                    w[i] += mat[t as usize][i];
+                let mut s: usize = 0;
+                let mut t: usize = 0;
+                for _ in 0..(n - ph) {
+                    w[t] = i64::MIN;
+                    s = t;
+                    t = (0..w.len()).max_by_key(|i| w[*i]).unwrap();
+                    for i in 0..n {
+                        w[i] += mat[t][i];
+                    }
                 }
-            }
 
-            if best
-                .as_ref()
-                .map(|(prev, _)| {
-                    w[t as usize] - mat[t as usize][t as usize] < *prev
-                })
-                .unwrap_or(true)
-            {
-                best = Some((
-                    w[t as usize] - mat[t as usize][t as usize],
-                    co[t as usize].clone(),
-                ));
-            }
-            let co_t = co[t as usize].clone();
-            co[s as usize].extend(co_t.into_iter());
-            for i in 0..n {
-                mat[s as usize][i] += mat[t as usize][i];
-            }
-            for i in 0..n {
-                mat[i][s as usize] = mat[s as usize][i];
-            }
-            mat[0][t as usize] = i64::MIN;
-        }
+                let connectivity = w[t] - mat[t][t];
+                let cut = co[t].clone();
 
-        best
+                co[s].extend(cut.iter().cloned());
+                for i in 0..n {
+                    mat[s][i] += mat[t][i];
+                    mat[i][s] = mat[s][i];
+                }
+                mat[0][t] = i64::MIN;
+
+                (connectivity, cut)
+            })
+            .min_by_key(|(connectivity, _)| *connectivity)
     }
 }
 
