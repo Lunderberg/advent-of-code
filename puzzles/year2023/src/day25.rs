@@ -122,9 +122,12 @@ impl IndexedGraph {
                 for _ in 0..(n - ph) {
                     w[t] = None;
                     s = t;
-                    t = (0..w.len())
-                        .filter(|i| w[*i].is_some())
-                        .max_by_key(|i| w[*i])
+                    t = w
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(i, opt_wi)| opt_wi.map(|wi| (i, wi)))
+                        .max_by_key(|(_, wi)| *wi)
+                        .map(|(i, _)| i)
                         .unwrap();
                     for i in 0..n {
                         if let Some(wi) = w[i].as_mut() {
