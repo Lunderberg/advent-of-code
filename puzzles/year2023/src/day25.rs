@@ -114,20 +114,26 @@ impl IndexedGraph {
 
         (1..n)
             .map(|ph| {
-                let mut w: Vec<i64> = mat[0].clone();
+                let mut w: Vec<Option<i64>> =
+                    mat[0].iter().map(|weight| Some(*weight)).collect();
 
                 let mut s: usize = 0;
                 let mut t: usize = 0;
                 for _ in 0..(n - ph) {
-                    w[t] = i64::MIN;
+                    w[t] = None;
                     s = t;
-                    t = (0..w.len()).max_by_key(|i| w[*i]).unwrap();
+                    t = (0..w.len())
+                        .filter(|i| w[*i].is_some())
+                        .max_by_key(|i| w[*i])
+                        .unwrap();
                     for i in 0..n {
-                        w[i] += mat[t][i];
+                        if let Some(wi) = w[i].as_mut() {
+                            *wi += mat[t][i];
+                        }
                     }
                 }
 
-                let connectivity = w[t] - mat[t][t];
+                let connectivity = w[t].unwrap() - mat[t][t];
                 let cut = co[t].clone();
 
                 co[s].extend(cut.iter().cloned());
