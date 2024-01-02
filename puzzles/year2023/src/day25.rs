@@ -101,21 +101,20 @@ impl IndexedGraph {
     // readable at that.
     fn stoer_wagner_min_cut(&self) -> Option<(i64, Vec<i64>)> {
         let n = self.connections.len();
-        let mut mat: Vec<Vec<i64>> = vec![vec![0; n]; n];
+        let mut mat: Vec<Vec<Option<i64>>> = vec![vec![Some(0); n]; n];
         self.connections
             .iter()
             .enumerate()
             .flat_map(|(i, outputs)| outputs.iter().map(move |j| (i, *j)))
             .for_each(|(i, j)| {
-                mat[i][j] = 1;
+                mat[i][j] = Some(1);
             });
 
         let mut co: Vec<Vec<i64>> = (0..n).map(|i| vec![i as i64]).collect();
 
         (1..n)
             .map(|ph| {
-                let mut w: Vec<Option<i64>> =
-                    mat[0].iter().map(|weight| Some(*weight)).collect();
+                let mut w: Vec<Option<i64>> = mat[0].clone();
 
                 let mut s: usize = 0;
                 let mut t: usize = 0;
@@ -130,22 +129,23 @@ impl IndexedGraph {
                         .map(|(i, _)| i)
                         .unwrap();
                     for i in 0..n {
-                        if let Some(wi) = w[i].as_mut() {
-                            *wi += mat[t][i];
-                        }
+                        w[i] = w[i]
+                            .and_then(|wi| mat[t][i].map(|mat_ti| wi + mat_ti));
                     }
                 }
 
-                let connectivity = w[t].unwrap() - mat[t][t];
+                let connectivity = w[t].unwrap() - mat[t][t].unwrap();
                 let cut = co[t].clone();
 
                 co[s].extend(cut.iter().cloned());
                 for i in 0..n {
-                    mat[s][i] += mat[t][i];
+                    mat[s][i] = mat[s][i].and_then(|mat_si| {
+                        mat[t][i].map(|mat_ti| mat_si + mat_ti)
+                    });
                     mat[i][s] = mat[s][i];
                 }
                 for i in 0..n {
-                    mat[i][t] = i64::MIN;
+                    mat[i][t] = None;
                 }
 
                 (connectivity, cut)
